@@ -17,7 +17,7 @@ def load_data(dataset: str, transformation=None, n_train=None, n_test=None, num_
     test_set = None
 
     if dataset not in DATASET_NAMES:
-        print(f"The specified dataset is not supported. You can choose from {" ".join(DATASET_NAMES)}")
+        print(f"The specified dataset is not supported. You can choose from {' '.join(DATASET_NAMES)}")
         return None
 
     if transformation:
