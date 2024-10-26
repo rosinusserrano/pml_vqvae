@@ -23,8 +23,7 @@ def load_data(
 
     if dataset not in DATASET_NAMES:
         print(
-            f"The specified dataset is not supported. You can choose from {
-              ', '.join(DATASET_NAMES)}"
+            f"The specified dataset is not supported. You can choose from {', '.join(DATASET_NAMES)}"
         )
         return None
 
