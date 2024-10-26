@@ -85,4 +85,4 @@ def load_data(
     return train_loader, test_loader
 
 
-t, te = load_data("imagenet_mini")
+t, te = load_data("cifar")
