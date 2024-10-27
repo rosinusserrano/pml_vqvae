@@ -2,9 +2,9 @@ from torchvision.datasets import ImageNet, CIFAR10
 from torchvision.transforms import ToTensor
 import torch
 import numpy as np
+import os
 
 DATASET_DIR = "/home/space/datasets/"
-DATASET_DIR = "./"
 DATASET_NAMES = ["imagenet", "imagenet_mini", "cifar"]
 
 
@@ -45,22 +45,16 @@ def load_data(
             DATASET_DIR + "imagenet_torchvision/imagenet100",
             "train",
             transform=transformation,
-            download=True,
         )
         test_set = ImageNet(
             DATASET_DIR + "imagenet_torchvision/imagenet100",
             "val",
-            transformat=transformation,
-            download=True,
+            transform=transformation,
         )
 
     elif dataset == "cifar":
-        train_set = CIFAR10(
-            DATASET_DIR + "cifar10", train=True, transform=transformation
-        )
-        test_set = CIFAR10(
-            DATASET_DIR + "cifar10", train=False, transform=transformation
-        )
+        train_set = CIFAR10(DATASET_DIR, train=True, transform=transformation)
+        test_set = CIFAR10(DATASET_DIR, train=False, transform=transformation)
 
     if n_train != None:
         # sample random indices
@@ -72,13 +66,13 @@ def load_data(
         indices = get_random_indices(len(test_set), n_test)
         test_set = torch.utils.data.Subset(test_set, indices)
 
-    # TODO: loader return labels as target for now but should return the image as well
+    # TODO: loader returns labels as target for now but should return the image as target, too
     train_loader = torch.utils.data.DataLoader(
-        train_set, batch_size=4, shuffle=True, num_workers=num_workers
+        train_set, batch_size=64, shuffle=True, num_workers=num_workers
     )
 
     test_loader = torch.utils.data.DataLoader(
-        test_set, batch_size=4, shuffle=True, num_workers=num_workers
+        test_set, batch_size=64, shuffle=True, num_workers=num_workers
     )
 
     return train_loader, test_loader
