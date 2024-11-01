@@ -1,78 +1,13 @@
-from torchvision.datasets import ImageNet, CIFAR10
-from torchvision.transforms import ToTensor, RandomCrop
-from torchvision.io import decode_image
+from torchvision.transforms import RandomCrop
 import torch
-from torch.utils.data import Dataset
+
 import numpy as np
-from PIL import Image
-import os
 from visuals import show_image_grid
+
+from datasets import ImageNetDataset, CifarDataset
 
 DATASET_DIR = "/home/space/datasets/"
 DATASET_NAMES = ["imagenet", "imagenet_mini", "cifar"]
-
-
-class ImageNetDataset(Dataset):
-    def __init__(self, root_dir: str, train: bool = True, transform=None):
-        super().__init__()
-        if train:
-            self.root_dir = os.path.join(root_dir, "train")
-        else:
-            self.root_dir = os.path.join(root_dir, "val")
-        self.train = train
-        self.transform = transform
-        self.image_paths = []
-
-        for _, subdirs, _ in os.walk(self.root_dir):
-            for dir in subdirs:
-                for subdir, _, files in os.walk(os.path.join(self.root_dir, dir)):
-                    for file in files:
-                        if file.endswith((".JPEG")):
-                            self.image_paths.append(os.path.join(subdir, file))
-
-        print(f"paths: {len(self.image_paths)}")
-
-    def __len__(self):
-        return len(self.image_paths)
-
-    def __getitem__(self, idx):
-        if torch.is_tensor(idx):
-            idx = idx.tolist()
-
-        img_name = self.image_paths[idx]
-        # image_channels x image_height x image_width
-        image = decode_image(img_name)
-
-        if self.transform:
-            image = self.transform(image)
-
-        return image, image
-
-
-class CifarDataset(Dataset):
-    def __init__(self, train: bool = True, transform=None):
-        super().__init__()
-        self.root_dir = "/home/space/datasets/cifar10/processed"
-        if train:
-            filename = os.path.join(self.root_dir, "training.npz")
-        else:
-            filename = os.path.join(self.root_dir, "test.npz")
-        self.transform = transform
-        self.images = np.load(filename)
-
-    def __len__(self):
-        return len(self.images)
-
-    def __getitem__(self, idx):
-        if torch.is_tensor(idx):
-            idx = idx.tolist()
-
-        image = self.images[idx]
-
-        if self.transform:
-            image = self.transform(image)
-
-        return image, image
 
 
 def get_random_indices(high: int, n: int, seed=None):
@@ -125,9 +60,9 @@ def load_data(
         )
 
     elif dataset == "cifar":
-        train_set = CifarDataset(DATASET_DIR, split="train", transform=transformation)
+        train_set = CifarDataset(transform=transformation)
 
-        test_set = CifarDataset(DATASET_DIR, split="test", transform=transformation)
+        test_set = CifarDataset(train=False, transform=transformation)
 
     if n_train != None:
         # sample random indices
@@ -153,7 +88,7 @@ def load_data(
 if __name__ == "__main__":
 
     t, te, a, b = load_data(
-        "imagenet_mini",
+        "imagenet",
         batch_size=20,
         transformation=RandomCrop(128, pad_if_needed=True),
     )
