@@ -1,4 +1,4 @@
-from torchvision.transforms import RandomCrop
+from torchvision.transforms import RandomCrop, CenterCrop
 import torch
 
 import numpy as np
@@ -82,14 +82,16 @@ def load_data(
         test_set, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers
     )
 
-    return train_loader, test_loader, train_set, test_set
+    return train_loader, test_loader
 
 
 if __name__ == "__main__":
 
-    t, te, a, b = load_data(
-        "imagenet",
+    t, te = load_data(
+        "cifar",
         batch_size=20,
+        n_train=40,
+        seed=2020,
         transformation=RandomCrop(128, pad_if_needed=True),
     )
 
@@ -98,6 +100,8 @@ if __name__ == "__main__":
     #     train_set, batch_size=1, shuffle=True, num_workers=1
     # )
 
+    # set seed for reproducibility
+    # torch.manual_seed(2809)
     sample_images = next(iter(t))[0]
 
     show_image_grid(sample_images, outfile="test.png")
