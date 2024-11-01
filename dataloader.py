@@ -1,4 +1,5 @@
 from torchvision.transforms import RandomCrop, CenterCrop
+import torchvision
 import torch
 
 import numpy as np
@@ -11,6 +12,16 @@ DATASET_NAMES = ["imagenet", "imagenet_mini", "cifar"]
 
 
 def get_random_indices(high: int, n: int, seed=None):
+    """Generates n random indices from 0 to high-1 without replacement
+
+    Args:
+        high (int): highest index
+        n (int): number of indices to generate
+        seed (int, optional): Seed for reproducibilty . Defaults to None.
+
+    Returns:
+        list: List of random indices
+    """
 
     if seed:
         rng = np.random.default_rng(seed=seed)
@@ -22,14 +33,31 @@ def get_random_indices(high: int, n: int, seed=None):
 
 def load_data(
     dataset: str,
-    transformation=None,
-    n_train=None,
-    n_test=None,
-    num_workers=1,
-    batch_size=32,
-    shuffle=True,
-    seed=None,
+    transformation: torchvision.transforms = None,
+    n_train: int = None,
+    n_test: int = None,
+    num_workers: int = 1,
+    batch_size: int = 32,
+    shuffle: bool = True,
+    seed: int = None,
 ):
+    """Load data from specified dataset
+
+    Args:
+        dataset (str): Name of the dataset
+        transformation (torchvision.transforms, optional): Transformation to apply to the data. Defaults to None.
+        n_train (int, optional): Number of training samples to load. Defaults to None.
+        n_test (int, optional): Number of test samples to load. Defaults to None.
+        num_workers (int, optional): Number of workers to use for data loading. Defaults to 1.
+        batch_size (int, optional): Batch size. Defaults to 32.
+        shuffle (bool, optional): Shuffle data. Defaults to True.
+        seed (int, optional): Seed for reproducibility. Defaults to None.
+
+    Returns:
+        torch.utils.data.DataLoader: Training data loader
+        torch.utils.data.DataLoader: Test data loader
+    """
+
     train_set = None
     test_set = None
 

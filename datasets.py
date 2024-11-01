@@ -6,6 +6,14 @@ import numpy as np
 
 
 class ImageNetDataset(Dataset):
+    """ImageNet Dataset
+
+    Args:
+        root_dir (str): Path to the ImageNet dataset
+        train (bool): Whether to load the training or validation set
+        transform (callable, optional): Optional transform to be applied on a sample.
+    """
+
     def __init__(self, root_dir: str, train: bool = True, transform=None):
         super().__init__()
         if train:
@@ -43,6 +51,13 @@ class ImageNetDataset(Dataset):
 
 
 class CifarDataset(Dataset):
+    """CIFAR-10 Dataset
+
+    Args:
+        train (bool): Whether to load the training or test set
+        transform (callable, optional): Optional transform to be applied on a sample.
+    """
+
     def __init__(self, train: bool = True, transform=None):
         super().__init__()
         self.root_dir = "/home/space/datasets/cifar10/processed"
