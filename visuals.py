@@ -90,4 +90,5 @@ def show_image_grid(x: torch.Tensor,
 if __name__ == "__main__":
     images = torch.randn((32, 1, 8, 8))
     show_image_grid(images)
+    show_image_grid(images, inch_per_pixel=0.1)
     show_image_grid(images, outfile="test.png")
