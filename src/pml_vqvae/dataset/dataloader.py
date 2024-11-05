@@ -3,7 +3,7 @@ import torchvision
 import torch
 
 import numpy as np
-from ..visuals import show_image_grid
+from pml_vqvae.visuals import show_image_grid
 
 from datasets import ImageNetDataset, CifarDataset
 

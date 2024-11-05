@@ -1,0 +1,9 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pml_vqvae"
+version = "0.0.1"
+description = "Package for our Project WS2425"
+readme = "README.md"

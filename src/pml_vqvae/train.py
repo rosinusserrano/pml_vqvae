@@ -2,7 +2,7 @@
 
 import argparse
 
-from src.baseline.vae import train_for_real
+from pml_vqvae.baseline.vae import train_for_real
 
 parser = argparse.ArgumentParser()
 parser.add_argument("model", help="The model you want to train")

@@ -9,7 +9,7 @@ from torch import nn
 
 from tqdm.auto import tqdm
 
-from ..visuals import show_image_grid
+from pml_vqvae.visuals import show_image_grid
 
 
 def conv_block(inc, outc):
