@@ -4,6 +4,7 @@ from torch.utils.data import DataLoader
 from torchvision.datasets.cifar import CIFAR10
 from torchvision.datasets.imagenet import ImageNet
 from torchaudio.datasets.vctk import VCTK_092
+from torchvision.transforms import ToTensor
 
 
 def load_imagenet(root: str, batch_size: int = 128):
@@ -32,8 +33,8 @@ def load_cifar10(root: str | None, batch_size: int = 128):
     
     Returns a tuple of 2 pytorch dataloaders. First is
     the train dataset and second is the test dataset."""
-    train_set = CIFAR10(root=root, train=True, download=True)
-    test_set = CIFAR10(root=root, train=False, download=True)
+    train_set = CIFAR10(root=root, train=True, download=True, transform=ToTensor())
+    test_set = CIFAR10(root=root, train=False, download=True, transform=ToTensor())
 
     train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
     test_loader = DataLoader(test_set, batch_size=batch_size)
