@@ -1,6 +1,7 @@
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
+import math
 
 from PIL import Image
 
@@ -79,18 +80,23 @@ def simple_downsample(image, scale):
     new_img = np.zeros((128, 128, 3), dtype=np.float32)
     for i in range(0, 128):
         for j in range(0, 128):
-            new_img[i][j] = image[i * scale][j * scale] / 255.
+            new_img[i][j] = image[math.floor(i * scale)][math.floor(j * scale)] / 255.
     return new_img
 
 
 def main():
     plt.figure(figsize=(3, 3))
 
-    img_array = np.array(Image.open('data/os361x7rfy151.webp'))
-    img_array = simple_downsample(img_array, 8)
+    img_array = np.array(Image.open('data/hand.webp'))
+    print(img_array.shape)
+    img_array = simple_downsample(img_array, 2.5)
     plt.imshow(img_array)
     plt.show()
 
+    img_array = np.array(Image.open('data/hand.webp'))
+    print(img_array.shape)
+    img_array = simple_downsample(img_array, 2.5)
+    '''
     img_tensor = torch.tensor(img_array, dtype=torch.float).unsqueeze(0).permute(0, 3, 1, 2)
     model = BaselineAutoencoder()
 
@@ -112,6 +118,6 @@ def main():
             plt.imshow(decoded_img)
             plt.show()
 
-
+'''
 if __name__ == '__main__':
     main()
