@@ -204,3 +204,4 @@ cython_debug/
 #### CUSTOM
 
 test.*
+imagenet-mini/
