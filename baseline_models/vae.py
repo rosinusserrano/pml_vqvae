@@ -44,20 +44,20 @@ def encoder():
         nn.Conv2d(16, 64, 5),
         nn.ReLU(),
         # 28x28x64 -> 28x28x2
-        nn.Conv2d(64, 2, 1))
+        nn.Conv2d(64, 16, 1))
 
 
-def reparamterization_trick(encoder_output: torch.Tensor):
+def reparameterization_trick(encoder_output: torch.Tensor):
     """Splits the output of the encoder into logvar and mean and then samples
     using the reparameterization trick"""
-    batch_size, height, width, n_feats = encoder_output.shape
+    batch_size, n_feats, height, width = encoder_output.shape
 
     assert n_feats % 2 == 0, """Use even number of output features otherwise
     one can't split them into mean and variance"""
 
-    z = torch.randn((batch_size, height, width, n_feats // 2))
-    mean = encoder_output[..., :(n_feats // 2)]
-    logvar = encoder_output[..., (n_feats // 2):]
+    z = torch.randn((batch_size, n_feats // 2, height, width))
+    mean = encoder_output[:, :(n_feats // 2), ...]
+    logvar = encoder_output[:, (n_feats // 2):, ...]
     z_hat = mean + torch.exp(0.5 * logvar) * z
 
     return z_hat, mean, logvar
@@ -67,17 +67,17 @@ def decoder():
     "The decoder for the simple VAE"
     return nn.Sequential(
         # 28x28x1 -> 32x32x64
-        nn.ConvTranspose2d(1, 64, 5),
+        nn.ConvTranspose2d(8, 64, 5),
         nn.ReLU(),
         # 32x32x64 -> 32x32x16
         ResidualBlock(64, 16),
         # 32x32x16 -> 64x64x16
-        nn.ConvTranspose2d(16, 16, 3, 2, 1),
+        nn.ConvTranspose2d(16, 16, 4, 2, 1),
         nn.ReLU(),
         # 64x64x16 -> 64x64x8
         ResidualBlock(16, 8),
         # 64x64x8 -> 128x128x8
-        nn.ConvTranspose2d(8, 8, 3, 2, 1),
+        nn.ConvTranspose2d(8, 8, 4, 2, 1),
         nn.ReLU(),
         # 128x128x8 -> 128x128x3
         ResidualBlock(8, 3))
