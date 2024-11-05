@@ -25,6 +25,7 @@ class BaselineAutoencoder(torch.nn.Module):
         hidden_chan = 128
         latent_chan = 6
         super().__init__()
+
         self.encoder_downsampling = torch.nn.Sequential(
             torch.nn.Conv2d(
                 in_channels=3, out_channels=hidden_chan, kernel_size=4, stride=2, padding=1),
@@ -37,18 +38,16 @@ class BaselineAutoencoder(torch.nn.Module):
             ResidualBlock(hidden_chan, hidden_chan),
             ResidualBlock(hidden_chan, hidden_chan)
         )
-        self.encoder_compression = (
-            torch.nn.Conv2d(
-                in_channels=hidden_chan, out_channels=latent_chan, kernel_size=1, stride=1))
-
+        self.encoder_compression = torch.nn.Conv2d(
+            in_channels=hidden_chan, out_channels=latent_chan, kernel_size=1, stride=1)
         self.encoder_stack = torch.nn.Sequential(
             self.encoder_downsampling,
             self.encoder_residual,
             self.encoder_compression
         )
 
-        self.decoder_decompression = (
-            torch.nn.Conv2d(in_channels=latent_chan, out_channels=hidden_chan, kernel_size=1, stride=1))
+        self.decoder_decompression = torch.nn.Conv2d(
+            in_channels=latent_chan, out_channels=hidden_chan, kernel_size=1, stride=1)
         self.decoder_residual = torch.nn.Sequential(
             ResidualBlock(hidden_chan, hidden_chan),
             ResidualBlock(hidden_chan, hidden_chan)
