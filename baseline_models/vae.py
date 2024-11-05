@@ -1,9 +1,16 @@
-"Baseline models to compare VQ-VAE to"
+"""Simple implementation of VAE.
+
+very simple"""
+
+import matplotlib.pyplot as plt
 
 import torch
 from torch import nn
 
+from tqdm.auto import tqdm
+
 from dataloaders import load_cifar10
+from visuals import show_image_grid
 
 
 def conv_block(inc, outc):
@@ -94,7 +101,7 @@ def loss_function(original, mean, logvar, reconstruction):
         -0.5 * torch.sum(1 + logvar - mean**2 - logvar.exp(), dim=(1, 2, 3)),
         dim=0)
 
-    loss = reconstruction_loss + kld_loss
+    loss = reconstruction_loss + 0.001 * kld_loss
 
     return {
         'loss': loss,
@@ -103,11 +110,107 @@ def loss_function(original, mean, logvar, reconstruction):
     }
 
 
-if __name__ == "__main__":
-    train_dl, test_dl = load_cifar10(batch_size=32)
+def overfit_on_first_batch():
+    "In order to check if your model works as wished, test if it can overfit."
+    train_dl, _ = load_cifar10(root="test.output/data", batch_size=4)
 
-    n_epochs = 100
+    n_epochs = 100000
 
-    for epoch in n_epochs:
-        for batch, _ in train_dl:
-            
+    vae_co = encoder()
+    vae_dec = decoder()
+
+    optimizer = torch.optim.Adam([*vae_co.parameters(), *vae_dec.parameters()])
+
+    reconstruction_loss = []
+    kld_loss = []
+
+    x = None
+    for batch, _ in train_dl:
+        x = batch
+        break
+
+    for epoch in range(n_epochs):
+        optimizer.zero_grad()
+
+        z = vae_co(x)
+        z_hat, mean, logvar = reparameterization_trick(z)
+        x_hat = vae_dec(z_hat)
+
+        loss = loss_function(x, mean, logvar, x_hat)
+        loss["loss"].backward()
+
+        kld_loss.append(loss["KLD"].item())
+        reconstruction_loss.append(loss["Reconstruction_Loss"].item())
+
+        optimizer.step()
+
+        if epoch % 100 == 0:
+            print(f"EPOCH {epoch}")
+
+        if epoch % 100 == 0:
+            show_image_grid(x, outfile="test.output/orig.png")
+            show_image_grid(x_hat, outfile="test.output/recon.png")
+
+            # z_samesize = torch.randn((4, 1, 4, 4))
+            # z_diffsize = torch.randn((4, 1, 6, 6))
+            # x_samesize = vae_dec(z_samesize)
+            # x_diffsize = vae_dec(z_diffsize)
+            # show_image_grid(x_samesize, outfile="test.output/samplesame.png")
+            # show_image_grid(x_diffsize, outfile="test.output/samplediff.png")
+
+            plt.clf()
+            plt.plot(kld_loss)
+            plt.plot(reconstruction_loss)
+            plt.savefig("test.output/losses.png")
+
+
+def train_for_real():
+    train_dl, _ = load_cifar10(root="test.output/data", batch_size=64)
+
+    n_epochs = 100000
+
+    vae_co = encoder()
+    vae_dec = decoder()
+
+    optimizer = torch.optim.Adam([*vae_co.parameters(), *vae_dec.parameters()])
+
+    reconstruction_loss = []
+    kld_loss = []
+
+    for epoch in range(n_epochs):
+        for x, _ in tqdm(train_dl):
+            optimizer.zero_grad()
+
+            z = vae_co(x)
+            z_hat, mean, logvar = reparameterization_trick(z)
+            x_hat = vae_dec(z_hat)
+
+            loss = loss_function(x, mean, logvar, x_hat)
+            loss["loss"].backward()
+
+            kld_loss.append(loss["KLD"].item())
+            reconstruction_loss.append(loss["Reconstruction_Loss"].item())
+
+            optimizer.step()
+
+        if epoch % 10 == 0:
+            print(f"EPOCH {epoch}")
+            print(f"loss {loss['loss'].item()}")
+            print(f"kld loss {kld_loss[-1]}")
+            print(f"recon loss {reconstruction_loss[-1]}")
+
+        if epoch % 100 == 0:
+            show_image_grid(x, outfile="test.output/orig.png")
+            show_image_grid(x_hat, outfile="test.output/recon.png")
+
+            z_samesize = torch.randn((4, 8, 4, 4))
+            z_diffsize = torch.randn((4, 8, 6, 6))
+            x_samesize = vae_dec(z_samesize)
+            x_diffsize = vae_dec(z_diffsize)
+            show_image_grid(x_samesize, outfile="test.output/samplesame.png")
+            show_image_grid(x_diffsize, outfile="test.output/samplediff.png")
+
+            plt.clf()
+            plt.plot(kld_loss)
+            plt.plot(reconstruction_loss)
+            plt.savefig("test.output/losses.png")
