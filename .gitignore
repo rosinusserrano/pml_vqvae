@@ -201,4 +201,7 @@ cython_debug/
 out/
 
 
+#### CUSTOM
+
+imagenet-mini/
 artifacts/
