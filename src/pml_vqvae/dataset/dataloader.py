@@ -2,7 +2,6 @@ from torchvision.transforms import RandomCrop
 import torchvision
 import torch
 
-import numpy as np
 from pml_vqvae.visuals import show_image_grid
 
 from cifar10 import CifarDataset
