@@ -63,6 +63,66 @@ class ImageNetDataset(Dataset):
         else:
             plt.show()
 
+    def export_pxl_size_per_class(self, outfile="./imagenet_img_sizes"):
+
+        pixel_counts = []
+        sizes = []
+
+        # iterate over all images classe and get their size
+        for wnid in self.imagenet.wnids:
+            # get class id
+            class_id = self.imagenet.wnid_to_idx[wnid]
+
+            # get all images paths
+            img_paths = [img[0] for img in self.imagenet.imgs if img[1] == class_id]
+
+            class_sizes = []
+            class_pixel_count = []
+            # get image sizes
+            for image_path in img_paths:
+                img = decode_image(image_path, mode="RGB")
+                img_size = img.size[-2]
+                pixel_count = img_size[0] * img_size[1]
+
+                class_sizes.append(img_size)
+                class_pixel_count.append(pixel_count)
+
+            sizes.append(class_sizes)
+            pixel_counts.append(class_pixel_count)
+
+        pixels_per_class = [
+            [np.mean(counts), np.max(counts), np.min(counts)] for counts in pixel_counts
+        ]
+        sizes_per_class = [
+            [
+                [np.mean(width), np.max(width), np.min(width)],
+                [np.mean(height), np.max(height), np.min(height)],
+            ]
+            for width, height in sizes
+        ]
+
+        # plot an errorbar plot
+        fig = plt.figure(figsize=(10, 10))
+        ax = fig.add_subplot(111)
+
+        for i, (mean, max, min) in enumerate(pixels_per_class):
+            ax.errorbar(
+                i,
+                mean,
+                yerr=[[mean - min], [max - mean]],
+                fmt="o",
+            )
+
+        ax.set_xticks(range(len(self.imagenet.classes)))
+        ax.set_xticklabels(self.imagenet.classes, rotation=90)
+        ax.set_ylabel("Number of pixels")
+        ax.set_title("Number of pixels per class")
+
+        if outfile is not None:
+            fig.savefig(outfile, bbox_inches="tight")
+        else:
+            plt.show()
+
     def info(self):
         info = {}
 
@@ -75,16 +135,31 @@ class ImageNetDataset(Dataset):
         # Number of classes
         info["n_classes"] = len(classes)
 
-        # class with highest number of samples
-        info["highest_sample_per_class"] = [{"n": np.max(counts)}]
+        # 5 classes with highest number of samples
+        info["highest_sample_per_class"] = {
+            "class": classes[np.argsort(counts)[-5:]],
+            "count": counts[np.argsort(counts)[-5:]],
+            "class_name": [
+                self.imagenet.classes[i] for i in classes[np.argsort(counts)[-5:]]
+            ],
+        }
 
-        # class with lowest number of samples
-        info["lowest_sample_per_class"] = [{"n": np.min(counts)}]
+        # 5 classes with lowest number of samples
+        info["lowest_sample_per_class"] = {
+            "class": classes[np.argsort(counts)[:5]],
+            "count": counts[np.argsort(counts)[:5]],
+            "class_name": [
+                self.imagenet.classes[i] for i in classes[np.argsort(counts)[:5]]
+            ],
+        }
 
         # mean number of samples
         info["mean_samples_per_class"] = np.mean(counts)
 
         # range of image sizes
+        sizes = np.array([img[0].size for img in self.imagenet.imgs])
+
+        # mean image size for every class
 
         pass
 
