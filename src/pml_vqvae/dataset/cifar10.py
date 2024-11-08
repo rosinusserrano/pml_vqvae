@@ -117,7 +117,7 @@ class CifarDataset(Dataset):
         if torch.is_tensor(idx):
             idx = idx.tolist()
 
-        image = torch.from_numpy(self.images[idx])
+        image = torch.from_numpy(self.images[idx]).to(torch.float32)
 
         if self.transform:
             image = self.transform(image)

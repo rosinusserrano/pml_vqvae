@@ -29,7 +29,7 @@ def train_log(loss, epoch, epochs):
 
 
 def train(model: torch.nn.Module = MODEL, dataset: str = DATASET, epochs: int = EPOCHS):
-    print(f"Training {model} on {dataset} for {epochs} epochs")
+    print(f"Training {model.name()} on {dataset} for {epochs} epochs")
 
     # Load data
     print("Loading dataset")

@@ -4,8 +4,8 @@ import torch
 
 from pml_vqvae.visuals import show_image_grid
 
-from cifar10 import CifarDataset
-from imagenet import ImageNetDataset
+from pml_vqvae.dataset.cifar10 import CifarDataset
+from pml_vqvae.dataset.imagenet import ImageNetDataset
 
 DATASET_NAMES = ["imagenet", "cifar"]
 

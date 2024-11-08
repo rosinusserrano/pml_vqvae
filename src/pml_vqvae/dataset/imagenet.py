@@ -111,7 +111,10 @@ class ImageNetDataset(Dataset):
         img_path = self.imagenet.imgs[idx]
 
         # image_channels x image_height x image_width
-        image = decode_image(img_path, mode="RGB")
+        image = decode_image(
+            img_path,
+            mode="RGB",
+        ).to(torch.float32)
 
         if self.transform:
             image = self.transform(image)
