@@ -3,7 +3,9 @@ From: python:3.10
 
 %files
     $PWD/requirements.txt requirements.txt
+    $PWD/src pml_vqvae
 
 %post
     pip install --upgrade pip
+    pip install --root-user-action=ignore -e pml_vqvae
     pip install --root-user-action=ignore -r requirements.txt
