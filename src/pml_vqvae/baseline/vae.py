@@ -10,14 +10,20 @@ from torch import nn
 from tqdm.auto import tqdm
 
 from pml_vqvae.visuals import show_image_grid
+from pml_vqvae.dataset.dataloader import load_data
 
 
 def conv_block(inc, outc):
     """A simple 3-layered conv block with kernel size 3, padding and relu
     activation"""
-    return nn.Sequential(nn.Conv2d(inc, outc, 3, padding=1), nn.ReLU(),
-                         nn.Conv2d(outc, outc, 3, padding=1), nn.ReLU(),
-                         nn.Conv2d(outc, outc, 3, padding=1), nn.ReLU())
+    return nn.Sequential(
+        nn.Conv2d(inc, outc, 3, padding=1),
+        nn.ReLU(),
+        nn.Conv2d(outc, outc, 3, padding=1),
+        nn.ReLU(),
+        nn.Conv2d(outc, outc, 3, padding=1),
+        nn.ReLU(),
+    )
 
 
 class ResidualBlock(nn.Module):
@@ -50,7 +56,8 @@ def encoder():
         nn.Conv2d(16, 64, 5),
         nn.ReLU(),
         # 28x28x64 -> 28x28x2
-        nn.Conv2d(64, 16, 1))
+        nn.Conv2d(64, 16, 1),
+    )
 
 
 def reparameterization_trick(encoder_output: torch.Tensor):
@@ -58,12 +65,14 @@ def reparameterization_trick(encoder_output: torch.Tensor):
     using the reparameterization trick"""
     batch_size, n_feats, height, width = encoder_output.shape
 
-    assert n_feats % 2 == 0, """Use even number of output features otherwise
+    assert (
+        n_feats % 2 == 0
+    ), """Use even number of output features otherwise
     one can't split them into mean and variance"""
 
     z = torch.randn((batch_size, n_feats // 2, height, width))
-    mean = encoder_output[:, :(n_feats // 2), ...]
-    logvar = encoder_output[:, (n_feats // 2):, ...]
+    mean = encoder_output[:, : (n_feats // 2), ...]
+    logvar = encoder_output[:, (n_feats // 2) :, ...]
     z_hat = mean + torch.exp(0.5 * logvar) * z
 
     return z_hat, mean, logvar
@@ -86,32 +95,33 @@ def decoder():
         nn.ConvTranspose2d(8, 8, 4, 2, 1),
         nn.ReLU(),
         # 128x128x8 -> 128x128x3
-        ResidualBlock(8, 3))
+        ResidualBlock(8, 3),
+    )
 
 
 def loss_function(original, mean, logvar, reconstruction):
     """Computes the VAE loss which consist of reconstruction loss and KL
-    divergence between prior distribution z ~ N(0, I) and posterior 
+    divergence between prior distribution z ~ N(0, I) and posterior
     distribution z|x ~ N(mean, exp(logvar))"""
 
-    reconstruction_loss = torch.mean((original - reconstruction)**2)
+    reconstruction_loss = torch.mean((original - reconstruction) ** 2)
 
     kld_loss = torch.mean(
-        -0.5 * torch.sum(1 + logvar - mean**2 - logvar.exp(), dim=(1, 2, 3)),
-        dim=0)
+        -0.5 * torch.sum(1 + logvar - mean**2 - logvar.exp(), dim=(1, 2, 3)), dim=0
+    )
 
     loss = reconstruction_loss + 0.001 * kld_loss
 
     return {
-        'loss': loss,
-        'Reconstruction_Loss': reconstruction_loss.detach(),
-        'KLD': -kld_loss.detach()
+        "loss": loss,
+        "Reconstruction_Loss": reconstruction_loss.detach(),
+        "KLD": -kld_loss.detach(),
     }
 
 
 def overfit_on_first_batch():
     "In order to check if your model works as wished, test if it can overfit."
-    train_dl, _ = load_cifar10(root="test.output/data", batch_size=4)
+    train_dl, _ = load_data("cifar", batch_size=4, n_train=10, shuffle=True, seed=2024)
 
     n_epochs = 100000
 
@@ -164,7 +174,7 @@ def overfit_on_first_batch():
 
 
 def train_for_real():
-    train_dl, _ = load_cifar10(root="test.output/data", batch_size=64)
+    train_dl, _ = load_data("cifar", batch_size=64, shuffle=True, seed=2024)
 
     n_epochs = 100000
 
