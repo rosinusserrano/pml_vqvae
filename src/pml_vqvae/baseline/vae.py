@@ -12,6 +12,7 @@ from tqdm.auto import tqdm
 
 from pml_vqvae.dataset.dataloader import load_data
 from pml_vqvae.visuals import show_image_grid
+from pml_vqvae.dataset.dataloader import load_data
 
 
 def conv_block(inc: int, outc: int) -> nn.Module:
@@ -129,9 +130,9 @@ def loss_function(
     }
 
 
-def overfit_on_first_batch() -> None:
-    """Overfit VAE on a single batch."""
-    train_dl, _ = load_data()
+def overfit_on_first_batch():
+    "In order to check if your model works as wished, test if it can overfit."
+    train_dl, _ = load_data("cifar", batch_size=4, n_train=10, shuffle=True, seed=2024)
 
     n_epochs = 100000
 
@@ -176,9 +177,8 @@ def overfit_on_first_batch() -> None:
             plt.savefig("test.output/losses.png")
 
 
-def train_for_real() -> None:
-    """Train VAE on CIFAR10."""
-    train_dl, _ = load_data("cifar10")
+def train_for_real():
+    train_dl, _ = load_data("cifar", batch_size=64, shuffle=True, seed=2024)
 
     n_epochs = 100000
 

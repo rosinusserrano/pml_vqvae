@@ -2,33 +2,12 @@ from torchvision.transforms import RandomCrop
 import torchvision
 import torch
 
-import numpy as np
 from pml_vqvae.visuals import show_image_grid
 
-from datasets import ImageNetDataset, CifarDataset
+from pml_vqvae.dataset.cifar10 import CifarDataset
+from pml_vqvae.dataset.imagenet import ImageNetDataset
 
-DATASET_DIR = "/home/space/datasets/"
-DATASET_NAMES = ["imagenet", "imagenet_mini", "cifar"]
-
-
-def get_random_indices(high: int, n: int, seed=None):
-    """Generates n random indices from 0 to high-1 without replacement
-
-    Args:
-        high (int): highest index
-        n (int): number of indices to generate
-        seed (int, optional): Seed for reproducibilty . Defaults to None.
-
-    Returns:
-        list: List of random indices
-    """
-
-    if seed:
-        rng = np.random.default_rng(seed=seed)
-    else:
-        rng = np.random.default_rng()
-
-    return rng.choice(high, n, replace=False)
+DATASET_NAMES = ["imagenet", "cifar"]
 
 
 def load_data(
@@ -69,38 +48,47 @@ def load_data(
         return None
 
     if dataset == "imagenet":
-        train_set = ImageNetDataset(
-            DATASET_DIR + "imagenet_torchvision/data", transform=transformation
-        )
+        # if n_train or n_test is specified, make sure it is a multiple of 1000 as there are 1000 classes
+        if n_train is not None or n_test is not None:
+            assert n_train % 1000 == 0, "n_train must be a multiple of 1000"
+            assert n_test % 1000 == 0, "n_test must be a multiple of 1000"
 
-        test_set = ImageNetDataset(
-            DATASET_DIR + "imagenet_torchvision/data",
-            train=False,
+            n_train = n_train // 1000
+            n_test = n_test // 1000
+
+        train_set = ImageNetDataset(
+            split="train",
+            samples_per_class=n_train,
             transform=transformation,
+            seed=seed,
         )
 
-    elif dataset == "imagenet_mini":
-        train_set = ImageNetDataset(
-            DATASET_DIR + "imagenet_mini", transform=transformation
-        )
         test_set = ImageNetDataset(
-            DATASET_DIR + "imagenet_mini", train=False, transform=transformation
+            split="val",
+            samples_per_class=n_test,
+            transform=transformation,
+            seed=seed,
         )
 
     elif dataset == "cifar":
-        train_set = CifarDataset(transform=transformation)
+        # if n_train or n_test is specified, make sure it is a multiple of 10 as there are 10 classes
+        if n_train is not None or n_test is not None:
+            assert n_train % 10 == 0, "n_train must be a multiple of 10"
+            assert n_test % 10 == 0, "n_test must be a multiple of 10"
 
-        test_set = CifarDataset(train=False, transform=transformation)
+            n_train = n_train // 10
+            n_test = n_test // 10
 
-    if n_train is not None:
-        # sample random indices
-        indices = get_random_indices(len(train_set), n_train, seed=seed)
-        train_set = torch.utils.data.Subset(train_set, indices)
+        train_set = CifarDataset(
+            split="train",
+            samples_per_class=n_train,
+            transform=transformation,
+            seed=seed,
+        )
 
-    if n_test is not None:
-        # sample random indices
-        indices = get_random_indices(len(test_set), n_test, seed=seed)
-        test_set = torch.utils.data.Subset(test_set, indices)
+        test_set = CifarDataset(
+            split="test", samples_per_class=n_test, transform=transformation, seed=seed
+        )
 
     train_loader = torch.utils.data.DataLoader(
         train_set, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers
@@ -116,9 +104,10 @@ def load_data(
 if __name__ == "__main__":
 
     t, te = load_data(
-        "cifar",
+        "imagenet",
         batch_size=20,
-        n_train=40,
+        n_train=1000,
+        n_test=1000,
         seed=2020,
         transformation=RandomCrop(128, pad_if_needed=True),
     )
