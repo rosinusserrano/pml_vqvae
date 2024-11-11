@@ -2,9 +2,12 @@
 
 import argparse
 from pml_vqvae.baseline.autoencoder import BaselineAutoencoder
+from pml_vqvae.baseline.vae import BaselineVariationalAutoencoder
+from pml_vqvae.baseline.pml_model_interface import PML_model
 from pml_vqvae.dataset.dataloader import load_data
 import torch
 from torchvision.transforms import RandomCrop
+import numpy as np
 
 # import wandb
 
@@ -12,7 +15,7 @@ from torchvision.transforms import RandomCrop
 MODEL = BaselineAutoencoder()
 DATASET = "cifar"
 
-EPOCHS = 100
+EPOCHS = 5
 LEARNING_RATE = 0.01
 MOMENTUM = 0.9
 N_TRAIN = 1000
@@ -28,18 +31,27 @@ def train_log(loss, epoch, epochs):
     print(f"Epoch {epoch+1}/{epochs} - Loss: {loss}")
 
 
-def train(
-    model: torch.nn.Module = MODEL,
-    dataset: str = DATASET,
-    epochs: int = EPOCHS,
-):
+def train(model: PML_model = MODEL, dataset: str = DATASET, epochs: int = EPOCHS):
+    """Train a model on a dataset for a number of epochs
+
+    Args:
+        model (PML_model, optional): The model to train. Defaults to MODEL.
+        dataset (str, optional): The dataset to train on. Defaults to DATASET.
+        epochs (int, optional): The number of epochs to train for. Defaults to EPOCHS.
+
+    Returns:
+        np.array: The losses over epochs (either a list of multiple losses or a list of floats)
+    """
+
     print(f"Training {model.name()} on {dataset} for {epochs} epochs")
 
     # Load data
     print("Loading dataset")
+
+    # TODO: Transformations should be added here
     train_loader, test_loader = load_data(
         dataset,
-        RandomCrop(128, pad_if_needed=True),
+        transformation=RandomCrop(128, pad_if_needed=True),
         n_train=N_TRAIN,
         n_test=N_TEST,
         seed=SEED,
@@ -57,8 +69,9 @@ def train(
     #     },
     # )
 
-    loss_fn = torch.nn.MSELoss()
-    optimizer = torch.optim.SGD(model.parameters(), lr=LEARNING_RATE, momentum=MOMENTUM)
+    loss_fn = model.loss_fn()
+    optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
+    # optimizer = torch.optim.SGD(model.parameters(), lr=LEARNING_RATE, momentum=MOMENTUM)
 
     # Watch model with wandb
     # wandb.watch(model, loss_fn, log="all", log_freq=10)
@@ -72,18 +85,28 @@ def train(
         for batch_img, _ in train_loader:
             optimizer.zero_grad()
 
+            # returns a tuple of losses: for basic autoencoder it's just the reconstruction, but for VAE it's (reconstruction, mean, logvar)
             output = model(batch_img)
-            loss = loss_fn(output, batch_img)
-            batch_losses.append(loss.item())
 
-            loss.backward()
+            # In case of VAE, loss is a tuple of (loss, mean, logvar)
+            loss = loss_fn(*output, batch_img)
+
+            # whether loss is a tensor (autoencoder) or a tuple (VAE)
+            if isinstance(loss, torch.Tensor):
+                model.backward(loss)
+                batch_losses.append(loss.item())
+            elif isinstance(loss, tuple):
+                model.backward(loss[0])
+                batch_losses.append([l.item() for l in loss])
             optimizer.step()
 
-        epoch_loss = sum(batch_losses) / len(batch_losses)
+        # claculate mean loss over all batches
+        epoch_loss = np.array(batch_losses).mean(axis=0)
         losses.append(epoch_loss)
         train_log(epoch_loss, i, epochs)
 
-    return losses
+    # losses can be either a list of floats (autoencoder) or a list of lists (VAE)
+    return np.array(losses)
 
 
 parser = argparse.ArgumentParser()
@@ -95,5 +118,11 @@ args = parser.parse_args()
 assert args.model in ["vae", "autoencoder"], "Unknown model"
 assert args.dataset in ["cifar", "imagenet"], "Unknown dataset"
 
-model = BaselineAutoencoder() if args.model == "autoencoder" else None
+model = None
+if args.model == "autoencoder":
+    model = BaselineAutoencoder()
+elif args.model == "vae":
+    model = BaselineVariationalAutoencoder()
+
 losses = train(model=model, dataset=args.dataset)
+print(losses)
