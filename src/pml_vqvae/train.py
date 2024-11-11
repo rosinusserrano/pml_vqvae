@@ -6,7 +6,7 @@ from pml_vqvae.baseline.vae import BaselineVariationalAutoencoder
 from pml_vqvae.baseline.pml_model_interface import PML_model
 from pml_vqvae.dataset.dataloader import load_data
 import torch
-from torchvision.transforms import RandomCrop
+from torchvision.transforms import v2
 import numpy as np
 
 # import wandb
@@ -49,12 +49,20 @@ def train(model: PML_model = MODEL, dataset: str = DATASET, epochs: int = EPOCHS
     print(f"Training {model.name()} on {dataset} for {epochs} epochs")
 
     # Load data
-    print("Loading dataset")
-
-    # TODO: Transformations should be added here
+    print("Loading dataset...")
+    # stolen from https://pytorch.org/vision/main/transforms.html
+    transforms = v2.Compose(
+        [
+            v2.RandomResizedCrop(size=(128, 128), antialias=True),
+            v2.RandomHorizontalFlip(p=0.5),
+            v2.ToDtype(torch.float32, scale=True),
+            v2.Normalize(mean=[0, 0, 0], std=[255.0, 255.0, 255.0]),
+        ]
+    )
     train_loader, test_loader = load_data(
         dataset,
-        transformation=RandomCrop(128, pad_if_needed=True),
+        batch_size=32,
+        transformation=transforms,
         n_train=N_TRAIN,
         n_test=N_TEST,
         seed=SEED,
