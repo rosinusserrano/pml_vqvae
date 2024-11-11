@@ -1,5 +1,0 @@
-line-length=79
-
-[lint]
-select = ["ALL"]
-ignore = ["D401", "T201"]

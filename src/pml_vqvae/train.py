@@ -28,7 +28,11 @@ def train_log(loss, epoch, epochs):
     print(f"Epoch {epoch+1}/{epochs} - Loss: {loss}")
 
 
-def train(model: torch.nn.Module = MODEL, dataset: str = DATASET, epochs: int = EPOCHS):
+def train(
+    model: torch.nn.Module = MODEL,
+    dataset: str = DATASET,
+    epochs: int = EPOCHS,
+):
     print(f"Training {model.name()} on {dataset} for {epochs} epochs")
 
     # Load data
@@ -66,7 +70,6 @@ def train(model: torch.nn.Module = MODEL, dataset: str = DATASET, epochs: int = 
         batch_losses = []
         # iterate over batches
         for batch_img, _ in train_loader:
-
             optimizer.zero_grad()
 
             output = model(batch_img)

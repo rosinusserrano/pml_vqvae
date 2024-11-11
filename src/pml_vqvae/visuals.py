@@ -1,14 +1,17 @@
 "Functions to visualize stuff"
+
 import math
 import torch
 import matplotlib.pyplot as plt
 
 
-def show_image_grid(x: torch.Tensor,
-                    outfile: str = None,
-                    rows: int = None,
-                    cols: int = None,
-                    inch_per_pixel: float = 0.05):
+def show_image_grid(
+    x: torch.Tensor,
+    outfile: str = None,
+    rows: int = None,
+    cols: int = None,
+    inch_per_pixel: float = 0.05,
+):
     """Plot a grid of images.
 
     `x`: A `torch.Tensor` of shape (batch_size x n_channels x
@@ -27,8 +30,7 @@ def show_image_grid(x: torch.Tensor,
 
     `inch_per_pixel` (optional): Defaults to 0.05
     """
-    assert len(x.shape) == 4,\
-        "Input should be batch with dimensions BS x C x H x W"
+    assert len(x.shape) == 4, "Input should be batch with dimensions BS x C x H x W"
     n_images = x.shape[0]
     height, width = x.shape[2], x.shape[3]
 
@@ -50,13 +52,9 @@ def show_image_grid(x: torch.Tensor,
 
     # Create matplotlib figure and axes and set width and
     # height of figure if `figsize is specified`
-    fig, axs = plt.subplots(rows,
-                            cols,
-                            squeeze=False,
-                            gridspec_kw={
-                                "wspace": 0,
-                                "hspace": 0
-                            })
+    fig, axs = plt.subplots(
+        rows, cols, squeeze=False, gridspec_kw={"wspace": 0, "hspace": 0}
+    )
 
     # A bit hacky but in order to eliminate the gaps between
     # the images in the grid, I had to set the aspect="auto"
@@ -64,8 +62,7 @@ def show_image_grid(x: torch.Tensor,
     # matplotlib from forcing them to be square thus I had
     # to set the figsize depending on the size of the grid
     # and it can be scaled using the `inch_per_pixel` param.
-    fig.set_size_inches(cols * width * inch_per_pixel,
-                        rows * height * inch_per_pixel)
+    fig.set_size_inches(cols * width * inch_per_pixel, rows * height * inch_per_pixel)
 
     # Fill the grid with the images
     for i in range(rows * cols):
@@ -73,11 +70,13 @@ def show_image_grid(x: torch.Tensor,
         row_i = i // cols
         col_i = i % cols
         axs[row_i, col_i].imshow(img.detach().cpu().numpy(), aspect="auto")
-        axs[row_i, col_i].tick_params(left=False,
-                                      right=False,
-                                      labelleft=False,
-                                      labelbottom=False,
-                                      bottom=False)
+        axs[row_i, col_i].tick_params(
+            left=False,
+            right=False,
+            labelleft=False,
+            labelbottom=False,
+            bottom=False,
+        )
 
     # If we specified a directory to save the plot save it,
     # otherwise simply show it.
