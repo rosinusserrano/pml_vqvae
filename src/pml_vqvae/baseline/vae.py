@@ -92,7 +92,7 @@ class BaselineVariationalAutoencoder(PML_model):
         ), """Use even number of output features otherwise
         one can't split them into mean and variance"""
 
-        z = torch.randn((batch_size, n_feats // 2, height, width))
+        z = torch.randn((batch_size, n_feats // 2, height, width)).to(DEVICE)
         mean = encoder_output[:, : (n_feats // 2), ...]
         logvar = encoder_output[:, (n_feats // 2) :, ...]
         z_hat = mean + torch.exp(0.5 * logvar) * z

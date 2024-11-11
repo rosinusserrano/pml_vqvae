@@ -24,6 +24,9 @@ N_TEST = 1000
 SEED = 2024
 
 
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+
+
 # From wandb tutotial https://docs.wandb.ai/tutorials/pytorch
 def train_log(loss, epoch, epochs):
     # Where the magic happens
@@ -57,24 +60,10 @@ def train(model: PML_model = MODEL, dataset: str = DATASET, epochs: int = EPOCHS
         seed=SEED,
     )
 
-    # wandb.init(
-    #     project="PML-VQVAE",
-    #     config={
-    #         "learning_rate": LEARNING_RATE,
-    #         "architecture": model.name(),
-    #         "dataset": dataset,
-    #         "n_train": N_TRAIN,
-    #         "n_test": N_TEST,
-    #         "epochs": epochs,
-    #     },
-    # )
-
     loss_fn = model.loss_fn()
     optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
-    # optimizer = torch.optim.SGD(model.parameters(), lr=LEARNING_RATE, momentum=MOMENTUM)
 
-    # Watch model with wandb
-    # wandb.watch(model, loss_fn, log="all", log_freq=10)
+    model.to(DEVICE)
 
     # Train model
     losses = []  # losses over epochs
@@ -83,12 +72,14 @@ def train(model: PML_model = MODEL, dataset: str = DATASET, epochs: int = EPOCHS
         batch_losses = []
         # iterate over batches
         for batch_img, _ in train_loader:
+            batch_img = batch_img.to(DEVICE)
+
             optimizer.zero_grad()
 
             # returns a tuple of losses: for basic autoencoder it's just the reconstruction, but for VAE it's (reconstruction, mean, logvar)
             output = model(batch_img)
 
-            # In case of VAE, loss is a tuple of (loss, mean, logvar)
+            # In case of VAE, output of model is a tuple of (reconstruction, mean, logvar)
             loss = loss_fn(*output, batch_img)
 
             # whether loss is a tensor (autoencoder) or a tuple (VAE)
@@ -104,7 +95,7 @@ def train(model: PML_model = MODEL, dataset: str = DATASET, epochs: int = EPOCHS
         epoch_loss = np.array(batch_losses).mean(axis=0)
         losses.append(epoch_loss)
         train_log(epoch_loss, i, epochs)
-    torch.save(model.state_dict(), 'testmodel_5ep.pth')
+    torch.save(model.state_dict(), "testmodel_5ep.pth")
     # losses can be either a list of floats (autoencoder) or a list of lists (VAE)
     return np.array(losses)
 
