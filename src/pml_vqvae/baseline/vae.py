@@ -130,3 +130,22 @@ class BaselineVariationalAutoencoder(PML_model):
 
     def backward(self, loss):
         loss[0].backward()
+
+    @staticmethod
+    def collect_stats(outputs, targets, loss):
+        return {
+            "Loss": loss[0].detach().cpu().item(),
+            "Reconstruction loss": loss[1].item(),
+            "KL divergence loss": loss[2].item(),
+        }
+
+    @staticmethod
+    def visualize_output(batch, output, target, prefix: str = "", base_dir: str = "."):
+        show_image_grid(batch, outfile=os.path.join(base_dir, f"{prefix}_original.png"))
+        show_image_grid(
+            output[0],
+            outfile=os.path.join(base_dir, f"{prefix}_reconstruction.png"),
+        )
+
+    def name(self):
+        return "BaselineVariationalAutoencoder"
