@@ -5,10 +5,12 @@
 \usepackage{graphicx}
 \usepackage{hyperref}
 \usepackage{amsmath}
+\usepackage{acronym}
 \usepackage{cleveref}
 \usepackage{natbib}
 \bibliographystyle{abbrvnat}
 \setcitestyle{authoryear}
+
 
 \title{Project Machine Learning\\--- Milestone 1 ---} 
 
@@ -22,6 +24,10 @@
 \date{\today}
 
 \begin{document}
+\acrodef{AE}{Autoencoder}
+\acrodef{VAE}{Variational Autoencoder}
+\acrodef{VQ}[VQ-VAE]{Vector Quantized Variatonal Autoencoder}
+
 \maketitle
 
 \section{Dataset overview}
@@ -29,7 +35,9 @@
         1 + 1 = 3
     \end{align}
 
-\section{Baseline method and evaluation}
+\section{Baseline method and evaluation}\label{sec:baseline-method-and-evaluation}
+Since it is the original Model that both \ac{VQ} and now the \ac{VAE} have been developed from,
+we chose a basic \ac{AE} as our baseline method.
 
 \begin{itemize}
     \item basically just use negative log entropy as the factor to compare
