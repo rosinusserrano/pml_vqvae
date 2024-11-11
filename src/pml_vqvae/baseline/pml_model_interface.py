@@ -6,9 +6,10 @@ class PML_model(torch.nn.Module):
     def name(self):
         raise NotImplementedError
 
-    def loss_fn(self):
+    @staticmethod
+    def loss_fn(model_outputs, target):
         raise NotImplementedError(
-            "The fist argument must be the output of the model and the second the target. The rest is free."
+            "The fist argument must be the output(s) of the model and the second the target. The rest is free."
         )
 
     def backward(self, loss):

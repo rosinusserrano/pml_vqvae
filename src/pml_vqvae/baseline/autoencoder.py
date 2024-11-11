@@ -101,8 +101,8 @@ class BaselineAutoencoder(PML_model):
         return (reconstruction,)
 
     @staticmethod
-    def loss_fn():
-        return torch.nn.MSELoss()
+    def loss_fn(model_outputs, target):
+        return torch.nn.functional.mse_loss(model_outputs, target)
 
     def backward(self, loss: torch.Tensor):
         return loss.backward()

@@ -107,29 +107,26 @@ class BaselineVariationalAutoencoder(PML_model):
         return x_hat, mean, logvar
 
     @staticmethod
-    def loss_fn():
-        return loss_function
+    def loss_fn(model_outputs, target):
+        """Computes the VAE loss which consist of reconstruction loss and KL
+        which consist of reconstruction loss and KL
+        divergence between prior distribution z ~ N(0, I) and posterior
+        distribution z|x ~ N(mean, exp(logvar)).
 
-    def backward(self, loss: torch.Tensor):
-        loss.backward()
+        Also stolen from the internet somewhere
+        """
+        reconstruction, mean, logvar = model_outputs
 
-    def name(self):
-        return "BaselineVariationalAutoencoder"
+        reconstruction_loss = torch.mean((target - reconstruction) ** 2)
 
+        kld_loss = torch.mean(
+            -0.5 * torch.sum(1 + logvar - mean**2 - logvar.exp(), dim=(1, 2, 3)),
+            dim=0,
+        )
 
-def loss_function(reconstruction, mean, logvar, original):
-    """Computes the VAE loss which consist of reconstruction loss and KL
-    which consist of reconstruction loss and KL
-    divergence between prior distribution z ~ N(0, I) and posterior
-    distribution z|x ~ N(mean, exp(logvar)).
-    """
-    reconstruction_loss = torch.mean((original - reconstruction) ** 2)
+        loss = reconstruction_loss + 0.001 * kld_loss
 
-    kld_loss = torch.mean(
-        -0.5 * torch.sum(1 + logvar - mean**2 - logvar.exp(), dim=(1, 2, 3)),
-        dim=0,
-    )
+        return loss, reconstruction_loss.detach(), kld_loss.detach()
 
-    loss = reconstruction_loss + 0.001 * kld_loss
-
-    return loss, reconstruction_loss.detach(), -kld_loss.detach()
+    def backward(self, loss):
+        loss[0].backward()
