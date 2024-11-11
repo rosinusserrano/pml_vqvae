@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import math
 
 from PIL import Image
+from pml_vqvae.baseline.pml_model_interface import PML_model
 
 
 class ResidualBlock(torch.nn.Module):
@@ -27,7 +28,7 @@ class ResidualBlock(torch.nn.Module):
         return torch.nn.functional.relu(x + self.conv(x))
 
 
-class BaselineAutoencoder(torch.nn.Module):
+class BaselineAutoencoder(PML_model):
     def __init__(self):
         hidden_chan = 128
         latent_chan = 6
@@ -97,7 +98,14 @@ class BaselineAutoencoder(torch.nn.Module):
         reconstruction = self.decoder_stack(latent)
 
         reconstruction = torch.clamp(reconstruction, 0.0, 1.0)
-        return reconstruction
+        return (reconstruction,)
+
+    @staticmethod
+    def loss_fn():
+        return torch.nn.MSELoss()
+
+    def backward(self, loss: torch.Tensor):
+        return loss.backward()
 
     def name(self):
         return "BaselineAutoencoder"
