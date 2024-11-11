@@ -104,7 +104,7 @@ def train(model: PML_model = MODEL, dataset: str = DATASET, epochs: int = EPOCHS
         epoch_loss = np.array(batch_losses).mean(axis=0)
         losses.append(epoch_loss)
         train_log(epoch_loss, i, epochs)
-
+    torch.save(model.state_dict(), 'testmodel_5ep.pth')
     # losses can be either a list of floats (autoencoder) or a list of lists (VAE)
     return np.array(losses)
 

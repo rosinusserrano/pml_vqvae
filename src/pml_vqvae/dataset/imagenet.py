@@ -108,8 +108,7 @@ class ImageNetDataset(Dataset):
         if torch.is_tensor(idx):
             idx = idx.tolist()
 
-        img_path = self.imagenet.imgs[idx]
-
+        img_path = self.imagenet.imgs[idx][0]
         # image_channels x image_height x image_width
         image = decode_image(
             img_path,

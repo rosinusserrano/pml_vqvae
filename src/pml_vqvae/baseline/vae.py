@@ -10,7 +10,6 @@ import os
 import matplotlib.pyplot as plt
 import torch
 from torch import nn
-from tqdm.auto import tqdm
 
 from pml_vqvae.dataset.dataloader import load_data
 from pml_vqvae.visuals import show_image_grid
