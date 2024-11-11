@@ -5,6 +5,8 @@ very simple
 
 from __future__ import annotations
 
+import os
+
 import matplotlib.pyplot as plt
 import torch
 from torch import nn
@@ -12,7 +14,9 @@ from tqdm.auto import tqdm
 
 from pml_vqvae.dataset.dataloader import load_data
 from pml_vqvae.visuals import show_image_grid
-from pml_vqvae.dataset.dataloader import load_data
+
+PROJECT_ROOT = os.getenv("PROJECT_ROOT")
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 
 def conv_block(inc: int, outc: int) -> nn.Module:
@@ -43,7 +47,7 @@ class ResidualBlock(nn.Module):
         return out + skip
 
 
-def encoder() -> nn.Sequential:
+def create_encoder() -> nn.Sequential:
     """Create basic encoder."""
     return nn.Sequential(
         # 128x128x3 -> 64x64x8
@@ -73,7 +77,7 @@ def reparameterization_trick(
     assert n_feats % 2 == 0, """Use even number of output features otherwise
     one can't split them into mean and variance"""  # noqa: S101
 
-    z = torch.randn((batch_size, n_feats // 2, height, width))
+    z = torch.randn((batch_size, n_feats // 2, height, width)).to(DEVICE)
     mean = encoder_output[:, : (n_feats // 2), ...]
     logvar = encoder_output[:, (n_feats // 2) :, ...]
     z_hat = mean + torch.exp(0.5 * logvar) * z
@@ -81,7 +85,7 @@ def reparameterization_trick(
     return z_hat, mean, logvar
 
 
-def decoder() -> nn.Sequential:
+def create_decoder() -> nn.Sequential:
     """Return decoder."""
     return nn.Sequential(
         # 28x28x1 -> 32x32x64
@@ -132,14 +136,20 @@ def loss_function(
 
 def overfit_on_first_batch():
     "In order to check if your model works as wished, test if it can overfit."
-    train_dl, _ = load_data("cifar", batch_size=4, n_train=10, shuffle=True, seed=2024)
+    train_dl, _ = load_data(
+        "cifar", batch_size=4, n_train=10, shuffle=True, seed=2024
+    )
 
     n_epochs = 100000
 
-    vae_co = encoder()
-    vae_dec = decoder()
+    encoder = create_encoder()
+    encoder.to(DEVICE)
+    decoder = create_decoder()
+    decoder.to(DEVICE)
 
-    optimizer = torch.optim.Adam([*vae_co.parameters(), *vae_dec.parameters()])
+    optimizer = torch.optim.Adam(
+        [*encoder.parameters(), *decoder.parameters()]
+    )
 
     reconstruction_loss = []
     kld_loss = []
@@ -147,14 +157,15 @@ def overfit_on_first_batch():
     x = None
     for batch, _ in train_dl:
         x = batch
+        x.to(DEVICE)
         break
 
     for epoch in range(n_epochs):
         optimizer.zero_grad()
 
-        z = vae_co(x)
+        z = encoder(x)
         z_hat, mean, logvar = reparameterization_trick(z)
-        x_hat = vae_dec(z_hat)
+        x_hat = decoder(z_hat)
 
         loss = loss_function(x, mean, logvar, x_hat)
         loss["loss"].backward()
@@ -168,62 +179,99 @@ def overfit_on_first_batch():
             print(f"EPOCH {epoch}")
 
         if epoch % 100 == 0:
-            show_image_grid(x, outfile="test.output/orig.png")
-            show_image_grid(x_hat, outfile="test.output/recon.png")
+            show_image_grid(
+                x, outfile=f"{PROJECT_ROOT}/artifacts/vae_train/orig.png"
+            )
+            show_image_grid(
+                x_hat, outfile=f"{PROJECT_ROOT}/artifacts/vae_train/recon.png"
+            )
 
             plt.clf()
             plt.plot(kld_loss)
             plt.plot(reconstruction_loss)
-            plt.savefig("test.output/losses.png")
+            plt.savefig(f"{PROJECT_ROOT}/artifacts/vae_train/losses.png")
 
 
 def train_for_real():
-    train_dl, _ = load_data("cifar", batch_size=64, shuffle=True, seed=2024)
+    train_dl, _ = load_data("cifar", batch_size=256, shuffle=True)
 
-    n_epochs = 100000
+    n_epochs = 1000
 
-    vae_co = encoder()
-    vae_dec = decoder()
+    encoder = create_encoder()
+    encoder.to(DEVICE)
+    decoder = create_decoder()
+    decoder.to(DEVICE)
 
-    optimizer = torch.optim.Adam([*vae_co.parameters(), *vae_dec.parameters()])
+    optimizer = torch.optim.Adam(
+        [*encoder.parameters(), *decoder.parameters()]
+    )
 
-    reconstruction_loss = []
-    kld_loss = []
+    losses = []
+    reconstruction_losses = []
+    kld_losses = []
 
     for epoch in range(n_epochs):
-        for x, _ in tqdm(train_dl):
+        sum_loss = 0
+        sum_recon_loss = 0
+        sum_kld_loss = 0
+        for x, _ in train_dl:
+            x = (x / 255.0).to(DEVICE)
+
             optimizer.zero_grad()
 
-            z = vae_co(x)
+            z = encoder(x)
             z_hat, mean, logvar = reparameterization_trick(z)
-            x_hat = vae_dec(z_hat)
+            x_hat = decoder(z_hat)
 
             loss = loss_function(x, mean, logvar, x_hat)
             loss["loss"].backward()
 
-            kld_loss.append(loss["KLD"].item())
-            reconstruction_loss.append(loss["Reconstruction_Loss"].item())
+            sum_kld_loss += loss["KLD"].item()
+            sum_recon_loss += loss["Reconstruction_Loss"].item()
+            sum_loss += loss["loss"]
 
             optimizer.step()
 
-        if epoch % 10 == 0:
-            print(f"EPOCH {epoch}")
-            print(f"loss {loss['loss'].item()}")
-            print(f"kld loss {kld_loss[-1]}")
-            print(f"recon loss {reconstruction_loss[-1]}")
+        kld_losses.append(sum_kld_loss / len(train_dl))
+        reconstruction_losses.append(sum_recon_loss / len(train_dl))
+        losses.append(sum_loss / len(train_dl))
 
-        if epoch % 100 == 0:
-            show_image_grid(x, outfile="test.output/orig.png")
-            show_image_grid(x_hat, outfile="test.output/recon.png")
+        if epoch % 5 == 0:
+            print(f"EPOCH {epoch} | loss {loss['loss'].item()} | kld loss {kld_losses[-1]} | recon loss {reconstruction_losses[-1]}")
 
-            z_samesize = torch.randn((4, 8, 4, 4))
-            z_diffsize = torch.randn((4, 8, 6, 6))
-            x_samesize = vae_dec(z_samesize)
-            x_diffsize = vae_dec(z_diffsize)
-            show_image_grid(x_samesize, outfile="test.output/samplesame.png")
-            show_image_grid(x_diffsize, outfile="test.output/samplediff.png")
+        if epoch % 5 == 0 and epoch > 0:
+            show_image_grid(
+                x, outfile=f"{PROJECT_ROOT}/artifacts/vae_train/orig.png"
+            )
+            show_image_grid(
+                x_hat, outfile=f"{PROJECT_ROOT}/artifacts/vae_train/recon.png"
+            )
+
+            z_samesize = torch.randn((4, 8, 4, 4)).to(DEVICE)
+            z_diffsize = torch.randn((4, 8, 6, 6)).to(DEVICE)
+            x_samesize = decoder(z_samesize)
+            x_diffsize = decoder(z_diffsize)
+            show_image_grid(
+                x_samesize,
+                outfile=f"{PROJECT_ROOT}/artifacts/vae_train/samplesame.png",
+            )
+            show_image_grid(
+                x_diffsize,
+                outfile=f"{PROJECT_ROOT}/artifacts/vae_train/samplediff.png",
+            )
 
             plt.clf()
-            plt.plot(kld_loss)
-            plt.plot(reconstruction_loss)
-            plt.savefig("test.output/losses.png")
+            plt.plot(kld_losses)
+            plt.plot(reconstruction_losses)
+            plt.savefig(f"{PROJECT_ROOT}/artifacts/vae_train/losses.png")
+
+    torch.save(
+        encoder.state_dict(), f"{PROJECT_ROOT}/artifacts/vae_train/encoder.pth"
+    )
+    torch.save(
+        decoder.state_dict(), f"{PROJECT_ROOT}/artifacts/vae_train/decoder.pth"
+    )
+
+
+if __name__ == "__main__":
+    train_for_real()
