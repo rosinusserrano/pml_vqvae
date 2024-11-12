@@ -34,7 +34,22 @@ Generally, you should be able to open the .tex document that you are interested 
     - Shortcut: Ctrl + Click in the PDF Preview
     - Description: Jumps from a location in the PDF preview back to the corresponding place in the .tex source
 
-## How to run on cluster?
+## How to run
+
+### Using the CLI
+
+To run start the training, you can run the training script with
+`python src/pml_vqvae/train.py`
+
+On default (without extra parameters givin in the command), the training script will look up the `config.yaml`-file and will train according those defined parameters.
+
+If you want to change the default values you can either change them in the `config.yaml` or you can pass the values yu want to change via the cli, e.g.
+
+    python src/pml_vqvae/train.py --learning_rate 0.1
+
+This will take the `config.yaml` as the foundation and overwrites all the given values passed in the command. See the `python src/pml_vqvae/train.py -h` for more information.
+
+### Running on Cluster
 
 1. ssh to cluster entry-node by `ssh <username>@hydra.ml.tu-berlin.de`
 2. Build container if not exist, see Section [Build Container](#build-container)
