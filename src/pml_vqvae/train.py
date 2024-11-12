@@ -4,24 +4,12 @@ import argparse
 from pml_vqvae.baseline.autoencoder import BaselineAutoencoder
 from pml_vqvae.baseline.vae import BaselineVariationalAutoencoder
 from pml_vqvae.baseline.pml_model_interface import PML_model
+from pml_vqvae.config_class import Config
 from pml_vqvae.dataset.dataloader import load_data
 import torch
 from torchvision.transforms import RandomCrop
 import numpy as np
-
-# import wandb
-
-# Hyperparameters
-MODEL = BaselineAutoencoder()
-DATASET = "cifar"
-
-EPOCHS = 5
-LEARNING_RATE = 0.01
-MOMENTUM = 0.9
-N_TRAIN = 1000
-N_TEST = 1000
-
-SEED = 2024
+import yaml
 
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
@@ -34,19 +22,20 @@ def train_log(loss, epoch, epochs):
     print(f"Epoch {epoch+1}/{epochs} - Loss: {loss}")
 
 
-def train(model: PML_model = MODEL, dataset: str = DATASET, epochs: int = EPOCHS):
+def train(config: Config):
     """Train a model on a dataset for a number of epochs
 
     Args:
-        model (PML_model, optional): The model to train. Defaults to MODEL.
-        dataset (str, optional): The dataset to train on. Defaults to DATASET.
-        epochs (int, optional): The number of epochs to train for. Defaults to EPOCHS.
+        config (dict): Configuration dictionary
 
     Returns:
         np.array: The losses over epochs (either a list of multiple losses or a list of floats)
     """
 
-    print(f"Training {model.name()} on {dataset} for {epochs} epochs")
+    model = config.model
+    dataset = config.dataset
+
+    print(f"Training {model.name()} on {dataset} for {config.epochs} epochs")
 
     # Load data
     print("Loading dataset")
@@ -55,20 +44,20 @@ def train(model: PML_model = MODEL, dataset: str = DATASET, epochs: int = EPOCHS
     train_loader, test_loader = load_data(
         dataset,
         transformation=RandomCrop(128, pad_if_needed=True),
-        n_train=N_TRAIN,
-        n_test=N_TEST,
-        seed=SEED,
+        n_train=config.n_train,
+        n_test=config.n_test,
+        seed=config.seed,
     )
 
     loss_fn = model.loss_fn()
-    optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
+    optimizer = torch.optim.Adam(model.parameters(), lr=config.learning_rate)
 
     model.to(DEVICE)
 
     # Train model
     losses = []  # losses over epochs
     vals = []
-    for i in range(epochs):
+    for i in range(config.epochs):
         batch_losses = []
         # iterate over batches
         for batch_img, _ in train_loader:
@@ -94,26 +83,28 @@ def train(model: PML_model = MODEL, dataset: str = DATASET, epochs: int = EPOCHS
         # claculate mean loss over all batches
         epoch_loss = np.array(batch_losses).mean(axis=0)
         losses.append(epoch_loss)
-        train_log(epoch_loss, i, epochs)
+        train_log(epoch_loss, i, config.epochs)
+
     torch.save(model.state_dict(), "testmodel_5ep.pth")
     # losses can be either a list of floats (autoencoder) or a list of lists (VAE)
     return np.array(losses)
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("model", help="The model you want to train")
-parser.add_argument("dataset", help="The dataset onto which to train your model")
+parser.add_argument(
+    "config",
+    help="path to the config.yaml file which contains information on the experiment configuration",
+)
 
 args = parser.parse_args()
 
-assert args.model in ["vae", "autoencoder"], "Unknown model"
-assert args.dataset in ["cifar", "imagenet"], "Unknown dataset"
+config_path = args.config
 
-model = None
-if args.model == "autoencoder":
-    model = BaselineAutoencoder()
-elif args.model == "vae":
-    model = BaselineVariationalAutoencoder()
+# Load config file
+with open(config_path, "r") as file:
+    config = Config.from_dict(yaml.safe_load(file))
 
-losses = train(model=model, dataset=args.dataset)
+print(config.summary())
+
+losses = train(config)
 print(losses)
