@@ -1,13 +1,16 @@
 "Python script to train different models"
 
+import os
 import argparse
+import matplotlib.pyplot as plt
 from pml_vqvae.baseline.autoencoder import BaselineAutoencoder
 from pml_vqvae.baseline.vae import BaselineVariationalAutoencoder
 from pml_vqvae.baseline.pml_model_interface import PML_model
 from pml_vqvae.dataset.dataloader import load_data
 import torch
-from torchvision.transforms import RandomCrop
+from torchvision.transforms import v2
 import numpy as np
+from tqdm.auto import tqdm
 
 # import wandb
 
@@ -15,7 +18,7 @@ import numpy as np
 MODEL = BaselineAutoencoder()
 DATASET = "cifar"
 
-EPOCHS = 5
+EPOCHS = 200
 LEARNING_RATE = 0.01
 MOMENTUM = 0.9
 N_TRAIN = 1000
@@ -25,6 +28,10 @@ SEED = 2024
 
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+
+os.makedirs("artifacts/models/", exist_ok=True)
+os.makedirs("artifacts/visuals/", exist_ok=True)
+os.makedirs("artifacts/plots/", exist_ok=True)
 
 
 # From wandb tutotial https://docs.wandb.ai/tutorials/pytorch
@@ -49,55 +56,115 @@ def train(model: PML_model = MODEL, dataset: str = DATASET, epochs: int = EPOCHS
     print(f"Training {model.name()} on {dataset} for {epochs} epochs")
 
     # Load data
-    print("Loading dataset")
-
-    # TODO: Transformations should be added here
+    print("Loading dataset...")
+    # stolen from https://pytorch.org/vision/main/transforms.html
+    transforms = v2.Compose(
+        [
+            v2.RandomResizedCrop(size=(128, 128), antialias=True),
+            v2.RandomHorizontalFlip(p=0.5),
+            v2.ToDtype(torch.float32, scale=True),
+            v2.Normalize(mean=[0, 0, 0], std=[255.0, 255.0, 255.0]),
+        ]
+    )
     train_loader, test_loader = load_data(
         dataset,
-        transformation=RandomCrop(128, pad_if_needed=True),
+        batch_size=32,
+        transformation=transforms,
         n_train=N_TRAIN,
         n_test=N_TEST,
         seed=SEED,
     )
 
-    loss_fn = model.loss_fn()
     optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
 
     model.to(DEVICE)
 
-    # Train model
-    losses = []  # losses over epochs
-    vals = []
+    print("Training model...")
+    train_epoch_stats = {}
+    test_epoch_stats = {}
+
     for i in range(epochs):
-        batch_losses = []
-        # iterate over batches
-        for batch_img, _ in train_loader:
-            batch_img = batch_img.to(DEVICE)
+        train_batch_stats = {}
+        train_tqdm = tqdm(train_loader)
+        for batch, target in train_tqdm:
+            batch = batch.to(DEVICE)
+            target = target.to(DEVICE)
 
             optimizer.zero_grad()
 
-            # returns a tuple of losses: for basic autoencoder it's just the reconstruction, but for VAE it's (reconstruction, mean, logvar)
-            output = model(batch_img)
+            output = model(batch)
+            loss = model.loss_fn(output, target)
+            model.backward(loss)
 
-            # In case of VAE, output of model is a tuple of (reconstruction, mean, logvar)
-            loss = loss_fn(*output, batch_img)
+            stats = model.collect_stats(output, target, loss)
+            for key, value in stats.items():
+                train_batch_stats.setdefault(key, []).append(value)
 
-            # whether loss is a tensor (autoencoder) or a tuple (VAE)
-            if isinstance(loss, torch.Tensor):
-                model.backward(loss)
-                batch_losses.append(loss.item())
-            elif isinstance(loss, tuple):
-                model.backward(loss[0])
-                batch_losses.append([l.item() for l in loss])
+            train_tqdm.set_description(
+                "[train] " + " | ".join([f"{k}:{v:.2f}" for k, v in stats.items()])
+            )
+
             optimizer.step()
 
-        # claculate mean loss over all batches
-        epoch_loss = np.array(batch_losses).mean(axis=0)
-        losses.append(epoch_loss)
-        train_log(epoch_loss, i, epochs)
-    torch.save(model.state_dict(), "testmodel_5ep.pth")
-    # losses can be either a list of floats (autoencoder) or a list of lists (VAE)
-    return np.array(losses)
+        if i % 1 == 0:
+            model.visualize_output(
+                batch,
+                output,
+                target,
+                prefix=f"train_epoch{i}",
+                base_dir="artifacts/visuals",
+            )
+
+        train_batch_stats = {k: sum(v) / len(v) for k, v in train_batch_stats.items()}
+        for key, value in train_batch_stats.items():
+            train_epoch_stats.setdefault(key, []).append(value)
+
+        with torch.no_grad():
+            model.eval()
+
+            test_batch_stats = {}
+            test_tqdm = tqdm(test_loader)
+
+            for batch, target in test_tqdm:
+                batch = batch.to(DEVICE)
+                target = target.to(DEVICE)
+
+                output = model(batch)
+                loss = model.loss_fn(output, target)
+
+                stats = model.collect_stats(output, target, loss)
+                for key, value in stats.items():
+                    test_batch_stats.setdefault(key, []).append(value)
+
+                test_tqdm.set_description(
+                    "[test] " + " | ".join([f"{k}:{v:.2f}" for k, v in stats.items()])
+                )
+
+            model.train()
+
+            if i % 1 == 0:
+                model.visualize_output(
+                    batch,
+                    output,
+                    target,
+                    prefix=f"test_epoch{i}",
+                    base_dir="artifacts/visuals",
+                )
+
+            test_batch_stats = {k: sum(v) / len(v) for k, v in test_batch_stats.items()}
+            for key, value in test_batch_stats.items():
+                test_epoch_stats.setdefault(key, []).append(value)
+
+    print("Saving model...")
+    torch.save(model.state_dict(), "artifacts/models/testmodel_5ep.pth")
+
+    print("Plotting stats...")
+    for stat in train_epoch_stats.keys():
+        plt.clf()
+        plt.plot(train_epoch_stats[stat])
+        plt.plot(test_epoch_stats[stat])
+        plt.title(stat)
+        plt.savefig(f"artifacts/plots/{stat}.png")
 
 
 parser = argparse.ArgumentParser()
@@ -115,5 +182,4 @@ if args.model == "autoencoder":
 elif args.model == "vae":
     model = BaselineVariationalAutoencoder()
 
-losses = train(model=model, dataset=args.dataset)
-print(losses)
+train(model=model, dataset=args.dataset)
