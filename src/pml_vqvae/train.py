@@ -1,9 +1,9 @@
 "Python script to train different models"
 
-import argparse
 from pml_vqvae.baseline.autoencoder import BaselineAutoencoder
 from pml_vqvae.baseline.vae import BaselineVariationalAutoencoder
 from pml_vqvae.baseline.pml_model_interface import PML_model
+from pml_vqvae.cli_input_handler import CLI_handler
 from pml_vqvae.config_class import Config
 from pml_vqvae.dataset.dataloader import load_data
 import torch
@@ -11,7 +11,7 @@ from torchvision.transforms import RandomCrop
 import numpy as np
 import yaml
 
-
+DEFAULT_CONFIG = "config.yaml"
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 
@@ -32,17 +32,16 @@ def train(config: Config):
         np.array: The losses over epochs (either a list of multiple losses or a list of floats)
     """
 
-    model = config.model
-    dataset = config.dataset
+    model = config.get_model()
 
-    print(f"Training {model.name()} on {dataset} for {config.epochs} epochs")
+    print(f"Training {model.name()} on {config.dataset} for {config.epochs} epochs")
 
     # Load data
     print("Loading dataset")
 
     # TODO: Transformations should be added here
     train_loader, test_loader = load_data(
-        dataset,
+        config.dataset,
         transformation=RandomCrop(128, pad_if_needed=True),
         n_train=config.n_train,
         n_test=config.n_test,
@@ -90,21 +89,16 @@ def train(config: Config):
     return np.array(losses)
 
 
-parser = argparse.ArgumentParser()
-parser.add_argument(
-    "config",
-    help="path to the config.yaml file which contains information on the experiment configuration",
-)
+cli_handler = CLI_handler()
+args = cli_handler.parse_args()
 
-args = parser.parse_args()
-
-config_path = args.config
-
-# Load config file
-with open(config_path, "r") as file:
+with open(DEFAULT_CONFIG, "r") as file:
     config = Config.from_dict(yaml.safe_load(file))
 
-print(config.summary())
+# Overwrite config when cli arguments are provided
+config = cli_handler.adjust_config(config, args)
+
+print(config)
 
 losses = train(config)
 print(losses)

@@ -6,19 +6,6 @@ AVAIL_DATASETS = ["cifar", "imagenet"]
 AVAIL_MODELS = ["vae", "autoencoder"]
 
 
-MODEL = BaselineAutoencoder()
-DATASET = "cifar"
-
-EPOCHS = 5
-LEARNING_RATE = 0.01
-MOMENTUM = 0.9
-N_TRAIN = 1000
-N_TEST = 1000
-BATCH_SIZE = 32
-
-SEED = 2024
-
-
 class Config:
     """Configuration class for the training process"""
 
@@ -26,24 +13,23 @@ class Config:
         """Initialize the a default configuration class"""
 
         # experiment
-        self.name = "default"
-        self.description = "Default confirguration"
-        self.save_dir = "checkpoints"
-        self.log_dir = "logs"
+        self.name = None
+        self.description = None
+        self.output_dir = None
 
         # data
-        self.dataset = DATASET
-        self.n_train = N_TRAIN
-        self.n_test = N_TEST
-        self.seed = SEED
+        self.dataset = None
+        self.n_train = None
+        self.n_test = None
+        self.seed = None
 
         # train
-        self.batch_size = BATCH_SIZE
-        self.epochs = EPOCHS
-        self.learning_rate = LEARNING_RATE
+        self.batch_size = None
+        self.epochs = None
+        self.learning_rate = None
 
         # model
-        self.model = MODEL
+        self.model_name = None
 
     @classmethod
     def from_dict(cls, config: dict):
@@ -65,24 +51,41 @@ class Config:
                     )
                 setattr(conf, key, value)
 
-                if key == "model_name":
-                    if value == "autoencoder":
-                        conf.model = BaselineAutoencoder()
-                    elif value == "vae":
-                        conf.model = BaselineVariationalAutoencoder()
-                    else:
-                        assert value in AVAIL_MODELS, "Unknown model"
+                if key == "name":
+                    setattr(conf, "output_dir", f"{value}_output/")
 
-                elif key == "dataset":
-                    assert value in AVAIL_DATASETS, "Unknown dataset"
+        conf.integrity_check()
 
         return conf
 
-    def summary(self):
-        """Print a summary of the configuration"""
-        print("Configuration:")
+    def integrity_check(self):
+        """Check if the configuration is complete"""
         for key, value in self.__dict__.items():
-            print(f"{key}: {value}")
+            if value is None:
+                raise ValueError(f"Parameter {key} is not set in the configuration")
+
+            if key == "dataset" and value not in AVAIL_DATASETS:
+                raise ValueError(
+                    f"Dataset {value} is not available. Choose from {AVAIL_DATASETS}"
+                )
+
+            if key == "model_name" and value not in AVAIL_MODELS:
+                raise ValueError(
+                    f"Model {value} is not available. Choose from {AVAIL_MODELS}"
+                )
+
+    def __str__(self):
+        """Return a string representation of the configuration"""
+        return str(self.__dict__)
+
+    def get_model(self):
+        """Return the model based on the model name"""
+        if self.model_name == "vae":
+            return BaselineVariationalAutoencoder()
+        elif self.model_name == "autoencoder":
+            return BaselineAutoencoder()
+
+        raise ValueError(f"Model {self.model_name} is not available.")
 
 
 if __name__ == "__main__":
