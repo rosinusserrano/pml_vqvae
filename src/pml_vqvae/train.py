@@ -84,7 +84,7 @@ def train(config: Config):
         losses.append(epoch_loss)
         train_log(epoch_loss, i, config.epochs)
 
-    torch.save(model.state_dict(), "testmodel_5ep.pth")
+    torch.save(model.state_dict(), f"{config.output_dir}/testmodel_5ep.pth")
     # losses can be either a list of floats (autoencoder) or a list of lists (VAE)
     return np.array(losses)
 
