@@ -66,6 +66,11 @@ class CLI_handler:
             "-vti",
             help="interval for visualizing the training process. If not provided, the interval from the config file will be used",
         )
+        self.parser.add_argument(
+            "--wandb_log",
+            "-wl",
+            help="log results to wandb. If not provided, the wandb log from the config file will be used",
+        )
 
     def parse_args(self):
         """Parse command line arguments
@@ -112,5 +117,7 @@ class CLI_handler:
             config.test_interval = args.test_interval
         if args.vis_train_interval:
             config.vis_train_interval = args.vis_train_interval
+        if args.wandb_log:
+            config.wandb_log = args.wandb_log
 
         return config

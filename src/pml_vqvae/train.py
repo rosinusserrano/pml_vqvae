@@ -11,7 +11,7 @@ from torch.optim import Adam, Optimizer
 from torchvision.transforms import v2
 import yaml
 from tqdm.auto import tqdm
-
+import wandb
 from pml_vqvae.stats_class import StatsKeeper
 
 # import wandb
@@ -103,7 +103,7 @@ def train_epoch(
         stats = model.collect_stats(output, target, loss)
 
         # collect all stats in Object for later plotting
-        dsp = stats_keeper.add_batch_stats(stats)
+        dsp = stats_keeper.add_batch_stats(stats, len(batch))
 
         # make a nice progress bar
         train_tqdm.set_description(dsp)
@@ -154,44 +154,29 @@ def train(config: Config):
     model.to(DEVICE)
 
     print("Training model...")
-    stats_keeper = StatsKeeper(output_dir=config.output_dir)
-
+    stats_keeper = StatsKeeper(output_dir=config.output_dir, config=config)
     for i in range(config.epochs):
         # train on all datat for one epoch
-        batch, target, output = train_epoch(
-            model, train_loader, optimizer, stats_keeper
-        )
+        batch, _, output = train_epoch(model, train_loader, optimizer, stats_keeper)
 
         if config.vis_train_interval and i % config.vis_train_interval == 0:
-            model.visualize_output(
-                batch,
-                output,
-                target,
-                prefix=f"train_epoch{i}",
-                base_dir=os.path.join(config.output_dir, "visuals"),
-            )
+            stats_keeper.save_examples(batch, output, i)
 
         # test on all data for one epoch
         if config.test_interval and i % config.test_interval == 0:
             with torch.no_grad():
-                batch, target, output = test(model, test_loader, stats_keeper)
+                batch, _, output = test(model, test_loader, stats_keeper)
 
-                model.visualize_output(
-                    batch,
-                    output,
-                    target,
-                    prefix=f"test_epoch{i}",
-                    base_dir=os.path.join(config.output_dir, "visuals"),
-                )
+                stats_keeper.save_examples(batch, output, i)
 
+                # save model every time we test
+                stats_keeper.save_model(model, epoch=i)
+
+    # save final model
     print("Saving model...")
-    torch.save(
-        model.state_dict(),
-        os.path.join(config.output_dir, "models", f"{config.model_name}.pth"),
-    )
+    stats_keeper.save_model(model, epoch=config.epochs)
 
-    print("Plotting stats...")
-    stats_keeper.visualize()
+    stats_keeper.finish()
 
 
 cli_handler = CLI_handler()
