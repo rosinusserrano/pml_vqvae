@@ -2,6 +2,8 @@ experiment:
   name: "BaselineAutoencoder" # name of the experiment
   description: "First attempt to train BaselineAutoencoder" # description of the experiment
   seed: 42 # seed for reproducibility
+  test_interval: 5  # test the model every test_interval epochs, None to disable
+  vis_train_interval: 5 # plot the training loss every plot_train_interval epochs, None to disable
 
 data:
   n_train: 10 # number of training samples
@@ -9,7 +11,7 @@ data:
   dataset: "cifar" # either cifar or imagenet
 
 train:
-  batch_size: 32
+  batch_size: 10
   epochs: 10
   learning_rate: 0.01
 

@@ -4,7 +4,7 @@ from pml_vqvae.config_class import Config
 
 
 class CLI_handler:
-    """Command line interface handler"""
+    """Command line interface handler for maximum flexibility in desinging experiments"""
 
     def __init__(self):
         self.parser = argparse.ArgumentParser()
@@ -56,6 +56,16 @@ class CLI_handler:
             "-ds",
             help="name of the dataset to use. If not provided, the dataset name from the config file will be used",
         )
+        self.parser.add_argument(
+            "--test_interval",
+            "-ti",
+            help="interval for testing the model. If not provided, the interval from the config file will be used",
+        )
+        self.parser.add_argument(
+            "--vis_train_interval",
+            "-vti",
+            help="interval for visualizing the training process. If not provided, the interval from the config file will be used",
+        )
 
     def parse_args(self):
         """Parse command line arguments
@@ -98,5 +108,9 @@ class CLI_handler:
             config.model_name = args.model_name
         if args.dataset:
             config.dataset = args.dataset
+        if args.test_interval:
+            config.test_interval = args.test_interval
+        if args.vis_train_interval:
+            config.vis_train_interval = args.vis_train_interval
 
         return config

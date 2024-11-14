@@ -162,7 +162,7 @@ def train(config: Config):
             model, train_loader, optimizer, stats_keeper
         )
 
-        if i % 1 == 0:
+        if config.vis_train_interval and i % config.vis_train_interval == 0:
             model.visualize_output(
                 batch,
                 output,
@@ -172,10 +172,10 @@ def train(config: Config):
             )
 
         # test on all data for one epoch
-        with torch.no_grad():
-            batch, target, output = test(model, test_loader, stats_keeper)
+        if config.test_interval and i % config.test_interval == 0:
+            with torch.no_grad():
+                batch, target, output = test(model, test_loader, stats_keeper)
 
-            if i % 1 == 0:
                 model.visualize_output(
                     batch,
                     output,
