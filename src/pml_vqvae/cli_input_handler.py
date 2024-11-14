@@ -10,14 +10,17 @@ class CLI_handler:
         self.parser = argparse.ArgumentParser()
         self.parser.add_argument(
             "--name",
+            "-n",
             help="name of the experiment. If not provided, the name from the config file will be used",
         )
         self.parser.add_argument(
             "--description",
+            "-d",
             help="description of the experiment. If not provided, the description from the config file will be used",
         )
         self.parser.add_argument(
             "--seed",
+            "-s",
             help="seed for reproducibility. If not provided, the seed from the config file will be used",
         )
         self.parser.add_argument(
@@ -30,22 +33,27 @@ class CLI_handler:
         )
         self.parser.add_argument(
             "--batch_size",
+            "-bs",
             help="batch size for training. If not provided, the batch size from the config file will be used",
         )
         self.parser.add_argument(
             "--epochs",
+            "-e",
             help="number of epochs for training. If not provided, the number from the config file will be used",
         )
         self.parser.add_argument(
             "--learning_rate",
+            "-lr",
             help="learning rate for training. If not provided, the learning rate from the config file will be used",
         )
         self.parser.add_argument(
             "--model_name",
+            "-mn",
             help="name of the model to train. If not provided, the model name from the config file will be used",
         )
         self.parser.add_argument(
             "--dataset",
+            "-ds",
             help="name of the dataset to use. If not provided, the dataset name from the config file will be used",
         )
 

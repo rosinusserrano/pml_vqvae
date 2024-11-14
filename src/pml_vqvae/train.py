@@ -1,17 +1,12 @@
 "Python script to train different models"
 
 import os
-import argparse
 import matplotlib.pyplot as plt
-from pml_vqvae.baseline.autoencoder import BaselineAutoencoder
-from pml_vqvae.baseline.vae import BaselineVariationalAutoencoder
-from pml_vqvae.baseline.pml_model_interface import PML_model
 from pml_vqvae.cli_input_handler import CLI_handler
 from pml_vqvae.config_class import Config
 from pml_vqvae.dataset.dataloader import load_data
 import torch
 from torchvision.transforms import v2
-import numpy as np
 import yaml
 from tqdm.auto import tqdm
 
