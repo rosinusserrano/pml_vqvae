@@ -12,5 +12,5 @@ From: python:3.10
     pip install --root-user-action=ignore -r requirements.txt
 
 %runscript
-    export PYTHONPATH=$PROJECT_ROOT:$PYTHONPATH
+    export PYTHONPATH=$PROJECT_ROOT/src:$PYTHONPATH
     exec "$@"
