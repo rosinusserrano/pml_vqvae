@@ -13,18 +13,12 @@ import yaml
 from tqdm.auto import tqdm
 import wandb
 from pml_vqvae.stats_class import StatsKeeper
+from pml_vqvae.wandb_wrapper import WANDBWrapper
 
 # import wandb
 DEFAULT_CONFIG = "config.yaml"
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-
-
-# From wandb tutotial https://docs.wandb.ai/tutorials/pytorch
-def train_log(loss, epoch, epochs):
-    # Where the magic happens
-    # wandb.log({"epoch": epoch, "loss": loss}, step=epoch)
-    print(f"Epoch {epoch+1}/{epochs} - Loss: {loss}")
 
 
 def test(model: PML_model, test_loader: DataLoader, stats_keeper: StatsKeeper):
@@ -55,7 +49,7 @@ def test(model: PML_model, test_loader: DataLoader, stats_keeper: StatsKeeper):
         stats = model.collect_stats(output, target, loss)
 
         # collect all stats in Object for later plotting
-        dsp = stats_keeper.add_batch_stats(stats, train=False)
+        dsp = stats_keeper.add_batch_stats(stats, len(batch), train=False)
 
         # make a nice progress bar
         test_tqdm.set_description(dsp)
@@ -153,30 +147,39 @@ def train(config: Config):
 
     model.to(DEVICE)
 
+    wandb_wrapper = WANDBWrapper(config)
+    wandb_wrapper.init(model)
+
+    stats_keeper = StatsKeeper()
+
     print("Training model...")
-    stats_keeper = StatsKeeper(output_dir=config.output_dir, config=config)
     for i in range(config.epochs):
         # train on all datat for one epoch
         batch, _, output = train_epoch(model, train_loader, optimizer, stats_keeper)
+        wandb_wrapper.construct_examples(batch, output)
 
-        if config.vis_train_interval and i % config.vis_train_interval == 0:
-            stats_keeper.save_examples(batch, output, i)
-
-        # test on all data for one epoch
+        # test
         if config.test_interval and i % config.test_interval == 0:
             with torch.no_grad():
                 batch, _, output = test(model, test_loader, stats_keeper)
+                wandb_wrapper.construct_examples(batch, output, train=False)
 
-                stats_keeper.save_examples(batch, output, i)
+        log_vis = True
+        if not config.vis_train_interval or i % config.vis_train_interval != 0:
+            log_vis = False
 
-                # save model every time we test
-                stats_keeper.save_model(model, epoch=i)
+        epoch_stats = stats_keeper.get_latest_stats()
+        wandb_wrapper.log_epoch(epoch_stats, epoch=i, log_vis=log_vis)
+
+        model_dir = stats_keeper.save_model(model, config.output_dir, epoch=i)
+        wandb_wrapper.save_model(model_dir)
 
     # save final model
     print("Saving model...")
-    stats_keeper.save_model(model, epoch=config.epochs)
-
-    stats_keeper.finish()
+    stats_keeper.save_model(model, config.output_dir, epoch=config.epochs)
+    stats_keeper.plot_results(config.output_dir)
+    wandb_wrapper.save_model(model_dir)
+    wandb_wrapper.finish()
 
 
 cli_handler = CLI_handler()

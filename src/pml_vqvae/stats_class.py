@@ -17,9 +17,7 @@ class StatsKeeper:
         ValueError: If output_dir is not set
     """
 
-    def __init__(self, config: Config, output_dir: str = None):
-
-        self.output_dir = output_dir
+    def __init__(self):
 
         self.train_epoch_stats = {}
         self.train_batch_stats = {}
@@ -27,16 +25,41 @@ class StatsKeeper:
         self.test_epoch_stats = {}
         self.test_batch_stats = {}
 
-        self.wandb_log = config.wandb_log
+        self.example_cnt = 0
 
-        self.epoch_cnt = 0
+    def save_model(self, model: PML_model, output_dir: str, epoch: int):
+        """Save the model to the output directory
 
-        if config.wandb_log:
-            wandb.login(key=os.environ["WANDB_API_KEY"])
-            wandb.init(project="pml_vqvae", name=config.name, config=config.to_dict())
-            # wandb.watch(model, log_freq=1)
+        Args:
+            model (PML_model): The model to save
+            epoch (int): The current epoch
+        """
 
-    def add_batch_stats(self, stats: dict, train: bool = True):
+        name = f"{output_dir}/model_{epoch}.pth"
+        torch.save(model.state_dict(), name)
+
+        return name
+
+    def get_latest_stats(self):
+        """Get the latest stats
+
+        Returns:
+            Tuple[dict, dict]: The latest train and test stats
+        """
+
+        try:
+            train_stats = {k: v[-1] for k, v in self.train_epoch_stats.items()}
+        except IndexError:
+            test_stats = {}
+
+        try:
+            test_stats = {k: v[-1] for k, v in self.test_epoch_stats.items()}
+        except IndexError:
+            test_stats = {}
+
+        return train_stats, test_stats, self.example_cnt
+
+    def add_batch_stats(self, stats: dict, batch_size: int, train: bool = True):
         """Add stats for one batch
 
         Args:
@@ -51,6 +74,9 @@ class StatsKeeper:
                 self.train_batch_stats.setdefault(key, []).append(value)
             else:
                 self.test_batch_stats.setdefault(key, []).append(value)
+
+        if train:
+            self.example_cnt += batch_size
 
         return f"[{'train' if train else 'test'}] " + " | ".join(
             [f"{k}:{v:.2f}" for k, v in stats.items()]
@@ -71,13 +97,6 @@ class StatsKeeper:
             for key, value in train_epoch_stats.items():
                 self.train_epoch_stats.setdefault(key, []).append(value)
 
-            if self.wandb_log:
-                train_epoch_stats = {
-                    "train/" + k: v for k, v in train_epoch_stats.items()
-                }
-                wandb.log(train_epoch_stats, step=self.epoch_cnt)
-
-            self.epoch_cnt += 1
             self.train_batch_stats = {}
         else:
             test_epoch_stats = {
@@ -87,57 +106,14 @@ class StatsKeeper:
             for key, value in test_epoch_stats.items():
                 self.test_epoch_stats.setdefault(key, []).append(value)
 
-            if self.wandb_log:
-                test_epoch_stats = {"test/" + k: v for k, v in test_epoch_stats.items()}
-                wandb.log(test_epoch_stats, step=self.epoch_cnt)
-
             self.test_batch_stats = {}
 
-    def save_examples(self, batch, output, epoch: int):
-        if self.wandb_log:
-            payload = {
-                "examples": [
-                    wandb.Image(np.moveaxis(batch[i].cpu().detach().numpy(), 0, -1))
-                    for i in range(len(batch))
-                ],
-                "reconstructions": [
-                    wandb.Image(np.moveaxis(output[i].cpu().detach().numpy(), 0, -1))
-                    for i in range(len(batch))
-                ],
-            }
-            wandb.log(payload, step=epoch)
-
-    def save_model(self, model: PML_model, epoch: int):
-        """Save the model to the output directory
-
-        Args:
-            model (PML_model): The model to save
-            epoch (int): The current epoch
-        """
-        if self.output_dir is None:
-            raise ValueError("Output directory is not set")
-
-        name = f"{self.output_dir}/model_{epoch}.pth"
-        torch.save(model.state_dict(), name)
-
-        if self.wandb_log:
-            wandb.save(name)
-
-    def finish(self):
-        """Finish the logging process"""
-        if self.wandb_log:
-            wandb.finish()
-        else:
-            self.visualize()
-
-    def visualize(self):
+    def plot_results(self, output_dir: str):
         """Visualize the stats and save the plots to the output directory"""
-        if self.output_dir is None:
-            raise ValueError("Output directory is not set")
 
         for stat in self.train_epoch_stats.keys():
             plt.clf()
             plt.plot(self.train_epoch_stats[stat])
             plt.plot(self.test_epoch_stats[stat])
             plt.title(stat)
-            plt.savefig(f"{self.output_dir}/plots/{stat}.png")
+            plt.savefig(f"{output_dir}/plots/{stat}.png")
