@@ -37,7 +37,7 @@ Generally, you should be able to open the .tex document that you are interested 
 ## How to Log with Weights and Biases
 
 1. You need to have a [Weights and Biases](https://wandb.ai/site/) (wandb) account
-2. Add your wandb api key to your environment variables `export WANDB_API_KEY=<your key>`
+2. Add your wandb api key to your environment variables `export WANDB_API_KEY=<your key>`. If you run train the model within an apptainer make sure to add the environment variable to your `pml.def`-file
 3. Create an experiment by adjusting the `config.yaml`-file. make sure `log_wandb=True`
 
 ## How to run
