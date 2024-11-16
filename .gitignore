@@ -208,3 +208,4 @@ out/
 imagenet-mini/
 artifacts/
 pml.sif
+wandb/

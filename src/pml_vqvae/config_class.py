@@ -19,6 +19,7 @@ class Config:
         self.output_dir = None
         self.test_interval = None
         self.vis_train_interval = None
+        self.wandb_log = None
 
         # data
         self.dataset = None
@@ -33,6 +34,14 @@ class Config:
 
         # model
         self.model_name = None
+
+    def to_dict(self):
+        """Convert the configuration to a dictionary
+
+        Returns:
+            dict: Configuration dictionary
+        """
+        return self.__dict__
 
     @classmethod
     def from_dict(cls, config: dict):

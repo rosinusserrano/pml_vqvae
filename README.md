@@ -34,6 +34,12 @@ Generally, you should be able to open the .tex document that you are interested 
     - Shortcut: Ctrl + Click in the PDF Preview
     - Description: Jumps from a location in the PDF preview back to the corresponding place in the .tex source
 
+## How to Log with Weights and Biases
+
+1. You need to have a [Weights and Biases](https://wandb.ai/site/) (wandb) account
+2. Add your wandb api key to your environment variables `export WANDB_API_KEY=<your key>`. If you run train the model within an apptainer make sure to add the environment variable to your `pml.def`-file
+3. Create an experiment by adjusting the `config.yaml`-file. make sure `log_wandb=True`
+
 ## How to run
 
 ### Using the CLI

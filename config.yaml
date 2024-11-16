@@ -1,9 +1,10 @@
 experiment:
-  name: "BaselineAutoencoder" # name of the experiment
-  description: "First attempt to train BaselineAutoencoder" # description of the experiment
+  name: "BaselineVae" # name of the experiment
+  description: "Test Vae Logging" # description of the experiment
   seed: 42 # seed for reproducibility
-  test_interval: 5  # test the model every test_interval epochs, None to disable
-  vis_train_interval: 5 # plot the training loss every plot_train_interval epochs, None to disable
+  test_interval: 1  # test the model every test_interval epochs, None to disable
+  vis_train_interval: 1 # plot the training loss every plot_train_interval epochs, None to disable
+  wandb_log: True # log the experiment to wandb
 
 data:
   n_train: 10 # number of training samples
@@ -12,7 +13,7 @@ data:
 
 train:
   batch_size: 10
-  epochs: 10
+  epochs: 5
   learning_rate: 0.01
 
 model:

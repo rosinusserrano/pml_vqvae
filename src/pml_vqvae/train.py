@@ -11,20 +11,14 @@ from torch.optim import Adam, Optimizer
 from torchvision.transforms import v2
 import yaml
 from tqdm.auto import tqdm
-
+import wandb
 from pml_vqvae.stats_class import StatsKeeper
+from pml_vqvae.wandb_wrapper import WANDBWrapper
 
 # import wandb
 DEFAULT_CONFIG = "config.yaml"
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-
-
-# From wandb tutotial https://docs.wandb.ai/tutorials/pytorch
-def train_log(loss, epoch, epochs):
-    # Where the magic happens
-    # wandb.log({"epoch": epoch, "loss": loss}, step=epoch)
-    print(f"Epoch {epoch+1}/{epochs} - Loss: {loss}")
 
 
 def test(model: PML_model, test_loader: DataLoader, stats_keeper: StatsKeeper):
@@ -55,7 +49,7 @@ def test(model: PML_model, test_loader: DataLoader, stats_keeper: StatsKeeper):
         stats = model.collect_stats(output, target, loss)
 
         # collect all stats in Object for later plotting
-        dsp = stats_keeper.add_batch_stats(stats, train=False)
+        dsp = stats_keeper.add_batch_stats(stats, len(batch), train=False)
 
         # make a nice progress bar
         test_tqdm.set_description(dsp)
@@ -103,7 +97,7 @@ def train_epoch(
         stats = model.collect_stats(output, target, loss)
 
         # collect all stats in Object for later plotting
-        dsp = stats_keeper.add_batch_stats(stats)
+        dsp = stats_keeper.add_batch_stats(stats, len(batch))
 
         # make a nice progress bar
         train_tqdm.set_description(dsp)
@@ -153,45 +147,39 @@ def train(config: Config):
 
     model.to(DEVICE)
 
-    print("Training model...")
-    stats_keeper = StatsKeeper(output_dir=config.output_dir)
+    wandb_wrapper = WANDBWrapper(config)
+    wandb_wrapper.init(model)
 
+    stats_keeper = StatsKeeper()
+
+    print("Training model...")
     for i in range(config.epochs):
         # train on all datat for one epoch
-        batch, target, output = train_epoch(
-            model, train_loader, optimizer, stats_keeper
-        )
+        batch, _, output = train_epoch(model, train_loader, optimizer, stats_keeper)
+        wandb_wrapper.construct_examples(batch, output)
 
-        if config.vis_train_interval and i % config.vis_train_interval == 0:
-            model.visualize_output(
-                batch,
-                output,
-                target,
-                prefix=f"train_epoch{i}",
-                base_dir=os.path.join(config.output_dir, "visuals"),
-            )
-
-        # test on all data for one epoch
+        # test
         if config.test_interval and i % config.test_interval == 0:
             with torch.no_grad():
-                batch, target, output = test(model, test_loader, stats_keeper)
+                batch, _, output = test(model, test_loader, stats_keeper)
+                wandb_wrapper.construct_examples(batch, output, train=False)
 
-                model.visualize_output(
-                    batch,
-                    output,
-                    target,
-                    prefix=f"test_epoch{i}",
-                    base_dir=os.path.join(config.output_dir, "visuals"),
-                )
+        log_vis = True
+        if not config.vis_train_interval or i % config.vis_train_interval != 0:
+            log_vis = False
 
+        epoch_stats = stats_keeper.get_latest_stats()
+        wandb_wrapper.log_epoch(epoch_stats, epoch=i, log_vis=log_vis)
+
+        model_dir = stats_keeper.save_model(model, config.output_dir, epoch=i)
+        wandb_wrapper.save_model(model_dir)
+
+    # save final model
     print("Saving model...")
-    torch.save(
-        model.state_dict(),
-        os.path.join(config.output_dir, "models", f"{config.model_name}.pth"),
-    )
-
-    print("Plotting stats...")
-    stats_keeper.visualize()
+    stats_keeper.save_model(model, config.output_dir, epoch=config.epochs)
+    stats_keeper.plot_results(config.output_dir)
+    wandb_wrapper.save_model(model_dir)
+    wandb_wrapper.finish()
 
 
 cli_handler = CLI_handler()
