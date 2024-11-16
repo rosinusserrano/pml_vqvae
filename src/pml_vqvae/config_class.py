@@ -1,6 +1,7 @@
 from pml_vqvae.baseline.autoencoder import BaselineAutoencoder
 from pml_vqvae.baseline.vae import BaselineVariationalAutoencoder
 import yaml
+import os
 
 AVAIL_DATASETS = ["cifar", "imagenet"]
 AVAIL_MODELS = ["vae", "autoencoder"]
@@ -16,6 +17,8 @@ class Config:
         self.name = None
         self.description = None
         self.output_dir = None
+        self.test_interval = None
+        self.vis_train_interval = None
 
         # data
         self.dataset = None
@@ -52,7 +55,12 @@ class Config:
                 setattr(conf, key, value)
 
                 if key == "name":
-                    setattr(conf, "output_dir", f"{value}_output/")
+                    outdir = f"artifacts/{value}_output"
+                    setattr(conf, "output_dir", outdir)
+
+                    os.makedirs(f"{outdir}/models/", exist_ok=True)
+                    os.makedirs(f"{outdir}/visuals/", exist_ok=True)
+                    os.makedirs(f"{outdir}/plots/", exist_ok=True)
 
         conf.integrity_check()
 
@@ -62,7 +70,8 @@ class Config:
         """Check if the configuration is complete"""
         for key, value in self.__dict__.items():
             if value is None:
-                raise ValueError(f"Parameter {key} is not set in the configuration")
+                if key not in ["description", "test_interval", "vis_train_interval"]:
+                    raise ValueError(f"Parameter {key} is not set in the configuration")
 
             if key == "dataset" and value not in AVAIL_DATASETS:
                 raise ValueError(

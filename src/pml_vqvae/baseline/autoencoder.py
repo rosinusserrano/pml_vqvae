@@ -100,7 +100,7 @@ class BaselineAutoencoder(PML_model):
         reconstruction = self.decoder_stack(latent)
 
         reconstruction = torch.clamp(reconstruction, 0.0, 1.0)
-        return (reconstruction,)
+        return reconstruction
 
     @staticmethod
     def loss_fn(model_outputs, target):
@@ -117,7 +117,7 @@ class BaselineAutoencoder(PML_model):
     def visualize_output(batch, output, target, prefix: str = "", base_dir: str = "."):
         show_image_grid(batch, outfile=os.path.join(base_dir, f"{prefix}_original.png"))
         show_image_grid(
-            output[0],
+            output,
             outfile=os.path.join(base_dir, f"{prefix}_reconstruction.png"),
         )
 
