@@ -1,0 +1,18 @@
+experiment:
+  name: "BaselineAutoencoder" # name of the experiment
+  description: "First attempt to train BaselineAutoencoder" # description of the experiment
+  seed: 42 # seed for reproducibility
+
+data:
+  n_train: 10 # number of training samples
+  n_test: 10 # number of test samples
+  dataset: "cifar" # either cifar or imagenet
+
+train:
+  batch_size: 32
+  epochs: 10
+  learning_rate: 0.01
+
+model:
+  model_name: "autoencoder" # either autoencoder or vae
+  

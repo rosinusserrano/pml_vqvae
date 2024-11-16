@@ -1,31 +1,17 @@
 "Python script to train different models"
 
 import os
-import argparse
 import matplotlib.pyplot as plt
-from pml_vqvae.baseline.autoencoder import BaselineAutoencoder
-from pml_vqvae.baseline.vae import BaselineVariationalAutoencoder
-from pml_vqvae.baseline.pml_model_interface import PML_model
+from pml_vqvae.cli_input_handler import CLI_handler
+from pml_vqvae.config_class import Config
 from pml_vqvae.dataset.dataloader import load_data
 import torch
 from torchvision.transforms import v2
-import numpy as np
+import yaml
 from tqdm.auto import tqdm
 
 # import wandb
-
-# Hyperparameters
-MODEL = BaselineAutoencoder()
-DATASET = "cifar"
-
-EPOCHS = 200
-LEARNING_RATE = 0.01
-MOMENTUM = 0.9
-N_TRAIN = 1000
-N_TEST = 1000
-
-SEED = 2024
-
+DEFAULT_CONFIG = "config.yaml"
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -41,19 +27,19 @@ def train_log(loss, epoch, epochs):
     print(f"Epoch {epoch+1}/{epochs} - Loss: {loss}")
 
 
-def train(model: PML_model = MODEL, dataset: str = DATASET, epochs: int = EPOCHS):
+def train(config: Config):
     """Train a model on a dataset for a number of epochs
 
     Args:
-        model (PML_model, optional): The model to train. Defaults to MODEL.
-        dataset (str, optional): The dataset to train on. Defaults to DATASET.
-        epochs (int, optional): The number of epochs to train for. Defaults to EPOCHS.
+        config (dict): Configuration dictionary
 
     Returns:
         np.array: The losses over epochs (either a list of multiple losses or a list of floats)
     """
 
-    print(f"Training {model.name()} on {dataset} for {epochs} epochs")
+    model = config.get_model()
+
+    print(f"Training {model.name()} on {config.dataset} for {config.epochs} epochs")
 
     # Load data
     print("Loading dataset...")
@@ -67,15 +53,14 @@ def train(model: PML_model = MODEL, dataset: str = DATASET, epochs: int = EPOCHS
         ]
     )
     train_loader, test_loader = load_data(
-        dataset,
-        batch_size=32,
+        config.dataset,
         transformation=transforms,
-        n_train=N_TRAIN,
-        n_test=N_TEST,
-        seed=SEED,
+        n_train=config.n_train,
+        n_test=config.n_test,
+        seed=config.seed,
     )
 
-    optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
+    optimizer = torch.optim.Adam(model.parameters(), lr=config.learning_rate)
 
     model.to(DEVICE)
 
@@ -83,7 +68,7 @@ def train(model: PML_model = MODEL, dataset: str = DATASET, epochs: int = EPOCHS
     train_epoch_stats = {}
     test_epoch_stats = {}
 
-    for i in range(epochs):
+    for i in range(config.epochs):
         train_batch_stats = {}
         train_tqdm = tqdm(train_loader)
         for batch, target in train_tqdm:
@@ -112,7 +97,7 @@ def train(model: PML_model = MODEL, dataset: str = DATASET, epochs: int = EPOCHS
                 output,
                 target,
                 prefix=f"train_epoch{i}",
-                base_dir="artifacts/visuals",
+                base_dir=f"{config.output_dir}/visuals",
             )
 
         train_batch_stats = {k: sum(v) / len(v) for k, v in train_batch_stats.items()}
@@ -148,7 +133,7 @@ def train(model: PML_model = MODEL, dataset: str = DATASET, epochs: int = EPOCHS
                     output,
                     target,
                     prefix=f"test_epoch{i}",
-                    base_dir="artifacts/visuals",
+                    base_dir=f"{config.output_dir}/visuals",
                 )
 
             test_batch_stats = {k: sum(v) / len(v) for k, v in test_batch_stats.items()}
@@ -156,7 +141,7 @@ def train(model: PML_model = MODEL, dataset: str = DATASET, epochs: int = EPOCHS
                 test_epoch_stats.setdefault(key, []).append(value)
 
     print("Saving model...")
-    torch.save(model.state_dict(), "artifacts/models/testmodel_5ep.pth")
+    torch.save(model.state_dict(), f"{config.output_dir}/models/testmodel_5ep.pth")
 
     print("Plotting stats...")
     for stat in train_epoch_stats.keys():
@@ -164,22 +149,19 @@ def train(model: PML_model = MODEL, dataset: str = DATASET, epochs: int = EPOCHS
         plt.plot(train_epoch_stats[stat])
         plt.plot(test_epoch_stats[stat])
         plt.title(stat)
-        plt.savefig(f"artifacts/plots/{stat}.png")
+        plt.savefig(f"{config.output_dir}/plots/{stat}.png")
 
 
-parser = argparse.ArgumentParser()
-parser.add_argument("model", help="The model you want to train")
-parser.add_argument("dataset", help="The dataset onto which to train your model")
+cli_handler = CLI_handler()
+args = cli_handler.parse_args()
 
-args = parser.parse_args()
+with open(DEFAULT_CONFIG, "r") as file:
+    config = Config.from_dict(yaml.safe_load(file))
 
-assert args.model in ["vae", "autoencoder"], "Unknown model"
-assert args.dataset in ["cifar", "imagenet"], "Unknown dataset"
+# Overwrite config when cli arguments are provided
+config = cli_handler.adjust_config(config, args)
 
-model = None
-if args.model == "autoencoder":
-    model = BaselineAutoencoder()
-elif args.model == "vae":
-    model = BaselineVariationalAutoencoder()
+print(config)
 
-train(model=model, dataset=args.dataset)
+losses = train(config)
+print(losses)
