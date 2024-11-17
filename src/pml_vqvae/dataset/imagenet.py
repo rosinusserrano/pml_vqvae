@@ -122,31 +122,9 @@ class ImageNetDataset(Dataset):
 
         return image, image
 
-    def image_size_from_file(self):
-        with open("sizes.json") as json_file:
-            sizes = json.load(json_file)
+    def optima_shape_examples(self):
+        """Find images with the largest and smallest width and height in the dataset and plot them."""
 
-        class_sizes = []
-
-        for class_idx, sizes in sizes.items():
-            sizes = np.array(sizes)
-            mean_size = np.mean(sizes, axis=0)
-            max_size = np.max(sizes, axis=0)
-            min_size = np.min(sizes, axis=0)
-
-            class_sizes.append((class_idx, [*mean_size, *max_size, *min_size]))
-
-        # sort by class index
-        class_sizes = sorted(class_sizes, key=lambda x: x[0])
-
-        # as a numpy array of shape (n_classes, 9)
-        class_sizes = np.array([x[1] for x in class_sizes])
-
-        # save to file
-        np.save("imagenet_sizes.npy", class_sizes)
-
-    # get class with the largest max image width
-    def max_class(self):
         sizes = np.load("imagenet_sizes.npy")
 
         max_width_class = sizes[:, 2].argmax()
@@ -207,31 +185,55 @@ class ImageNetDataset(Dataset):
                 l_height = height
                 s_height_img = img
 
+        plt.clf()
         print(f"Max width: {l_width}")
         print(l_width_img)
         plt.imshow(decode_image(l_width_img, mode="RGB").permute(1, 2, 0).numpy())
         plt.title("/".join(l_height_img.split("/")[-2:]))
-        plt.savefig("resources/max_width_img.png")
+        plt.savefig("resources/max_width_img.svg")
 
+        plt.clf()
         print(f"Max height: {l_height}")
         print(l_height_img)
         plt.imshow(decode_image(l_height_img, mode="RGB").permute(1, 2, 0).numpy())
         plt.title("/".join(l_height_img.split("/")[-2:]))
-        plt.savefig("resources/max_height_img.png")
+        plt.savefig("resources/max_height_img.svg")
 
+        plt.clf()
         print(f"Min width: {l_width}")
         print(s_width_img)
         plt.imshow(decode_image(s_width_img, mode="RGB").permute(1, 2, 0).numpy())
         plt.title("/".join(s_width_img.split("/")[-2:]))
-        plt.savefig("resources/min_width_img.png")
+        plt.savefig("resources/min_width_img.svg")
 
+        plt.clf()
         print(f"Min height: {l_height}")
         print(s_height_img)
         plt.imshow(decode_image(s_height_img, mode="RGB").permute(1, 2, 0).numpy())
         plt.title("/".join(s_height_img.split("/")[-2:]))
-        plt.savefig("resources/min_height_img.png")
+        plt.savefig("resources/min_height_img.svg")
+
+        plt.clf()
+        # plot all four images in one plot
+        fig, ax = plt.subplots(2, 2)
+
+        ax[0, 0].imshow(decode_image(l_width_img, mode="RGB").permute(1, 2, 0).numpy())
+        ax[0, 0].set_title("/".join(l_width_img.split("/")[-2:]))
+
+        ax[0, 1].imshow(decode_image(l_height_img, mode="RGB").permute(1, 2, 0).numpy())
+        ax[0, 1].set_title("/".join(l_height_img.split("/")[-2:]))
+
+        ax[1, 0].imshow(decode_image(s_width_img, mode="RGB").permute(1, 2, 0).numpy())
+        ax[1, 0].set_title("/".join(s_width_img.split("/")[-2:]))
+
+        ax[1, 1].imshow(decode_image(s_height_img, mode="RGB").permute(1, 2, 0).numpy())
+        ax[1, 1].set_title("/".join(s_height_img.split("/")[-2:]))
+        plt.tight_layout()
+        plt.savefig("resources/optima_shape_examples.svg")
 
     def image_close_to_32x32(self):
+        """Find an image with a width or height close to 32x32 and plot it."""
+
         for img, class_idx in self.imagenet.imgs:
             width, height = imagesize.get(img)
 
@@ -256,10 +258,15 @@ class ImageNetDataset(Dataset):
 
                 fig.suptitle("/".join(img.split("/")[-2:]))
                 plt.tight_layout()
-                plt.savefig("resources/close_to_32x32.png")
+                plt.savefig("resources/close_to_32x32.svg")
                 break
 
     def randomcropresize(self):
+        """Plot an image before and after applying a random resized crop transformation."""
+
+        plt.clf()
+
+        # determined by optima_shape_examples function
         img_small = "/home/space/datasets/imagenet_torchvision/data/train/n02783161/n02783161_4703.JPEG"
         image_large = "/home/space/datasets/imagenet_torchvision/data/train/n03933933/n03933933_10972.JPEG"
 
@@ -277,7 +284,7 @@ class ImageNetDataset(Dataset):
 
         fig.suptitle("/".join(img_small.split("/")[-2:]))
         plt.tight_layout()
-        plt.savefig("resources/random_resized_crop_small.png")
+        plt.savefig("resources/random_resized_crop_small.svg")
 
         image = decode_image(image_large, mode="RGB")
         image_resized = v2.RandomResizedCrop(128)(image)
@@ -296,9 +303,11 @@ class ImageNetDataset(Dataset):
 
         fig.suptitle("/".join(image_large.split("/")[-2:]))
         plt.tight_layout()
-        plt.savefig("resources/random_resized_crop_large.png")
+        plt.savefig("resources/random_resized_crop_large.svg")
 
     def create_size_errorbar(self):
+        """Create errorbar plots for the mean image width and height per class."""
+
         sizes = np.load("imagenet_sizes.npy")
 
         mean = sizes.mean(axis=0)
@@ -306,7 +315,7 @@ class ImageNetDataset(Dataset):
         print(sizes.max(axis=0)[2:4])
         print(sizes.min(axis=0)[4:])
 
-        fig, ax = plt.subplots(2)
+        fig, ax = plt.subplots(2, figsize=(10, 10))
 
         # plot mean image width per class with min max deviation
         ax[0].errorbar(
@@ -339,8 +348,6 @@ class ImageNetDataset(Dataset):
         ax[0].set_xlabel("Class ID")
         ax[0].set_ylabel("Image width in px")
         ax[0].legend()
-
-        plt.clf()
 
         # plot mean image height per class with min max deviation
         ax[1].errorbar(
@@ -375,13 +382,13 @@ class ImageNetDataset(Dataset):
         ax[1].legend()
 
         plt.tight_layout()
-        plt.savefig("resources/imagenet_sizes_errorbar.png")
+        plt.savefig("resources/imagenet_sizes_errorbar.svg")
 
         # clear figure
         plt.clf()
 
         # create histogram plot of image mean image width and height
-        fig, ax = plt.subplots(2)
+        fig, ax = plt.subplots(2, figsize=(10, 10))
 
         ax[0].hist(sizes[:, 0], bins=50)
         ax[0].set_title("Mean image width distribution")
@@ -404,14 +411,16 @@ class ImageNetDataset(Dataset):
         ax[1].legend()
 
         plt.tight_layout()
-        plt.savefig("resources/imagenet_sizes_histogram.png")
+        plt.savefig("resources/imagenet_sizes_histogram.svg")
 
     def image_size_summary(self):
-        """Compute the image size distribution of the dataset.
+        """Compute the mean, max and min image size per class and save it to a file.
 
-        Returns:
-            dict: Image size distribution
+        Note: This functions takes a long time to compute and should be done in multiple batches.
+
+        The result of this function is saved to a file and can be loaded with np.load("imagenet_sizes.npy").
         """
+
         print("Start computing image size distribution...")
 
         class_sizes = []
@@ -450,7 +459,7 @@ class ImageNetDataset(Dataset):
         sizes = np.array(class_sizes)
 
         # save to file
-        np.save("resources/imagenet_sizes_4.npy", sizes)
+        np.save("resources/imagenet_sizes.npy", sizes)
 
         return
 
@@ -528,5 +537,7 @@ class ImageNetDataset(Dataset):
 if __name__ == "__main__":
 
     data = ImageNetDataset(split="train")
-    data.image_close_to_32x32()
-    data.randomcropresize()
+    # data.image_close_to_32x32()
+    data.optima_shape_examples()
+    # data.create_size_errorbar()
+    # data.randomcropresize()
