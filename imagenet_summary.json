@@ -1,0 +1,80 @@
+{
+    "n_samples": 1281167,
+    "n_classes": 1000,
+    "highest_sample_per_class": {
+        "class": [
+            996,
+            997,
+            998,
+            999,
+            0
+        ],
+        "count": [
+            1300,
+            1300,
+            1300,
+            1300,
+            1300
+        ],
+        "class_name": [
+            [
+                "hen-of-the-woods",
+                "hen of the woods",
+                "Polyporus frondosus",
+                "Grifola frondosa"
+            ],
+            [
+                "bolete"
+            ],
+            [
+                "ear",
+                "spike",
+                "capitulum"
+            ],
+            [
+                "toilet tissue",
+                "toilet paper",
+                "bathroom tissue"
+            ],
+            [
+                "tench",
+                "Tinca tinca"
+            ]
+        ]
+    },
+    "lowest_sample_per_class": {
+        "class": [
+            165,
+            175,
+            167,
+            268,
+            152
+        ],
+        "count": [
+            732,
+            738,
+            754,
+            755,
+            772
+        ],
+        "class_name": [
+            [
+                "black-and-tan coonhound"
+            ],
+            [
+                "otterhound",
+                "otter hound"
+            ],
+            [
+                "English foxhound"
+            ],
+            [
+                "Mexican hairless"
+            ],
+            [
+                "Japanese spaniel"
+            ]
+        ]
+    },
+    "mean_samples_per_class": 1281.167
+}

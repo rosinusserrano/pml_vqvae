@@ -3,7 +3,7 @@ import torchvision
 import torch
 
 from pml_vqvae.visuals import show_image_grid
-
+from torchvision.transforms import v2
 from pml_vqvae.dataset.cifar10 import CifarDataset
 from pml_vqvae.dataset.imagenet import ImageNetDataset
 
@@ -106,13 +106,21 @@ def load_data(
 
 if __name__ == "__main__":
 
+    transforms = v2.Compose(
+        [
+            # v2.RandomResizedCrop(size=(128, 128), antialias=True),
+            # v2.RandomHorizontalFlip(p=0.5),
+            v2.ToDtype(torch.float32, scale=True),
+            v2.Normalize(mean=[0.0, 0.0, 0.0], std=[255.0, 255.0, 255.0]),
+            # v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+        ]
+    )
+
     t, te = load_data(
-        "imagenet",
-        batch_size=20,
-        n_train=1000,
-        n_test=1000,
+        "cifar",
+        batch_size=15,
         seed=2020,
-        transformation=RandomCrop(128, pad_if_needed=True),
+        transformation=transforms,
     )
 
     # train_set = ImageNet(root=DATASET_DIR + "imagenet_torchvision/data", split="train")
@@ -122,6 +130,6 @@ if __name__ == "__main__":
 
     # set seed for reproducibility
     # torch.manual_seed(2809)
-    sample_images = next(iter(t))[0]
 
-    show_image_grid(sample_images, outfile="test.png")
+    sample_images = next(iter(t))[0]
+    show_image_grid(sample_images, outfile=f"cifar_rbatch.png", rows=3, cols=5)
