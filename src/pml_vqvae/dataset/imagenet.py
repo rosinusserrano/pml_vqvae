@@ -100,7 +100,7 @@ class ImageNetDataset(Dataset):
 
         if samples_per_class is not None or class_idx is not None:
             self.imagenet = create_imagenet_subset(
-                root_dir, samples_per_class, split, seed=seed, class_idx=class_idx
+                root_dir, samples_per_class, split, seed=seed, class_idx_list=class_idx
             )
             self.samples_per_class = samples_per_class
         else:

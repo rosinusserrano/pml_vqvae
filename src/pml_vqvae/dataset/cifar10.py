@@ -110,7 +110,7 @@ class CifarDataset(Dataset):
             "truck",
         ]
 
-        if samples_per_class is not None or class_idx_list is not None:
+        if samples_per_class is not None or class_idx is not None:
             self.images, self.labels = create_cifar_subset(
                 self.filename,
                 samples_per_class,

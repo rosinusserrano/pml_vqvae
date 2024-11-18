@@ -26,6 +26,7 @@ class Config:
         self.n_train = None
         self.n_test = None
         self.seed = None
+        self.class_idx = None
 
         # train
         self.batch_size = None
