@@ -472,10 +472,23 @@ class ImageNetDataset(Dataset):
 
         fig = plt.figure()
 
-        plt.hist(self.imagenet.targets, bins=self.imagenet.targets[-1] + 1)
+        # plot histogram of class distribution without gaps
+        plt.hist(self.imagenet.targets, bins=self.imagenet.targets[-1] + 1, rwidth=1)
         plt.title("Number of samples per class")
         plt.xlabel("Class ID")
         plt.ylabel("Number of samples")
+
+        # plot mean number of samples per class
+        plt.axhline(
+            np.mean(np.unique(self.imagenet.targets, return_counts=True)[1]),
+            color="r",
+            linestyle="--",
+            label="Mean= {:.2f}".format(
+                np.mean(np.unique(self.imagenet.targets, return_counts=True)[1])
+            ),
+        )
+
+        plt.legend(loc="lower right")
 
         if outfile is not None:
             fig.savefig(outfile, bbox_inches="tight")
@@ -538,6 +551,7 @@ if __name__ == "__main__":
 
     data = ImageNetDataset(split="train")
     # data.image_close_to_32x32()
-    data.optima_shape_examples()
+    # data.optima_shape_examples()
     # data.create_size_errorbar()
     # data.randomcropresize()
+    data.export_class_dist("resources/imagenet_dist.svg")
