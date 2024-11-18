@@ -10,7 +10,13 @@ from torchvision.datasets import ImageNet
 DATASET_DIR = "/home/space/datasets/"
 
 
-def create_imagenet_subset(root_dir: str, n_samples: int, split: str, seed: int = None):
+def create_imagenet_subset(
+    root_dir: str,
+    n_samples: int,
+    split: str,
+    seed: int = None,
+    class_idx_list: list = None,
+):
     """Create a subset of the ImageNet dataset with n_samples per class.
 
     Args:
@@ -39,8 +45,12 @@ def create_imagenet_subset(root_dir: str, n_samples: int, split: str, seed: int 
             if img_class_idx != class_idx or idx == len(full_imagenet.imgs) - 1:
                 img_pointer = idx  # save the pointer for the next class
 
+                # if only select specific classes and its at current iteration not that class, skip
+                if class_idx_list and class_idx not in class_idx_list:
+                    break
+
                 # choose n_samples random images from the subset
-                if len(class_imgs) > n_samples:
+                if n_samples and len(class_imgs) > n_samples:
                     np.random.seed(seed)
                     indices = np.random.choice(
                         len(class_imgs), n_samples, replace=False
@@ -81,25 +91,25 @@ class ImageNetDataset(Dataset):
         samples_per_class: int = None,
         seed: int = None,
         transform=None,
+        class_idx: list = None,
     ):
         super().__init__()
 
         # root directory of the dataset
         self.root_dir = os.path.join(root_dir, split)
 
-        if samples_per_class is not None:
+        if samples_per_class is not None or class_idx is not None:
             self.imagenet = create_imagenet_subset(
-                root_dir, samples_per_class, split, seed=seed
+                root_dir, samples_per_class, split, seed=seed, class_idx=class_idx
             )
+            self.samples_per_class = samples_per_class
         else:
             self.imagenet = ImageNet(root_dir, split)
 
         self.split = split
         self.transform = transform
         self.image_paths = []
-
-        if samples_per_class is not None:
-            self.samples_per_class = samples_per_class
+        self.class_idx = class_idx
 
     def __len__(self):
         return len(self.imagenet.imgs)
