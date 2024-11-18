@@ -10,6 +10,33 @@ from torchvision.datasets import ImageNet
 DATASET_DIR = "/home/space/datasets/"
 
 
+def init_imagenet(rootdir: str, split: str):
+
+    return filter_small_imgs(ImageNet(rootdir, split))
+
+
+def filter_small_imgs(imgnet: ImageNet):
+    """Filter out small images from the ImageNet dataset.
+
+    Args:
+        imgnet (ImageNet): ImageNet dataset
+
+    Returns:
+        ImageNet: ImageNet dataset without small images
+    """
+
+    small_imgs = json.load(open("src/pml_vqvae/dataset/small_images.json"))
+    indexes = small_imgs["idx"]
+
+    print(len(indexes))
+
+    imgnet.imgs = [imgnet.imgs[i] for i in range(len(imgnet.imgs)) if i not in indexes]
+    imgnet.samples = imgnet.imgs
+    imgnet.targets = [img[1] for img in imgnet.imgs]
+
+    return imgnet
+
+
 def create_imagenet_subset(
     root_dir: str,
     n_samples: int,
@@ -29,7 +56,7 @@ def create_imagenet_subset(
         ImageNet: Subset of the ImageNet dataset
     """
 
-    full_imagenet = ImageNet(root_dir, split)
+    full_imagenet = init_imagenet(root_dir, split)
 
     img_subset = []
 
@@ -104,7 +131,7 @@ class ImageNetDataset(Dataset):
             )
             self.samples_per_class = samples_per_class
         else:
-            self.imagenet = ImageNet(root_dir, split)
+            self.imagenet = init_imagenet(root_dir, split)
 
         self.split = split
         self.transform = transform
@@ -205,4 +232,4 @@ if __name__ == "__main__":
 
     data = ImageNetDataset(split="train", samples_per_class=10)
 
-    # info = data.summary()
+    info = data.summary()
