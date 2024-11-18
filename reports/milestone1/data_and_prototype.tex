@@ -12,7 +12,7 @@
 \setcitestyle{authoryear}
 
 
-\title{Project Machine Learning\\--- Milestone 1 ---} 
+\title{Project Machine Learning\\--- Milestone 1 ---}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                                     %
@@ -24,69 +24,103 @@
 \date{\today}
 
 \begin{document}
-\acrodef{ae}[AE]{Autoencoder}
-\acrodef{vae}[VAE]{Variational Autoencoder}
-\acrodef{vq}[VQ-VAE]{Vector Quantized Variatonal Autoencoder}
-\acrodef{gan}[GAN]{Generative Adversarial Networks}
-\acrodef{dnn}[DNN]{Deep Neural Networks}
+    \acrodef{ae}[AE]{Autoencoder}
+    \acrodef{vae}[VAE]{Variational Autoencoder}
+    \acrodef{vq}[VQ-VAE]{Vector Quantized Variatonal Autoencoder}
+    \acrodef{gan}[GAN]{Generative Adversarial Networks}
+    \acrodef{dnn}[DNN]{Deep Neural Networks}
+    \acrodef{bpp}{bits per pixel}
+    \acrodef{mse}[MSE]{Mean Squared Error}
+    \acrodef{psnr}[PSNR]{Peak Signal to Noise Ratio}
+    \acrodef{nll}[NLL]{Negative Log Likelihood}
 
-\maketitle
+    \maketitle
 
-We need to state our focus on images before this section begins.
+    We need to state our focus on images before this section begins.
 
-\section{Baseline method and evaluation}\label{sec:baseline-method-and-evaluation}
-The \ac{vq} described in the paper fulfills two tasks.
-The first is learning useful and compact, discrete representations of real world data, the second generating new samples
-in this representation space and decoding them back to the original data space.
-The paper mainly focuses on the generative aspect, but to understand the whole model better, we want to gain insights
-into both, and chose our baseline methods accordingly.
+    \section{Baseline method and evaluation}\label{sec:baseline-method-and-evaluation}
+    The \ac{vq} described in the paper fulfills two tasks.
+    The first is learning useful and compact, discrete representations of real world data, the second generating new samples
+    in this representation space and decoding them back to the original data space.
+    The paper mainly focuses on the generative aspect, but to understand the whole model better, we want to gain insights
+    into both, and chose our baseline methods accordingly.
 
-\subsection{Baselines}\label{subsec:baselines}
-While there exist multiple machine learning approaches with a setup similar to that of the \ac{vq}
-i.e.\ generative models with latent representations such as \ac{gan}, differences in the details make these hard to
-compare against each other.
-When sticking to the example of \ac{gan}, one key difference is that in the basic model, the latents can not be created
-by encoding real world data but overall represent a distribution that is close to that of the training data~\cite{gan}.
+    \subsection{Baselines}\label{subsec:baselines}
+    While there exist multiple machine learning approaches with a setup similar to that of the \ac{vq}
+    i.e.\ generative models with latent representations such as \ac{gan}, differences in the details make these hard to
+    compare against each other.
+    When sticking to the example of \ac{gan}, one key difference is that in the basic model, the latents can not be created
+    by encoding real world data but overall represent a distribution that is close to that of the training data~\cite{gan}.
 
-Another requirement for or baseline model is some simplicity.
-Since it is the original model that the non-quantized \ac{vae} is based on, which in turn later was developed into the
-\ac{vq} and because it also fulfils the requirement of simplicity, we chose the basic \ac{ae} as our general baseline
-method.
-We also incorporate some experiments with the \ac{vae}, to show the progress that was made over time.
+    Another requirement for or baseline model is some simplicity.
+    Since it is the original model that the non-quantized \ac{vae} is based on, which in turn later was developed into the
+    \ac{vq} and because it also fulfils the requirement of simplicity, we chose the basic \ac{ae} as our general baseline
+    method.
+    We also incorporate some experiments with the \ac{vae}, to show the progress that was made over time.
 
-The similar architecture of these baselines allow for very comparable results, since they can be tuned to be very
-close in size, training cost and latent structure.
+    The similar architecture of these baselines allow for very comparable results, since they can be tuned to be very
+    close in size, training cost and latent structure.
 
-While much of the current work in realistic high resolution image generation is based on \ac{dnn} \cite{addsources},
-the field of image compression is well researched both in-, and outside deep architectures~\cite{compression},
-and non-ML approaches are still dominant on the web~\cite{img_file_format}.
-To represent this, we also use the popular JPEG format for comparisons against our lossy compression schemes.
+    While much of the current work in realistic high resolution image generation is based on \ac{dnn} \cite{addsources},
+    the field of image compression is well researched both in-, and outside deep architectures~\cite{compression},
+    and non-ML approaches are still dominant on the web as can be seen in Figure~\ref{fig:file_formats}.
+    To represent this, we also use the popular JPEG format for comparisons against our lossy compression schemes.
 
-\begin{figure}[h]
-    \centering
-    \includegraphics[width=0.5\textwidth]{images/formats}
-    \caption{Percentages of websites using various image file formats. Note that a website may use more than one image file format~\cite{img_file_format}}
-    \label{fig:file_formats}
-\end{figure}
+    \begin{figure}[h]
+        \centering
+        \includegraphics[width=0.5\textwidth]{images/formats}
+        \caption{Percentages of websites using various image file formats~\cite{img_file_format}}
+        \label{fig:file_formats}
+    \end{figure}
 
-\subsection{Evaluation Metrics}\label{subsec:evaluation-metrics}
-\subsubsection{Compression}
-bits per pixel for compression rate
-ssim
-\subsubsection{Image Generation}
-Marginal NLL or NLE, basically just use negative log entropy as the factor to compare, this describes the entropy of the picture generated?
+    \subsection{Evaluation Metrics}\label{subsec:evaluation-metrics}
+    \subsubsection{Compression}
+    For compression, the most straightforward metric is to measure the reduction of memory required to
+    store the data.
+    To normalize over image resolution, we choose to evaluate the \ac{bpp}.
 
-\begin{itemize}
-    \item I do not have clarity here see: https://bjlkeng.io/posts/a-note-on-using-log-likelihood-for-generative-models/
-    \item I need to understand PixelCNN better to continue
-    \item see Shannon for theory on entropy\cite{shannon}
-    \item dont use parzen windows\cite{note_on_eval}
-    \item
-    \item
-\end{itemize}
+    The second, and less objective measure, is image similarity after reconstruction.
+    While the \ac{mse} and by transfer \ac{psnr} describe pixel-wise similarity very well, it is not
+    always optimal to judge perceived similarity for humans, as can be seen in Figure~\ref{fig:mse_ssim}.
 
-\section{Discussion}
-:-)
+    \begin{figure}[h]
+        \centering
+        \includegraphics[width=0.8\textwidth]{images/ssim_mse}
+        \caption{from~\cite{scikit-ssim}}
+        \label{fig:mse_ssim}
+    \end{figure}
 
-\bibliography{bibliography}
+    To overcome these limitations we will use the \ac{ssim}, a metric working under the assumption that human visual
+    perception is highly adapted for extracting structural information from a scene, that has been
+
+    Even though this analysis favours \ac{ssim}, we use \ac{mse} as our loss function for our baseline models,
+    since the \ac{vq} implementation we plan to replicate does the same, and we want to maximize comparability.
+    We use \ac{ssim} for result evaluation, and add \ac{psnr} values for further work later on.
+
+
+    \subsubsection{Image Generation}
+    An important metric in Image Generation and the one used to argue about the strong performance of the \ac{vq} in the
+    paper is the \ac{nll} normalized to the amount of pixels (dimensions) in an image, given in bits/dim.
+    A lower number indicates a higher likelihood of generating the test data given our model.
+    The bits/dim number is rooted in information theory, and describes the average number of bits required to
+    compress the test data with the entropy coding scheme that is optimal for a model~\cite{shannon}.
+
+    Another interesting metric is the \ac{fid} introduced by~\cite{fid}, which compares the distribution of features of
+    a generator with that of real images via a network trained on a big dataset, often also imagenet.
+
+    Another criterion not to be left out is the classic human turing test, as in evaluating the images by hand.
+    Even though this is not scalable, it is the ultimate classifier for human perception, and can be a good starting
+    point.
+
+    As on metrics we found, but decided not to use: The paper that introduced \ac{fid} it also shows that it is more
+    consistent than a previous, similar metric, the inception score, which we will therefore leave out.
+    Another sometimes utilized evaluation metric that research has shown to better avoid are Parzen Windows Estimates~\cite{note_on_eval}.
+
+    Overall, since we have not yet implemented any Image Generation functionality, it remains to be seen which of these
+    criteria are of which worth to us.
+
+    \section{Discussion}
+    :-)
+    MY QUESTIONS: MORE FORMULAE FOR THE CRITERIONS?
+    \bibliography{bibliography}
 \end{document}
