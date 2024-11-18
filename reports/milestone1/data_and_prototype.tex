@@ -71,6 +71,10 @@ Upon examining the ImageNet dataset, we found that it contains images with highl
 
     A class disbalance in the training data can lead to a bias in the resulting model. We access the class distribution in the ImageNet dataset more or less balanced, as most classes contain 1300 images. The classes with fewer examples are still represented by a reasonable number of images. Moreover, the number samples for different dog breeds for instance might be lower, but still the number of dog images is fairly high. Our goal for this project might not be to generate images of different dog breeds, just a dog image suffices.
 
+    Upon examining the plethora of different shapes present in the ImageNet dataset, we found that the images have highly irregular resolutions. The resolutions range from 8x10 pixels to 9331x6530 pixels with a mean resolution of 471.7x404.7 pixels, as shown in Figure \ref{fig:imnet_sizes_err}. The histogram in Figure \ref{fig:imnet_sizes_hist} illustrates the distribution of image resolutions in the dataset.
+
+    As to be seen in figure \ref{fig:optimal_resolution}, some images have a very unregular ratio, which imposes a challenge for resizing. Very small images do not contain enough information, which when upscaled, result in a blurry image (illustrated in figure \ref{fig:small_image}). We decided to remove such images and resstrict the dataset to a minimum image size of 32x32 pixels.
+
     \begin{figure}
         \centering
         \includegraphics[width=\textwidth]{../../sample_images/imagenet_dist.png}
@@ -161,6 +165,20 @@ Upon examining the ImageNet dataset, we found that it contains images with highl
     \includegraphics[width=\textwidth]{../../sample_images/cifar_rbatch.png}
     \caption{Example images from the CIFAR-10 dataset standardized}
     \label{fig:cifar10_example_normalized}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=\textwidth]{../../sample_images/optima_shape_examples.png}
+    \caption{Example images from the ImageNet dataset with very unregular resolution ratios}
+    \label{fig:optimal_resolution}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=\textwidth]{../../sample_images/random_resized_crop_small.png}
+    \caption{Example image from the ImageNet dataset that is too small}
+    \label{fig:small_image}
 \end{figure}
 
 \end{document}
