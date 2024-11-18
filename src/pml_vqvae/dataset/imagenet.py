@@ -229,7 +229,7 @@ class ImageNetDataset(Dataset):
         ax[1, 1].imshow(decode_image(s_height_img, mode="RGB").permute(1, 2, 0).numpy())
         ax[1, 1].set_title("/".join(s_height_img.split("/")[-2:]))
         plt.tight_layout()
-        plt.savefig("resources/optima_shape_examples.svg")
+        plt.savefig("resources/optima_shape_examples.png")
 
     def image_close_to_32x32(self):
         """Find an image with a width or height close to 32x32 and plot it."""
@@ -413,6 +413,47 @@ class ImageNetDataset(Dataset):
         plt.tight_layout()
         plt.savefig("resources/imagenet_sizes_histogram.svg")
 
+    def get_too_small_images(self, threshold=32):
+        """Find images with a width or height smaller than a threshold.
+
+        Args:
+            threshold (int, optional): Threshold for the width or height. Defaults to 32.
+
+        Returns:
+            list: List of image paths
+        """
+
+        print("Start finding images that are too small...")
+
+        too_small_images = []
+        idx = []
+        save_cnt = 3
+        for i in range(1100000, len(self.imagenet.imgs)):
+            img_path, class_idx = self.imagenet.imgs[i]
+            width, height = imagesize.get(img_path)
+
+            if width < threshold or height < threshold:
+                print(img_path)
+                too_small_images.append(img_path)
+                idx.append(i)
+
+            if i % 1000 == 0:
+                print(f"Processed {i} images")
+
+            if i != 0 and i % 700000 == 0:
+                # save list as json file
+                with open(f"resources/too_small_images_{save_cnt}.json", "w") as f:
+                    json.dump({"images": too_small_images, "idx": idx}, f)
+
+                too_small_images = []
+                idx = []
+                save_cnt += 1
+
+        with open(f"resources/too_small_images_11.json", "w") as f:
+            json.dump({"images": too_small_images, "idx": idx}, f)
+
+        return too_small_images
+
     def image_size_summary(self):
         """Compute the mean, max and min image size per class and save it to a file.
 
@@ -549,9 +590,11 @@ class ImageNetDataset(Dataset):
 
 if __name__ == "__main__":
 
-    data = ImageNetDataset(split="train")
+    # data = ImageNetDataset(split="train")
     # data.image_close_to_32x32()
     # data.optima_shape_examples()
+    # data.get_too_small_images()
     # data.create_size_errorbar()
     # data.randomcropresize()
-    data.export_class_dist("resources/imagenet_dist.svg")
+    # data.export_class_dist("resources/imagenet_dist.svg")
+    pass
