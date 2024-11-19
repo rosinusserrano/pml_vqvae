@@ -49,4 +49,62 @@
     \bibliography{bibliography}
     \section{Appendix}\label{sec:appendix}
     \input{appendix}
+
+\subsection{VAE}
+
+Our version of the VAE follows the same basic structure as the Autoencoder
+previosly described. First we use 2 convolutional layers to downsample the
+image to $1/4$ of its original height and width. Then two convolutional
+residual blocks are applied, each of which contains two convolutional layers.
+An important difference of the VAE is that its encoder outputs a random
+variable $\boldsymbol{\hat{z}} \sim \mathcal{N}(\boldsymbol{\mu_\theta}, \text{diag}
+(\boldsymbol{\sigma_\theta}))$. $\boldsymbol{\hat{z}}$ is obtained using the
+reparameterization trick, which consists in sampling $\boldsymbol{z}
+\sim \mathcal{N}(0, I)$ and then computing $\boldsymbol{\hat{z}} =
+\boldsymbol{\mu_\theta} + \boldsymbol{z} \odot \boldsymbol{\sigma_\theta}$.
+$\boldsymbol{\mu_\theta}$ and $\boldsymbol{\sigma_\theta}$ are deterministic
+outputs of the last convolutional layer of the VAE's encoder. This allows to
+optimize the model using the ELBO loss which in turn enables us to not only
+reconstruct the input, but to learn a posterior distribution $p(x|z)$ while
+the encoder $q(z|x)$ tries to be as close as possible to $p(z)$. Thus enabling
+us to generate new dataset samples by sampling $z \sim p(z)$ and then feeding
+it through the decoder.
+
+\subsection{Overfitting}
+
+Overfitting in the context of machine learning refers to the phenomenon where
+a model instead of learning useful features from the training data, that
+generalize to unseen data, it starts "memorizing" the training data. This
+leads to bad performance on the test set. While theoretically, this may still
+be an issue with autoencoders and VAEs, we have not experienced this happening
+when training with normal settings. This is very likely due to the large
+dataset size and the inductive bias of the convolution operation.
+
+\subsection{Class differences}
+
+\subsection{What constitutes good features in machine learning}
+
+In classical machine learning, a set of features is "good", if it helps the
+model to achieve a certain task. This implies that the features should be
+informative, meaning that they should have some predictive value towards our
+final goal. In simple regression settings, this is the case if the feature
+correlates with the true value. Furthermore it is helpful for features to be
+independent form each other. Dependent features could overemphasize their
+importance due to the higher frequency. And lastly, features should be simple.
+A classical example would be the task of delivery time prediction between two
+locations. Here it is advised to use the distance between the two locations
+instead of passing a pair of coordinates, which would cause the model to first
+extract knowledge about the distance of the locations. Another important thing
+to think of is normalization. Features that intrinsically live on a scale
+magnitudes larger than other features will have higher impact on the final
+output and will therefore be considered "more important" than other features.
+
+The above listed reasons all are due to the fact that traditional ML models
+usually are very sensitive to small perturbations which calls for efficient
+feature engineering. In modern deep learning settings this is not so much the
+case. Here we see that the models generally become insensitive to small
+perturbations in the data. Thats why there is generally not much preprocessing
+done. Most commonly the data is normalized into a [-1, 1] range.
+
+\bibliography{bibliography}
 \end{document}
