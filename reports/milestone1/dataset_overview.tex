@@ -9,6 +9,9 @@ Vector-quantized variational autoencoders (VQ-VAE) are versatile models that can
     ImageNet and CIFAR-10 are among the most common image datasets used in machine learning. While they were originally designed for image classification and detection tasks, their utility extends beyond these applications; by discarding the labels, they can also be leveraged for image generation tasks. An overview of these two datasets is provided in Table \ref{tab:datasets}
 
     \subsection{ImageNet}
+    Upon examining the ImageNet dataset, we found that it contains images with highly irregular resolutions, including some very small images, which was unexpected.
+As a result, we performed additional data cleaning by removing images that were excessively small.
+
     The full ImageNet dataset consists of 14.197.122 hand-labeled photographs collected from flickr and other search engines \cite{ILSVRC15}\cite{imagenet_breakdown}. The images are distributed over 21841 \textit{synonym sets} from the \textit{WordNet} \cite{wordnet} hierarchy, pursuing to cover most nouns in the English language \cite{imagenet_breakdown}.
 
     When talking about ImageNet, most authors refer to the \textit{ImageNet Large Scale Visual Recognition Challenge 2012} (ILSVRC) dataset \cite{ILSVRC15}, which is a subset of the full dataset. Hereinafter, we will refer to the ILSVRC 2012 dataset as ImageNet if not stated otherwise.

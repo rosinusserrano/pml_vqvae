@@ -1,8 +1,11 @@
 
-In the course of this machine learning project, we aim to implement a Vector-Quantized Variational Autoencoder (VQ-VAE)~\cite{vqvae} and to reproduce their results on the ImageNet and CIFAR-10 datasets.
+Over the course of this machine learning project, we aim to implement a \ac{vq} as introduced by~\cite{vqvae} and to reproduce their results.
+To begin, we focus solely on the field of 2D images, specifically using the ImageNet and CIFAR-10 datasets.
+In the later stages of this project, we will have to decide to either go more in-depth, working on increasing the models capabilities in this one field, or widening our work over the other modalities touched upon by the paper introducing the model.
 
-In the first milestone, we focus on data preprocessing and the implementation of a baseline method for subsequent comparison.
-This section will provide an overview of the datasets we will use, the preprocessing steps applied, and the baseline method we will implement. Additionally, we will outline the evaluation metrics that will be used to compare the performance of our VQ-VAE model with the baseline method.
+For the first milestone, we especially focus on the datasets and a baseline method for subsequent comparison to our final model.
 
-Upon examining the ImageNet dataset, we found that it contains images with highly irregular resolutions, including some very small images, which was unexpected.
-As a result, we performed additional data cleaning by removing images that were excessively small.
+This report is structured as follows: After a short intro into the \ac{vq}, we begin with an overview of the datasets we will use and the preprocessing and data-cleaning steps applied.
+The next section describes the baseline method we implement, followed by a section on the evaluation metrics suitable for both these baselines and our future \ac{vq} model.
+We close with a discussion of the results of our baseline models, questions we would like to solve over the course of the project and possible real world use-cases of the final model.
+
