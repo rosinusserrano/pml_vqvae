@@ -11,6 +11,8 @@ class ResidualBlock(nn.Module):
         """Create a residual block."""
         super().__init__()
 
+        self.downsample = in_channels != out_channels
+
         if kernel_size % 2 == 0:
             raise Exception("Use odd kernel size for residual block.")
 
@@ -29,5 +31,11 @@ class ResidualBlock(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Forward with skip connection."""
         out = self.conv_block(x)
-        skip = self.skip_conv(x)
+
+        if self.downsample:
+            skip = self.skip_conv(x)
+            out = out + skip
+        else:
+            out = self.skip_conv(out) + x
+
         return out + skip
