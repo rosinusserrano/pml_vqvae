@@ -2,6 +2,15 @@ import torch
 from torch import nn
 
 
+class PrintModule(nn.Module):
+    def __init__(self):
+        super().__init__()
+
+    def forward(self, x):
+        print(x.shape)
+        return x
+
+
 class ResidualBlock(nn.Module):
     """Create residual layers."""
 
@@ -16,7 +25,7 @@ class ResidualBlock(nn.Module):
         if kernel_size % 2 == 0:
             raise Exception("Use odd kernel size for residual block.")
 
-        padding = (kernel_size - 1) / 2
+        padding = int((kernel_size - 1) / 2)
 
         self.conv_block = nn.Sequential(
             nn.Conv2d(in_channels, out_channels, kernel_size, padding=padding),
@@ -38,4 +47,4 @@ class ResidualBlock(nn.Module):
         else:
             out = self.skip_conv(out) + x
 
-        return out + skip
+        return out
