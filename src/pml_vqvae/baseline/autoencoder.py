@@ -14,7 +14,9 @@ from pml_vqvae.nnutils import ResidualBlock
 # glaube hier ist ein fehler dass hier ein fehler drin ist. Die 1x1
 # convolution glaube ich müsste parallel gemacht werden um für eventuelle
 # Änderungen der anzahl der channels zu kompensieren. Habe es trotzdem erstmal
-# drin gelasse in case, dass ich es falsch verstanden habe.
+# drin gelasse in case, dass ich es falsch verstanden habe. Ich beziehe mich
+# dabei auf diese Implementierung:
+# https://github.com/pytorch/vision/blob/a9a8220e0bcb4ce66a733f8c03a1c2f6c68d22cb/torchvision/models/resnet.py#L56-L72
 
 # class ResidualBlock(torch.nn.Module):
 #     def __init__(self, in_chan, out_chan):
@@ -96,7 +98,12 @@ class BaselineAutoencoder(PML_model):
         latent = self.encoder_stack(x)
         reconstruction = self.decoder_stack(latent)
 
-        reconstruction = torch.clamp(reconstruction, 0.0, 1.0)
+        # Auch hier nur auskommentiert in Falle dass ich das falsch verstanden
+        # habe. Wollten wir die .clamp() function nicht aus dem model
+        # rausnehmen?
+
+        # reconstruction = torch.clamp(reconstruction, 0.0, 1.0)
+
         return reconstruction
 
     @staticmethod
