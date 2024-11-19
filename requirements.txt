@@ -6,3 +6,5 @@ torchvision
 scipy==1.14.1
 PyYAML
 tqdm
+wandb
+torchsummary

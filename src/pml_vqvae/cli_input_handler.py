@@ -21,30 +21,36 @@ class CLI_handler:
         self.parser.add_argument(
             "--seed",
             "-s",
+            type=int,
             help="seed for reproducibility. If not provided, the seed from the config file will be used",
         )
         self.parser.add_argument(
             "--n_train",
             help="number of training samples. If not provided, the number from the config file will be used",
+            type=int,
         )
         self.parser.add_argument(
             "--n_test",
             help="number of test samples. If not provided, the number from the config file will be used",
+            type=int,
         )
         self.parser.add_argument(
             "--batch_size",
             "-bs",
             help="batch size for training. If not provided, the batch size from the config file will be used",
+            type=int,
         )
         self.parser.add_argument(
             "--epochs",
             "-e",
             help="number of epochs for training. If not provided, the number from the config file will be used",
+            type=int,
         )
         self.parser.add_argument(
             "--learning_rate",
             "-lr",
             help="learning rate for training. If not provided, the learning rate from the config file will be used",
+            type=float,
         )
         self.parser.add_argument(
             "--model_name",
@@ -59,16 +65,19 @@ class CLI_handler:
         self.parser.add_argument(
             "--test_interval",
             "-ti",
+            type=int,
             help="interval for testing the model. If not provided, the interval from the config file will be used",
         )
         self.parser.add_argument(
             "--vis_train_interval",
             "-vti",
+            type=int,
             help="interval for visualizing the training process. If not provided, the interval from the config file will be used",
         )
         self.parser.add_argument(
             "--wandb_log",
             "-wl",
+            type=bool,
             help="log results to wandb. If not provided, the wandb log from the config file will be used",
         )
 
