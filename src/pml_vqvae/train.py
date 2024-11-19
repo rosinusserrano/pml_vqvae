@@ -129,8 +129,10 @@ def train(config: Config):
     # stolen from https://pytorch.org/vision/main/transforms.html
     transforms = v2.Compose(
         [
-            v2.RandomResizedCrop(size=(128, 128), antialias=True),
-            v2.RandomHorizontalFlip(p=0.5),
+            v2.RandomResizedCrop(
+                size=(128, 128), scale=(0.2, 1.0), ratio=1.0, antialias=True
+            ),  # scale: minmax of cropped area to original area, ratio: we desire a sqaure image
+            v2.RandomHorizontalFlip(p=0.5),  # do we need it? Does it change anything?
             v2.ToDtype(torch.float32, scale=True),
             v2.Normalize(mean=[0, 0, 0], std=[255.0, 255.0, 255.0]),
         ]
