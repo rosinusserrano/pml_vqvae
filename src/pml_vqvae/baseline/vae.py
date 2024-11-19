@@ -7,79 +7,50 @@ from __future__ import annotations
 
 import os
 
-import matplotlib.pyplot as plt
 import torch
 from torch import nn
 
-from pml_vqvae.dataset.dataloader import load_data
 from pml_vqvae.visuals import show_image_grid
 
-PROJECT_ROOT = os.getenv("PROJECT_ROOT")
-DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-
 from pml_vqvae.baseline.pml_model_interface import PML_model
+from pml_vqvae.nnutils import ResidualBlock
 
 
-def conv_block(inc: int, outc: int) -> nn.Module:
-    """Create a simple 3-layered conv block."""
-    return nn.Sequential(
-        nn.Conv2d(inc, outc, 3, padding=1),
-        nn.ReLU(),
-        nn.Conv2d(outc, outc, 3, padding=1),
-        nn.ReLU(),
-        nn.Conv2d(outc, outc, 3, padding=1),
-        nn.ReLU(),
-    )
-
-
-class ResidualBlock(nn.Module):
-    """Create residual layers."""
-
-    def __init__(self, in_channels: int, out_channels: int) -> None:
-        """Create a residual block."""
-        super().__init__()
-        self.conv_block = conv_block(in_channels, out_channels)
-        self.skip_conv = nn.Conv2d(in_channels, out_channels, 1)
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Forward with skip connection."""
-        out = self.conv_block(x)
-        skip = self.skip_conv(x)
-        return out + skip
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 
 class BaselineVariationalAutoencoder(PML_model):
     def __init__(self):
         super().__init__()
+
+        hidden_dim = 128
+        latent_dim = 6
+
         self.encoder = nn.Sequential(
-            # 128x128x3 -> 64x64x8
-            ResidualBlock(3, 8),
-            nn.MaxPool2d(2, 2),
-            # 64x64x8 -> 32x32x16
-            ResidualBlock(8, 16),
-            nn.MaxPool2d(2, 2),
-            # 32x32x16 -> 28x28x64
-            nn.Conv2d(16, 64, 5),
-            nn.ReLU(),
-            # 28x28x64 -> 28x28x2
-            nn.Conv2d(64, 16, 1),
+            # Downsampling
+            nn.Conv2d(in_channels=3, out_channels=hidden_dim, kernel_size=4, stride=2),
+            nn.Conv2d(
+                in_channels=hidden_dim, out_channels=hidden_dim, kernel_size=4, stride=2
+            ),
+            # Residuals
+            ResidualBlock(hidden_dim, hidden_dim),
+            ResidualBlock(hidden_dim, hidden_dim),
+            # Compression
+            ResidualBlock(hidden_dim, latent_dim * 2),
         )
         self.decoder = nn.Sequential(
-            # 28x28x1 -> 32x32x64
-            nn.ConvTranspose2d(8, 64, 5),
-            nn.ReLU(),
-            # 32x32x64 -> 32x32x16
-            ResidualBlock(64, 16),
-            # 32x32x16 -> 64x64x16
-            nn.ConvTranspose2d(16, 16, 4, 2, 1),
-            nn.ReLU(),
-            # 64x64x16 -> 64x64x8
-            ResidualBlock(16, 8),
-            # 64x64x8 -> 128x128x8
-            nn.ConvTranspose2d(8, 8, 4, 2, 1),
-            nn.ReLU(),
-            # 128x128x8 -> 128x128x3
-            ResidualBlock(8, 3),
+            # Decompress
+            ResidualBlock(latent_dim, hidden_dim),
+            # Residuals
+            ResidualBlock(hidden_dim, hidden_dim),
+            ResidualBlock(hidden_dim, hidden_dim),
+            # Upsampling
+            nn.ConvTranspose2d(
+                in_channels=hidden_dim, out_channels=hidden_dim, kernel_size=4, stride=2
+            ),
+            nn.ConvTranspose2d(
+                in_channels=hidden_dim, out_channels=3, kernel_size=4, stride=2
+            ),
         )
 
     def reparameterization(self, encoder_output: torch.Tensor):
@@ -124,7 +95,11 @@ class BaselineVariationalAutoencoder(PML_model):
             dim=0,
         )
 
-        loss = reconstruction_loss + 0.001 * kld_loss
+        # The division by the detached loss is done to equally balance
+        # the contribution of each loss function to the final loss
+        loss = (reconstruction_loss / reconstruction_loss.detach()) + (
+            kld_loss / kld_loss.detach()
+        )
 
         return loss, reconstruction_loss.detach(), kld_loss.detach()
 

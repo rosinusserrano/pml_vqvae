@@ -1,0 +1,33 @@
+import torch
+from torch import nn
+
+
+class ResidualBlock(nn.Module):
+    """Create residual layers."""
+
+    def __init__(
+        self, in_channels: int, out_channels: int, kernel_size: int = 3
+    ) -> None:
+        """Create a residual block."""
+        super().__init__()
+
+        if kernel_size % 2 == 0:
+            raise Exception("Use odd kernel size for residual block.")
+
+        padding = (kernel_size - 1) / 2
+
+        self.conv_block = nn.Sequential(
+            nn.Conv2d(in_channels, out_channels, kernel_size, padding=padding),
+            nn.ReLU(),
+            nn.BatchNorm2d(out_channels),
+            nn.Conv2d(out_channels, out_channels, kernel_size, padding=padding),
+            nn.ReLU(),
+            nn.BatchNorm2d(out_channels),
+        )
+        self.skip_conv = nn.Conv2d(in_channels, out_channels, 1)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Forward with skip connection."""
+        out = self.conv_block(x)
+        skip = self.skip_conv(x)
+        return out + skip

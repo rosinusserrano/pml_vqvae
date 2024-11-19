@@ -7,27 +7,34 @@ import math
 from PIL import Image
 from pml_vqvae.baseline.pml_model_interface import PML_model
 from pml_vqvae.visuals import show_image_grid
+from pml_vqvae.nnutils import ResidualBlock
 
 
-class ResidualBlock(torch.nn.Module):
-    def __init__(self, in_chan, out_chan):
-        super().__init__()
-        self.conv = torch.nn.Sequential(
-            torch.nn.Conv2d(
-                in_channels=in_chan,
-                out_channels=out_chan,
-                kernel_size=3,
-                stride=1,
-                padding=1,
-            ),
-            torch.nn.ReLU(),
-            torch.nn.Conv2d(
-                in_channels=in_chan, out_channels=out_chan, kernel_size=1, stride=1
-            ),
-        )
+# Ich habe das auskommentiert und meinen residual block genommen, weil ich
+# glaube hier ist ein fehler dass hier ein fehler drin ist. Die 1x1
+# convolution glaube ich müsste parallel gemacht werden um für eventuelle
+# Änderungen der anzahl der channels zu kompensieren. Habe es trotzdem erstmal
+# drin gelasse in case, dass ich es falsch verstanden habe.
 
-    def forward(self, x):
-        return torch.nn.functional.relu(x + self.conv(x))
+# class ResidualBlock(torch.nn.Module):
+#     def __init__(self, in_chan, out_chan):
+#         super().__init__()
+#         self.conv = torch.nn.Sequential(
+#             torch.nn.Conv2d(
+#                 in_channels=in_chan,
+#                 out_channels=out_chan,
+#                 kernel_size=3,
+#                 stride=1,
+#                 padding=1,
+#             ),
+#             torch.nn.ReLU(),
+#             torch.nn.Conv2d(
+#                 in_channels=in_chan, out_channels=out_chan, kernel_size=1, stride=1
+#             ),
+#         )
+
+#     def forward(self, x):
+#         return torch.nn.functional.relu(x + self.conv(x))
 
 
 class BaselineAutoencoder(PML_model):
@@ -38,11 +45,7 @@ class BaselineAutoencoder(PML_model):
 
         self.encoder_downsampling = torch.nn.Sequential(
             torch.nn.Conv2d(
-                in_channels=3,
-                out_channels=hidden_chan,
-                kernel_size=4,
-                stride=2,
-                padding=1,
+                in_channels=3, out_channels=hidden_chan, kernel_size=4, stride=2
             ),
             torch.nn.ReLU(),
             torch.nn.Conv2d(
@@ -50,7 +53,6 @@ class BaselineAutoencoder(PML_model):
                 out_channels=hidden_chan,
                 kernel_size=4,
                 stride=2,
-                padding=1,
             ),
             torch.nn.ReLU(),
         )
@@ -78,15 +80,10 @@ class BaselineAutoencoder(PML_model):
                 out_channels=hidden_chan,
                 kernel_size=4,
                 stride=2,
-                padding=1,
             ),
             torch.nn.ReLU(),
             torch.nn.ConvTranspose2d(
-                in_channels=hidden_chan,
-                out_channels=3,
-                kernel_size=4,
-                stride=2,
-                padding=1,
+                in_channels=hidden_chan, out_channels=3, kernel_size=4, stride=2
             ),
             torch.nn.ReLU(),
         )
