@@ -92,7 +92,7 @@ class BaselineVariationalAutoencoder(PML_model):
         ), """Use even number of output features otherwise
         one can't split them into mean and variance"""
 
-        z = torch.randn((batch_size, n_feats // 2, height, width))
+        z = torch.randn((batch_size, n_feats // 2, height, width)).to(DEVICE)
         mean = encoder_output[:, : (n_feats // 2), ...]
         logvar = encoder_output[:, (n_feats // 2) :, ...]
         z_hat = mean + torch.exp(0.5 * logvar) * z
@@ -107,29 +107,45 @@ class BaselineVariationalAutoencoder(PML_model):
         return x_hat, mean, logvar
 
     @staticmethod
-    def loss_fn():
-        return loss_function
+    def loss_fn(model_outputs, target):
+        """Computes the VAE loss which consist of reconstruction loss and KL
+        which consist of reconstruction loss and KL
+        divergence between prior distribution z ~ N(0, I) and posterior
+        distribution z|x ~ N(mean, exp(logvar)).
 
-    def backward(self, loss: torch.Tensor):
-        loss.backward()
+        Also stolen from the internet somewhere
+        """
+        reconstruction, mean, logvar = model_outputs
+
+        reconstruction_loss = torch.mean((target - reconstruction) ** 2)
+
+        kld_loss = torch.mean(
+            -0.5 * torch.sum(1 + logvar - mean**2 - logvar.exp(), dim=(1, 2, 3)),
+            dim=0,
+        )
+
+        loss = reconstruction_loss + 0.001 * kld_loss
+
+        return loss, reconstruction_loss.detach(), kld_loss.detach()
+
+    def backward(self, loss):
+        loss[0].backward()
+
+    @staticmethod
+    def collect_stats(outputs, targets, loss):
+        return {
+            "Loss": loss[0].detach().cpu().item(),
+            "Reconstruction loss": loss[1].item(),
+            "KL divergence loss": loss[2].item(),
+        }
+
+    @staticmethod
+    def visualize_output(batch, output, target, prefix: str = "", base_dir: str = "."):
+        show_image_grid(batch, outfile=os.path.join(base_dir, f"{prefix}_original.png"))
+        show_image_grid(
+            output[0],
+            outfile=os.path.join(base_dir, f"{prefix}_reconstruction.png"),
+        )
 
     def name(self):
         return "BaselineVariationalAutoencoder"
-
-
-def loss_function(reconstruction, mean, logvar, original):
-    """Computes the VAE loss which consist of reconstruction loss and KL
-    which consist of reconstruction loss and KL
-    divergence between prior distribution z ~ N(0, I) and posterior
-    distribution z|x ~ N(mean, exp(logvar)).
-    """
-    reconstruction_loss = torch.mean((original - reconstruction) ** 2)
-
-    kld_loss = torch.mean(
-        -0.5 * torch.sum(1 + logvar - mean**2 - logvar.exp(), dim=(1, 2, 3)),
-        dim=0,
-    )
-
-    loss = reconstruction_loss + 0.001 * kld_loss
-
-    return loss, reconstruction_loss.detach(), -kld_loss.detach()

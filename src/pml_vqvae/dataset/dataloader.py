@@ -40,6 +40,9 @@ def load_data(
     train_set = None
     test_set = None
 
+    if seed:
+        torch.manual_seed(seed)
+
     # if unknown dataset name
     if dataset not in DATASET_NAMES:
         print(

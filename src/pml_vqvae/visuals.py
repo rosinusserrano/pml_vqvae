@@ -1,7 +1,10 @@
 "Functions to visualize stuff"
 
 import math
+from pml_vqvae.baseline.pml_model_interface import PML_model
 import torch
+from torchvision.utils import make_grid
+
 import matplotlib.pyplot as plt
 
 
@@ -86,8 +89,66 @@ def show_image_grid(
         plt.show()
 
 
+def show_image_grid_v2(
+    x: torch.Tensor,
+    outfile: str = None,
+    rows: int = None,
+    cols: int = None,
+    inch_per_pixel: float = 0.05,
+):
+    """Plot a grid of images.
+
+    `x`: A `torch.Tensor` of shape (batch_size x n_channels x
+    height x width)
+
+    `outfile` (optional): The path to the file where the plot
+    should be saved to. If not specified, the plot is just
+    shown directly (probably not possible on the cluster)
+
+    `rows` (optional): The number of rows of the grid onto
+    which to plot the images. Only has impact if `cols` is also
+    specified, otherwise will simply figure aout the optimal
+    number of rows and cols.
+
+    `cols` (optional): Same as `rows`.
+
+    `inch_per_pixel` (optional): Defaults to 0.05
+    """
+    assert len(x.shape) == 4, "Input should be batch with dimensions BS x C x H x W"
+    n_images = x.shape[0]
+    height, width = x.shape[2], x.shape[3]
+
+    # If not specified; determine number of rows and columns
+    # based on the numbers that factorize the number of
+    # images and are closest together
+    if rows is None or cols is None:
+        # stolen from https://stackoverflow.com/questions/39248245/factor-an-integer-to-something-as-close-to-a-square-as-possible
+        rows = math.ceil(math.sqrt(n_images))
+        cols = int(n_images / rows)
+        while cols * rows != float(n_images):
+            rows -= 1
+            cols = int(n_images / rows)
+
+    image_grid = make_grid(x, nrow=cols)
+
+    # PyTorch uses the format C x H x W for images while
+    # matplotlib uses H x W x C. Thus, we have to transpose
+    # it accordingly
+    image_grid = image_grid.permute(1, 2, 0)
+
+    plt.imshow(image_grid)
+
+    # If we specified a directory to save the plot save it,
+    # otherwise simply show it.
+    if outfile is not None:
+        plt.savefig(outfile)
+    else:
+        plt.show()
+
+
+def reconstruct_images(model: PML_model, original_images: torch.Tensor):
+    reconstructions = model(original_images)
+
+
 if __name__ == "__main__":
-    images = torch.randn((32, 1, 8, 8))
-    show_image_grid(images)
-    show_image_grid(images, inch_per_pixel=0.1)
-    show_image_grid(images, outfile="test.png")
+    pass
