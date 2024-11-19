@@ -78,6 +78,7 @@ class CLI_handler:
             "--wandb_log",
             "-wl",
             type=bool,
+            action=argparse.BooleanOptionalAction,
             help="log results to wandb. If not provided, the wandb log from the config file will be used",
         )
 
