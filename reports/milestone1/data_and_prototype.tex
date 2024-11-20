@@ -5,12 +5,14 @@
 \usepackage{graphicx}
 \usepackage{hyperref}
 \usepackage{amsmath}
+\usepackage{acronym}
 \usepackage{cleveref}
 \usepackage{natbib}
 \bibliographystyle{abbrvnat}
 \setcitestyle{authoryear}
 
-\title{Project Machine Learning\\--- Milestone 1 ---} 
+
+\title{Project Machine Learning\\--- Milestone 1 ---}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                                     %
@@ -21,29 +23,24 @@
 \author{Konstantin Ausborn, Timon Palm, Marco Rosinus Serrano}
 \date{\today}
 
+\acrodef{ae}[AE]{Autoencoder}
+    \acrodef{vae}[VAE]{Variational Autoencoder}
+    \acrodef{vq}[VQ-VAE]{Vector Quantized Variatonal Autoencoder}
+    \acrodef{gan}[GAN]{Generative Adversarial Networks}
+    \acrodef{dnn}[DNN]{Deep Neural Networks}
+    \acrodef{bpp}{bits per pixel}
+    \acrodef{mse}[MSE]{Mean Squared Error}
+    \acrodef{psnr}[PSNR]{Peak Signal to Noise Ratio}
+    \acrodef{nll}[NLL]{Negative Log Likelihood}
+
 \begin{document}
-\maketitle
 
-\section{Dataset overview}
-    \begin{align}
-        1 + 1 = 3
-    \end{align}
+    \maketitle
 
-\section{Baseline method and evaluation}
+    \section{Baseline method and evaluation}\label{sec:baseline-method-and-evaluation}
+    \input{base_eval}
 
-\begin{itemize}
-    \item basically just use negative log entropy as the factor to compare
-    \item this describes the entropy of the picture generated?
-    I do not have clarity here see: https://bjlkeng.io/posts/a-note-on-using-log-likelihood-for-generative-models/
-    \item I need to understand PixelCNN better to continue
-    \item see Shannon for theory on entropy\cite{shannon}
-    \item dont use parzen windows\cite{note_on_eval}
-    \item
-    \item
-\end{itemize}
-
-\section{Discussion}
-:-)
-
-\bibliography{bibliography}
+    \section{Discussion}
+    :-)
+    \bibliography{bibliography}
 \end{document}

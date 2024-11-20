@@ -141,6 +141,7 @@ def train(config: Config):
         n_train=config.n_train,
         n_test=config.n_test,
         seed=config.seed,
+        class_idx=config.class_idx,
         batch_size=config.batch_size,
     )
 
