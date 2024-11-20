@@ -18,13 +18,16 @@ We also incorporate some experiments with the \ac{vae}, to show the progress tha
 
 The similar architecture of these baselines allow for very comparable results, since they can be tuned to be very
 close in size, training cost and latent structure.
+When constructing the neural network, we adhered to the same architecture as the \ac{vq} wherever possible,
+only deviating where it is absolutely necessary, directly around the latent layer.
 
-While much of the current work in realistic high resolution image generation is based on \ac{dnn} \cite{addsources},
+
+While much of the current work in realistic high resolution image generation is based on \ac{dnn} \cite{citationNeeded},
 the field of image compression is well researched both in-, and outside deep architectures~\cite{compression},
 and non-ML approaches are still dominant on the web as can be seen in Figure~\ref{fig:file_formats}.
 To represent this, we also use the popular JPEG format for comparisons against our lossy compression schemes.
 
-\begin{figure}[h]
+\begin{figure}[H]
     \centering
     \includegraphics[width=0.5\textwidth]{images/formats}
     \caption{Percentages of websites using various image file formats~\cite{img_file_format}}
@@ -32,6 +35,7 @@ To represent this, we also use the popular JPEG format for comparisons against o
 \end{figure}
 
 \subsection{Evaluation Metrics}\label{subsec:evaluation-metrics}
+
 \subsubsection{Compression}
 For compression, the most straightforward metric is to measure the reduction of memory required to
 store the data.
@@ -41,7 +45,7 @@ The second, and less objective measure, is image similarity after reconstruction
 While the \ac{mse} and by transfer \ac{psnr} describe pixel-wise similarity very well, it is not
 always optimal to judge perceived similarity for humans, as can be seen in Figure~\ref{fig:mse_ssim}.
 
-\begin{figure}[h]
+\begin{figure}[ht]
     \centering
     \includegraphics[width=0.8\textwidth]{images/ssim_mse}
     \caption{from~\cite{scikit-ssim}}
@@ -55,7 +59,6 @@ Even though this analysis favours \ac{ssim}, we use \ac{mse} as our loss functio
 since the \ac{vq} implementation we plan to replicate does the same, and we want to maximize comparability.
 We use \ac{ssim} for result evaluation, and add \ac{psnr} values for further work later on.
 
-
 \subsubsection{Image Generation}
 An important metric in Image Generation and the one used to argue about the strong performance of the \ac{vq} in the
 paper is the \ac{nll} normalized to the amount of pixels (dimensions) in an image, given in bits/dim.
@@ -63,8 +66,9 @@ A lower number indicates a higher likelihood of generating the test data given o
 The bits/dim number is rooted in information theory, and describes the average number of bits required to
 compress the test data with the entropy coding scheme that is optimal for a model~\cite{shannon}.
 
-Another interesting metric is the \ac{fid} introduced by~\cite{fid}, which compares the distribution of features of
-a generator with that of real images via a network trained on a big dataset, often also imagenet.
+The \ac{fid}, introduced by~\cite{fid}, is another interesting metric.
+It compares the distribution of features of a generator with that of real images via a network trained on a big
+dataset, often also imagenet.
 
 Another criterion not to be left out is the classic human turing test, as in evaluating the images by hand.
 Even though this is not scalable, it is the ultimate classifier for human perception, and can be a good starting
@@ -72,7 +76,8 @@ point.
 
 As on metrics we found, but decided not to use: The paper that introduced \ac{fid} it also shows that it is more
 consistent than a previous, similar metric, the inception score, which we will therefore leave out.
-Another sometimes utilized evaluation metric that research has shown to better avoid are Parzen Windows Estimates~\cite{note_on_eval}.
+Another sometimes utilized evaluation metric that research has shown to better avoid are Parzen Windows Estimates~
+\cite{note_on_eval}.
 
 Overall, since we have not yet implemented any Image Generation functionality, it remains to be seen which of these
 criteria are of which worth to us.
@@ -81,7 +86,7 @@ MY QUESTIONS: MORE FORMULAE FOR THE CRITERIONS?
 
 \subsection{VAE}
 Our version of the VAE follows the same basic structure as the Autoencoder
-previosly described. First we use 2 convolutional layers to downsample the
+previously described. First we use 2 convolutional layers to downsample the
 image to $1/4$ of its original height and width. Then two convolutional
 residual blocks are applied, each of which contains two convolutional layers.
 An important difference of the VAE is that its encoder outputs a random
@@ -98,7 +103,7 @@ the encoder $q(z|x)$ tries to be as close as possible to $p(z)$. Thus enabling
 us to generate new dataset samples by sampling $z \sim p(z)$ and then feeding
 it through the decoder.
 
-\subsection{Overfitting}
+\subsection{Overfitting}\label{subsec:overfitting}
 Overfitting in the context of machine learning refers to the phenomenon where
 a model instead of learning useful features from the training data, that
 generalize to unseen data, it starts "memorizing" the training data. This
