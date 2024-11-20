@@ -1,11 +1,6 @@
-Vector-quantized variational autoencoders (VQ-VAE) are versatile models that can be applied to various modalities,
-including image, video, and audio generation.
-In this project, we will primarily focus on image generation, drawing comparisons with earlier models such as the
-classic Autoencoder and Variational Autoencoder (VAE)~\cite{vae}.
-
-The original VQ-VAE paper~\cite{vqvae} trained their model on three image datasets: \textit{ImageNet}, \textit{CIFAR-10}
+The original \ac{vq} paper~\cite{vqvae} trained their model on three image datasets: \textit{ImageNet}, \textit{CIFAR-10}
 , and video frames from \textit{DeepMind Lab}.
-For this project, we will follow the same approach and train our VQ-VAE model on the ImageNet and CIFAR-10 datasets.
+For this project, we will follow the same approach and train our \ac{vq} model on the ImageNet and CIFAR-10 datasets.
 
 Image generation is an unsupervised learning task and therefore does not require labeled data.
 Potentially, any kind of image data could be used for training and testing.
@@ -13,11 +8,11 @@ However, the quality of the generated
 images is highly dependent on
 the quality and diversity of the training data.
 
-Further feature extraction methods are not necessary for the image generation task, as VQ-VAE works directly on pixel
+Further feature extraction methods are not necessary for the image generation task, as \ac{vq} works directly on pixel
 values.
-Image pixels are numerical values with a spatial correlation that VQ-VAE leverage.
-VQ-VAE follows the Encoder-Decoder structure, learning a compressed representation of the input image in latent space.
-Thus, VQ-VAE itself can be seen as a feature extraction/compression method.
+Image pixels are numerical values with a spatial correlation that \ac{vq} leverage.
+\ac{vq} follows the Encoder-Decoder structure, learning a compressed representation of the input image in latent space.
+Thus, \ac{vq} itself can be seen as a feature extraction/compression method.
 
 ImageNet and CIFAR-10 are among the most common image datasets used in machine learning.
 While they were originally designed for image classification and detection tasks, their utility extends beyond
@@ -100,12 +95,12 @@ We decided to remove such images and restrict the dataset to a minimum image siz
 \end{figure}
 
 \subsubsection{Preprocessing}
-In order to train the VQ-VAE on the ImageNet dataset, we will do the following preprocessing steps.
+In order to train the \ac{vq} on the ImageNet dataset, we will do the following preprocessing steps.
 
 \begin{itemize}
     \item \textbf{Image Resizing:}
     For training and testing, we resize all images to 128x128 pixels, similar to the paper~\cite{vqvae}.
-    \item By virtue of the VQ-VAE architecture, a latent space of 32x32x1 pixel is implied.
+    \item By virtue of the \ac{vq} architecture, a latent space of 32x32x1 pixel is implied.
     There are different ways one can resize an image.
     \item We use a composition of random cropping to extract a square image
     and resize it to 128x128 pixels with the TorchVision
