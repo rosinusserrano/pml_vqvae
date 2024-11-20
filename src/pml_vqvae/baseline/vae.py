@@ -57,7 +57,7 @@ class BaselineVariationalAutoencoder(PML_model):
                 stride=1,
             ),
             nn.ReLU(),
-            nn.BatchNorm2d(latent_dim) * 2,
+            nn.BatchNorm2d(latent_dim * 2),
         )
         self.decoder = nn.Sequential(
             # Decompress
