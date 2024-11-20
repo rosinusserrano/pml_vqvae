@@ -14,8 +14,8 @@ always optimal to judge perceived similarity for humans, as can be seen in Figur
     \label{fig:mse_ssim}
 \end{figure}
 
-To overcome these limitations we will use the \ac{ssim}, a metric working under the assumption that human visual
-perception is highly adapted for extracting structural information from a scene, that has been
+To overcome these limitations we use the \ac{ssim}, a metric working under the assumption that human visual
+perception is highly adapted for extracting structural information from a scene~\cite{ssim}.
 
 Even though this analysis favours \ac{ssim}, we use \ac{mse} as our loss function for our baseline models,
 since the \ac{vq} implementation we plan to replicate does the same, and we want to maximize comparability.
@@ -41,8 +41,8 @@ consistent than a previous, similar metric, the inception score, which we will t
 Another sometimes utilized evaluation metric that research has shown to better avoid are Parzen Windows Estimates~
 \cite{note_on_eval}.
 
-Overall, since we have not yet implemented any Image Generation functionality, it remains to be seen which of these
-criteria are of which worth to us.
+Overall, since we have not yet implemented any Image Generation functionality, the individual worth of these metrics
+is still to be evaluated by us.
 
 TODO: INTRODUCE FORMULAS FOR THE CRITERIONS
 

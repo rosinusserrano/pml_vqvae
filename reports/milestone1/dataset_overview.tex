@@ -19,11 +19,12 @@ Furthermore it is helpful for features to be independent form each other, as dep
 their importance due to the higher frequency.
 Lastly, features should be simple, \textbf{because???}.
 
-The above listed reasons all are due to the fact that traditional ML models usually are very sensitive to small
-perturbations, which calls for efficient feature engineering~\cite{citationNeeded}
-In modern deep learning settings this is not so much the case~\cite{citationNeeded}.
-Here we see that the models generally become insensitive to small perturbations in the data, which we also expect to
-apply to all of our models, be it the baselines or the final \ac{vq}.
+
+The above listed reasons are all due to the high sensitivity of traditional ML models to
+small perturbations in data, which calls for efficient feature engineering~\cite{citationNeeded}
+\textbf{maybe explain in 2 sentences how such features were found}
+In modern deep learning settings, this sensitivity has decreased significantly~\cite{citationNeeded}, which we also
+expect to apply to all of our models, both the baselines and the final \ac{vq}.
 
 As \ac{vq} works directly on pixel values, further feature extraction methods are not necessary.
 Image pixels are numerical values with a spatial correlation that \ac{vq} leverage.
@@ -67,7 +68,7 @@ illustrated in Figure~\ref{fig:imnet_dimensions}.
 
 \begin{figure}[ht]
     \centering
-    \includegraphics[width=0.74\textwidth]{../../sample_images/imnet_dimension}
+    \includegraphics[width=0.5\textwidth]{../../sample_images/imnet_dimension}
     \caption{Eight diversity dimensions of the ImageNet dataset~\cite{imagenet_breakdown}}
     \label{fig:imnet_dimensions}
 \end{figure}
