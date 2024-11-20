@@ -7,33 +7,42 @@ import math
 from PIL import Image
 from pml_vqvae.baseline.pml_model_interface import PML_model
 from pml_vqvae.visuals import show_image_grid
+from pml_vqvae.nnutils import ResidualBlock
 
 
-class ResidualBlock(torch.nn.Module):
-    def __init__(self, in_chan, out_chan):
-        super().__init__()
-        self.conv = torch.nn.Sequential(
-            torch.nn.Conv2d(
-                in_channels=in_chan,
-                out_channels=out_chan,
-                kernel_size=3,
-                stride=1,
-                padding=1,
-            ),
-            torch.nn.ReLU(),
-            torch.nn.Conv2d(
-                in_channels=in_chan, out_channels=out_chan, kernel_size=1, stride=1
-            ),
-        )
+# Ich habe das auskommentiert und meinen residual block genommen, weil ich
+# glaube hier ist ein fehler dass hier ein fehler drin ist. Die 1x1
+# convolution glaube ich müsste parallel gemacht werden um für eventuelle
+# Änderungen der anzahl der channels zu kompensieren. Habe es trotzdem erstmal
+# drin gelasse in case, dass ich es falsch verstanden habe. Ich beziehe mich
+# dabei auf diese Implementierung:
+# https://github.com/pytorch/vision/blob/a9a8220e0bcb4ce66a733f8c03a1c2f6c68d22cb/torchvision/models/resnet.py#L56-L72
 
-    def forward(self, x):
-        return torch.nn.functional.relu(x + self.conv(x))
+# class ResidualBlock(torch.nn.Module):
+#     def __init__(self, in_chan, out_chan):
+#         super().__init__()
+#         self.conv = torch.nn.Sequential(
+#             torch.nn.Conv2d(
+#                 in_channels=in_chan,
+#                 out_channels=out_chan,
+#                 kernel_size=3,
+#                 stride=1,
+#                 padding=1,
+#             ),
+#             torch.nn.ReLU(),
+#             torch.nn.Conv2d(
+#                 in_channels=in_chan, out_channels=out_chan, kernel_size=1, stride=1
+#             ),
+#         )
+
+#     def forward(self, x):
+#         return torch.nn.functional.relu(x + self.conv(x))
 
 
 class BaselineAutoencoder(PML_model):
     def __init__(self):
         hidden_chan = 128
-        latent_chan = 6
+        latent_chan = 2
         super().__init__()
 
         self.encoder_downsampling = torch.nn.Sequential(
@@ -45,6 +54,7 @@ class BaselineAutoencoder(PML_model):
                 padding=1,
             ),
             torch.nn.ReLU(),
+            torch.nn.BatchNorm2d(hidden_chan),
             torch.nn.Conv2d(
                 in_channels=hidden_chan,
                 out_channels=hidden_chan,
@@ -53,20 +63,35 @@ class BaselineAutoencoder(PML_model):
                 padding=1,
             ),
             torch.nn.ReLU(),
+            torch.nn.BatchNorm2d(hidden_chan),
         )
         self.encoder_residual = torch.nn.Sequential(
             ResidualBlock(hidden_chan, hidden_chan),
             ResidualBlock(hidden_chan, hidden_chan),
         )
-        self.encoder_compression = torch.nn.Conv2d(
-            in_channels=hidden_chan, out_channels=latent_chan, kernel_size=1, stride=1
+        self.encoder_compression = torch.nn.Sequential(
+            torch.nn.Conv2d(
+                in_channels=hidden_chan,
+                out_channels=latent_chan,
+                kernel_size=1,
+                stride=1,
+            ),
+            torch.nn.ReLU(),
+            torch.nn.BatchNorm2d(latent_chan),
         )
         self.encoder_stack = torch.nn.Sequential(
             self.encoder_downsampling, self.encoder_residual, self.encoder_compression
         )
 
-        self.decoder_decompression = torch.nn.Conv2d(
-            in_channels=latent_chan, out_channels=hidden_chan, kernel_size=1, stride=1
+        self.decoder_decompression = torch.nn.Sequential(
+            torch.nn.Conv2d(
+                in_channels=latent_chan,
+                out_channels=hidden_chan,
+                kernel_size=1,
+                stride=1,
+            ),
+            torch.nn.ReLU(),
+            torch.nn.BatchNorm2d(hidden_chan),
         )
         self.decoder_residual = torch.nn.Sequential(
             ResidualBlock(hidden_chan, hidden_chan),
@@ -81,6 +106,7 @@ class BaselineAutoencoder(PML_model):
                 padding=1,
             ),
             torch.nn.ReLU(),
+            torch.nn.BatchNorm2d(hidden_chan),
             torch.nn.ConvTranspose2d(
                 in_channels=hidden_chan,
                 out_channels=3,
@@ -88,7 +114,6 @@ class BaselineAutoencoder(PML_model):
                 stride=2,
                 padding=1,
             ),
-            torch.nn.ReLU(),
         )
 
         self.decoder_stack = torch.nn.Sequential(
@@ -99,7 +124,12 @@ class BaselineAutoencoder(PML_model):
         latent = self.encoder_stack(x)
         reconstruction = self.decoder_stack(latent)
 
-        reconstruction = torch.clamp(reconstruction, 0.0, 1.0)
+        # Auch hier nur auskommentiert in Falle dass ich das falsch verstanden
+        # habe. Wollten wir die .clamp() function nicht aus dem model
+        # rausnehmen?
+
+        # reconstruction = torch.clamp(reconstruction, 0.0, 1.0)
+
         return reconstruction
 
     @staticmethod
@@ -168,7 +198,3 @@ def main():
             plt.show()
 
 """
-
-
-if __name__ == "__main__":
-    main()
