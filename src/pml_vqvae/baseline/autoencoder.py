@@ -106,6 +106,7 @@ class BaselineAutoencoder(PML_model):
                 padding=1,
             ),
             torch.nn.ReLU(),
+            torch.nn.BatchNorm2d(hidden_chan),
             torch.nn.ConvTranspose2d(
                 in_channels=hidden_chan,
                 out_channels=3,
@@ -113,7 +114,6 @@ class BaselineAutoencoder(PML_model):
                 stride=2,
                 padding=1,
             ),
-            torch.nn.ReLU(),
         )
 
         self.decoder_stack = torch.nn.Sequential(
