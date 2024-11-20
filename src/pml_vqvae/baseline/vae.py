@@ -24,13 +24,13 @@ class BaselineVariationalAutoencoder(PML_model):
         super().__init__()
 
         hidden_dim = 128
-        latent_dim = 6
+        latent_dim = 2
 
         self.encoder = nn.Sequential(
             # Downsampling
-            nn.Conv2d(in_channels=3, out_channels=hidden_dim, kernel_size=4, stride=2),
+            nn.Conv2d(in_channels=3, out_channels=hidden_dim, kernel_size=4, stride=2, padding=1),
             nn.Conv2d(
-                in_channels=hidden_dim, out_channels=hidden_dim, kernel_size=4, stride=2
+                in_channels=hidden_dim, out_channels=hidden_dim, kernel_size=4, stride=2, padding=1
             ),
             # Residuals
             ResidualBlock(hidden_dim, hidden_dim),
@@ -46,10 +46,10 @@ class BaselineVariationalAutoencoder(PML_model):
             ResidualBlock(hidden_dim, hidden_dim),
             # Upsampling
             nn.ConvTranspose2d(
-                in_channels=hidden_dim, out_channels=hidden_dim, kernel_size=4, stride=2
+                in_channels=hidden_dim, out_channels=hidden_dim, kernel_size=4, stride=2, padding=1
             ),
             nn.ConvTranspose2d(
-                in_channels=hidden_dim, out_channels=3, kernel_size=4, stride=2
+                in_channels=hidden_dim, out_channels=3, kernel_size=4, stride=2, padding=1
             ),
         )
 
@@ -97,7 +97,7 @@ class BaselineVariationalAutoencoder(PML_model):
 
         # The division by the detached loss is done to equally balance
         # the contribution of each loss function to the final loss
-        loss = (reconstruction_loss / reconstruction_loss.detach()) + (
+        loss = (reconstruction_loss / reconstruction_loss.detach()) + 0.01 * (
             kld_loss / kld_loss.detach()
         )
 

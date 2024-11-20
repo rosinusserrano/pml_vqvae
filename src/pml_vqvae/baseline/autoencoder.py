@@ -42,12 +42,16 @@ from pml_vqvae.nnutils import ResidualBlock
 class BaselineAutoencoder(PML_model):
     def __init__(self):
         hidden_chan = 128
-        latent_chan = 6
+        latent_chan = 2
         super().__init__()
 
         self.encoder_downsampling = torch.nn.Sequential(
             torch.nn.Conv2d(
-                in_channels=3, out_channels=hidden_chan, kernel_size=4, stride=2
+                in_channels=3,
+                out_channels=hidden_chan,
+                kernel_size=4,
+                stride=2,
+                padding=1
             ),
             torch.nn.ReLU(),
             torch.nn.Conv2d(
@@ -55,6 +59,7 @@ class BaselineAutoencoder(PML_model):
                 out_channels=hidden_chan,
                 kernel_size=4,
                 stride=2,
+                padding=1
             ),
             torch.nn.ReLU(),
         )
@@ -82,10 +87,15 @@ class BaselineAutoencoder(PML_model):
                 out_channels=hidden_chan,
                 kernel_size=4,
                 stride=2,
+                padding=1
             ),
             torch.nn.ReLU(),
             torch.nn.ConvTranspose2d(
-                in_channels=hidden_chan, out_channels=3, kernel_size=4, stride=2
+                in_channels=hidden_chan,
+                out_channels=3,
+                kernel_size=4,
+                stride=2,
+                padding=1
             ),
             torch.nn.ReLU(),
         )
