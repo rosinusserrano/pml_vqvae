@@ -52,12 +52,12 @@ class BaselineVariationalAutoencoder(PML_model):
             # Compression
             nn.Conv2d(
                 in_channels=hidden_dim,
-                out_channels=latent_dim,
+                out_channels=latent_dim * 2,
                 kernel_size=1,
                 stride=1,
             ),
             nn.ReLU(),
-            nn.BatchNorm2d(latent_dim),
+            nn.BatchNorm2d(latent_dim) * 2,
         )
         self.decoder = nn.Sequential(
             # Decompress
