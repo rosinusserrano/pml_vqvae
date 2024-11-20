@@ -10,6 +10,8 @@ import os
 import torch
 from torch import nn
 
+from trochsummary import summary
+
 from pml_vqvae.visuals import show_image_grid
 
 from pml_vqvae.baseline.pml_model_interface import PML_model
@@ -124,3 +126,8 @@ class BaselineVariationalAutoencoder(PML_model):
 
     def name(self):
         return "BaselineVariationalAutoencoder"
+
+
+if __name__ = "__main__":
+    model = BaselineVariationalAutoencoder()
+    summary(model, (16, 3, 128, 128))
