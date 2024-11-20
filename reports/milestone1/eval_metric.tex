@@ -48,36 +48,3 @@ TODO: INTRODUCE FORMULAS FOR THE CRITERIONS
 
 \subsection{Class differences}
 
-\subsection{Good Features}\label{subsec:good-features}
-In classical machine learning, a set of features is ``good'', if it helps the
-model to achieve a certain task.
-This implies that the features should be
-informative, meaning that they should have some predictive value towards our
-final goal.
-In simple regression settings, this is the case if the feature
-correlates with the true value.
-Furthermore it is helpful for features to be
-independent form each other.
-Dependent features could overemphasize their
-importance due to the higher frequency.
-And lastly, features should be simple.
-A classical example would be the task of delivery time prediction between two
-locations.
-Here it is advised to use the distance between the two locations
-instead of passing a pair of coordinates, which would cause the model to first
-extract knowledge about the distance of the locations.
-Another important thing
-to think of is normalization.
-Features that intrinsically live on a scale
-magnitudes larger than other features will have higher impact on the final
-output and will therefore be considered ``more important'' than other features.
-
-The above listed reasons all are due to the fact that traditional ML models
-usually are very sensitive to small perturbations which calls for efficient
-feature engineering.
-In modern deep learning settings this is not so much the
-case.
-Here we see that the models generally become insensitive to small
-perturbations in the data.
-Thats why there is generally not much preprocessing done.
-Most commonly the data is normalized into a [-1, 1] range.

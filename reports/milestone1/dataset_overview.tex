@@ -10,6 +10,21 @@ Overall, the image generation and reconstruction performance of a model is highl
 of the training data.
 
 \subsection{Feature Extraction}\label{subsec:feature-extraction}
+In machine learning, a set of features is ``good'' if it allows the model to achieve a certain task
+efficiently.
+For traditional, non-deep models, that means that features should aim to be informative, meaning that
+they should have some predictive value towards the final goal.
+In simple regression settings, this is the case if the feature correlates with the true value.
+Furthermore it is helpful for features to be independent form each other, as dependent features could overemphasize
+their importance due to the higher frequency.
+And lastly, features should be simple, \textbf{because???}.
+
+The above listed reasons all are due to the fact that traditional ML models usually are very sensitive to small
+perturbations, which calls for efficient feature engineering~\cite{citationNeeded}
+In modern deep learning settings this is not so much the case~\cite{citationNeeded}.
+Here we see that the models generally become insensitive to small perturbations in the data, which we also expect to
+apply to all of our models, be it the baselines or the final \ac{vq}.
+
 As \ac{vq} works directly on pixel values, further feature extraction methods are not necessary.
 Image pixels are numerical values with a spatial correlation that \ac{vq} leverage.
 Since \ac{vq} follows the Encoder-Decoder structure, learning a compressed representation of the input image in latent
