@@ -51,31 +51,47 @@ class BaselineAutoencoder(PML_model):
                 out_channels=hidden_chan,
                 kernel_size=4,
                 stride=2,
-                padding=1
+                padding=1,
             ),
             torch.nn.ReLU(),
+            torch.nn.BatchNorm2d(hidden_chan),
             torch.nn.Conv2d(
                 in_channels=hidden_chan,
                 out_channels=hidden_chan,
                 kernel_size=4,
                 stride=2,
-                padding=1
+                padding=1,
             ),
             torch.nn.ReLU(),
+            torch.nn.BatchNorm2d(hidden_chan),
         )
         self.encoder_residual = torch.nn.Sequential(
             ResidualBlock(hidden_chan, hidden_chan),
             ResidualBlock(hidden_chan, hidden_chan),
         )
-        self.encoder_compression = torch.nn.Conv2d(
-            in_channels=hidden_chan, out_channels=latent_chan, kernel_size=1, stride=1
+        self.encoder_compression = torch.nn.Sequential(
+            torch.nn.Conv2d(
+                in_channels=hidden_chan,
+                out_channels=latent_chan,
+                kernel_size=1,
+                stride=1,
+            ),
+            torch.nn.ReLU(),
+            torch.nn.BatchNorm2d(latent_chan),
         )
         self.encoder_stack = torch.nn.Sequential(
             self.encoder_downsampling, self.encoder_residual, self.encoder_compression
         )
 
-        self.decoder_decompression = torch.nn.Conv2d(
-            in_channels=latent_chan, out_channels=hidden_chan, kernel_size=1, stride=1
+        self.decoder_decompression = torch.nn.Sequential(
+            torch.nn.Conv2d(
+                in_channels=latent_chan,
+                out_channels=hidden_chan,
+                kernel_size=1,
+                stride=1,
+            ),
+            torch.nn.ReLU(),
+            torch.nn.BatchNorm2d(hidden_chan),
         )
         self.decoder_residual = torch.nn.Sequential(
             ResidualBlock(hidden_chan, hidden_chan),
@@ -87,7 +103,7 @@ class BaselineAutoencoder(PML_model):
                 out_channels=hidden_chan,
                 kernel_size=4,
                 stride=2,
-                padding=1
+                padding=1,
             ),
             torch.nn.ReLU(),
             torch.nn.ConvTranspose2d(
@@ -95,7 +111,7 @@ class BaselineAutoencoder(PML_model):
                 out_channels=3,
                 kernel_size=4,
                 stride=2,
-                padding=1
+                padding=1,
             ),
             torch.nn.ReLU(),
         )
@@ -182,7 +198,3 @@ def main():
             plt.show()
 
 """
-
-
-if __name__ == "__main__":
-    main()

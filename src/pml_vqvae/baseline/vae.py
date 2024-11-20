@@ -10,8 +10,6 @@ import os
 import torch
 from torch import nn
 
-from trochsummary import summary
-
 from pml_vqvae.visuals import show_image_grid
 
 from pml_vqvae.baseline.pml_model_interface import PML_model
@@ -30,28 +28,66 @@ class BaselineVariationalAutoencoder(PML_model):
 
         self.encoder = nn.Sequential(
             # Downsampling
-            nn.Conv2d(in_channels=3, out_channels=hidden_dim, kernel_size=4, stride=2, padding=1),
             nn.Conv2d(
-                in_channels=hidden_dim, out_channels=hidden_dim, kernel_size=4, stride=2, padding=1
+                in_channels=3,
+                out_channels=hidden_dim,
+                kernel_size=4,
+                stride=2,
+                padding=1,
             ),
+            nn.ReLU(),
+            nn.BatchNorm2d(hidden_dim),
+            nn.Conv2d(
+                in_channels=hidden_dim,
+                out_channels=hidden_dim,
+                kernel_size=4,
+                stride=2,
+                padding=1,
+            ),
+            nn.ReLU(),
+            nn.BatchNorm2d(hidden_dim),
             # Residuals
             ResidualBlock(hidden_dim, hidden_dim),
             ResidualBlock(hidden_dim, hidden_dim),
             # Compression
-            ResidualBlock(hidden_dim, latent_dim * 2),
+            nn.Conv2d(
+                in_channels=hidden_dim,
+                out_channels=latent_dim,
+                kernel_size=1,
+                stride=1,
+            ),
+            nn.ReLU(),
+            nn.BatchNorm2d(latent_dim),
         )
         self.decoder = nn.Sequential(
             # Decompress
-            ResidualBlock(latent_dim, hidden_dim),
+            nn.Conv2d(
+                in_channels=latent_dim,
+                out_channels=hidden_dim,
+                kernel_size=1,
+                stride=1,
+            ),
+            nn.ReLU(),
+            nn.BatchNorm2d(hidden_dim),
             # Residuals
             ResidualBlock(hidden_dim, hidden_dim),
             ResidualBlock(hidden_dim, hidden_dim),
             # Upsampling
             nn.ConvTranspose2d(
-                in_channels=hidden_dim, out_channels=hidden_dim, kernel_size=4, stride=2, padding=1
+                in_channels=hidden_dim,
+                out_channels=hidden_dim,
+                kernel_size=4,
+                stride=2,
+                padding=1,
             ),
+            nn.ReLU(),
+            nn.BatchNorm2d(hidden_dim),
             nn.ConvTranspose2d(
-                in_channels=hidden_dim, out_channels=3, kernel_size=4, stride=2, padding=1
+                in_channels=hidden_dim,
+                out_channels=3,
+                kernel_size=4,
+                stride=2,
+                padding=1,
             ),
         )
 
@@ -128,6 +164,8 @@ class BaselineVariationalAutoencoder(PML_model):
         return "BaselineVariationalAutoencoder"
 
 
-if __name__ = "__main__":
+if __name__ == "__main__":
     model = BaselineVariationalAutoencoder()
-    summary(model, (16, 3, 128, 128))
+    example_input = torch.randn((16, 3, 128, 128))
+
+    model(example_input)
