@@ -17,7 +17,7 @@ they should have some predictive value towards the final goal.
 In simple regression settings, this is the case if the feature correlates with the true value.
 Furthermore it is helpful for features to be independent form each other, as dependent features could overemphasize
 their importance due to the higher frequency.
-And lastly, features should be simple, \textbf{because???}.
+Lastly, features should be simple, \textbf{because???}.
 
 The above listed reasons all are due to the fact that traditional ML models usually are very sensitive to small
 perturbations, which calls for efficient feature engineering~\cite{citationNeeded}
@@ -65,7 +65,7 @@ Hereinafter, we will refer to this subset as ImageNet if not stated otherwise.
 The ImageNet dataset is designed to capture a diverse range of real-world scenarios across eight dimensions, as
 illustrated in Figure~\ref{fig:imnet_dimensions}.
 
-\begin{figure}[h]
+\begin{figure}[ht]
     \centering
     \includegraphics[width=0.74\textwidth]{../../sample_images/imnet_dimension}
     \caption{Eight diversity dimensions of the ImageNet dataset~\cite{imagenet_breakdown}}
@@ -85,7 +85,7 @@ like \textit{"black-and-tan coonhound"}, \textit{"otterhound"} and \textit{"Engl
 As our goal for this project does not focus on generating image of different dog breeds, and just generating a
 believable dog image would likely suffice, we think our position is further strengthened.
 
-\begin{figure}[h]
+\begin{figure}[ht]
     \centering
     \includegraphics[width=0.7\textwidth]{../../sample_images/imagenet_dist}
     \caption{Distribution of images per class in the ImageNet dataset}
@@ -147,7 +147,7 @@ Hence, we will only apply MinMax Normalizing and potentially Standardizing, same
 
 Example images from the CIFAR-10 dataset are shown in figure~\ref{fig:cifar10_example_normalized}.
 
-\begin{table}[h]
+\begin{table}[ht]
     \begin{tabular}{lllll}
         Dataset  & \# train images & \# test images & \# classes & image size           \\ \hline \hline
         ILSVRC   & 1.281.167       & 100.000        & 1000       & 8x10px - 9331x6530px \\
