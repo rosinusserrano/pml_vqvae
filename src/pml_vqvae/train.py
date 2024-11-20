@@ -142,6 +142,7 @@ def train(config: Config):
         n_test=config.n_test,
         seed=config.seed,
         class_idx=config.class_idx,
+        batch_size=config.batch_size,
     )
 
     optimizer = Adam(model.parameters(), lr=config.learning_rate)

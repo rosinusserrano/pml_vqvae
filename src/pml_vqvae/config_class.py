@@ -80,7 +80,13 @@ class Config:
         """Check if the configuration is complete"""
         for key, value in self.__dict__.items():
             if value is None:
-                if key not in ["description", "test_interval", "vis_train_interval"]:
+                if key not in [
+                    "description",
+                    "test_interval",
+                    "vis_train_interval",
+                    "n_train",
+                    "n_test",
+                ]:
                     raise ValueError(f"Parameter {key} is not set in the configuration")
 
             if key == "dataset" and value not in AVAIL_DATASETS:
