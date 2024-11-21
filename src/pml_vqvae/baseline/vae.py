@@ -113,7 +113,7 @@ class BaselineVariationalAutoencoder(PML_model):
         z_hat, mean, logvar = self.reparameterization(z)
         x_hat = self.decoder(z_hat)
 
-        return x_hat, mean, logvar
+        return (x_hat, mean, logvar) if self.training else x_hat
 
     @staticmethod
     def loss_fn(model_outputs, target):
