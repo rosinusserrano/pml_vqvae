@@ -3,42 +3,35 @@ In order to judge different performance measures of our final model, we require 
 Such a baseline needs to align to the collection of tasks described in Section~\ref{sec:introduction} as close as
 possible to allow for good comparability of results.
 
-While there exist multiple machine learning approaches with a setup similar to that of the \ac{vq}
-i.e.\ generative models with latent representations such as \ac{gan}, differences in the details make these hard to
-compare against each other.
-When sticking to the example of \ac{gan} as described by~\cite{gan}, one key difference is that similar to the
-\ac{vq} after training the PixelCNN, the latents represent a distribution that is close to that of the training
-data, but can not be created by encoding real world data.
+There exist multiple machine learning approaches with a setup similar to that of the \ac{vq}
+i.e.\ generative models with latent representations such as \ac{gan}.
+Differences in architectural details make these hard to compare against each other.
+Revisiting the example of \ac{gan} as described by~\cite{gan}, the latents, like those in the \ac{vq} after
+training the PixelCNN, approximate a distribution similar to the training data.
+However, a key difference is that these latents cannot be obtained by encoding real-world data, making it impossible to
+directly compare the compression task.
 
 \subsection{Autoencoder}\label{subsec:autoencoder}
-Since it is the original model that the non-quantized \ac{vae} is based on, which in turn later was developed into the
-\ac{vq} and because it also fulfils our requirement of sufficient simplicity, we chose a basic \ac{ae} as our general
-baseline method.
+We selected a basic \ac{ae} as our general baseline method because it serves as the foundation for the original
+\ac{vae}, which was later developed into the \ac{vq}.
 
-A very basic \ac{ae} as described by~\cite{autoenc} and illustrated in Figure~\ref{fig:ae}, is a neural
-network that is fed
-the
-original data, in our case the
-image, and then compresses the data down to a lower dimension using one or more hidden and fully connected layers,
-the encoding stage.
-The result of this encoding stage is fed into a latent layer, whose dimensions decide the size of the compressed
-representation.
-The output of this latent layer, the actual latent, is than upsampled by a decoding stage, which follows an inverted
-structure of the encoding stage.
-The output of the net, the reconstruction, is now of the same shape as the input data and can be directly compared
-to it.
+A basic \ac{ae}, as described by~\cite{autoenc} and shown in Figure~\ref{fig:ae}, is a neural network designed to compress and reconstruct data. In our case, the input is an image. During the encoding stage, the network compresses the input data to a lower-dimensional representation using one or more fully connected hidden layers.
+The output of this stage is passed to a latent layer, whose dimensionality determines the size of the compressed representation.
+
+The decoding stage, which mirrors the structure of the encoding stage, upsamples the latent representation to reconstruct the original input.
+The final output, known as the reconstruction, has the same shape as the input data, allowing for a direct comparison between the two.
 
 The model can be trained by applying gradient descent on some form of cost function that describes reconstruction error
 like \ac{mse}, theoretically pushing the network to encode the information most important to deconstruction in the
 latent.
 
-The similarities to \ac{vq} allow for very comparable results, since the \ac{ae} can be tuned to be very
-close in size, training and inference cost.
-During implementation of the \ac{ae} baseline, we adhere to the same architecture as the \ac{vq} wherever possible,
-exchanging the fully connected layers of the standard \ac{ae} with the downsampling layers and
+The similarities to \ac{vq} enable highly comparable results, as the \ac{ae} can be adjusted to closely match the
+size, training requirements, and inference costs of the \ac{vq}.
+In implementing the \ac{ae} baseline, we follow the same architecture as the \ac{vq} wherever feasible.
+Specifically, we replace the fully connected layers of the standard \ac{ae} with the downsampling layers and
 residual blocks from the \ac{vq} implementation in our reference paper.
-This will likely increase its power significantly, as convolutional \ac{ae} have been shown to be superior to the
-basic feed-forward \ac{ae} on the realm of image reconstruction by~\cite{convae}.
+This modification is expected to significantly enhance performance, as convolutional \ac{ae}s have been shown to
+outperform basic feed-forward \ac{ae}s in image reconstruction tasks, as demonstrated by~\cite{convae}.
 
 \begin{figure}[H]
     \centering
@@ -78,8 +71,8 @@ This is very likely due to the large dataset size and the inductive bias of the 
 
 \subsection{Non-ML Baseline: JPEG}\label{subsec:jpeg}
 While much of the current work in realistic high resolution image generation is based on \ac{dnn}~\cite{citationNeeded},
-the field of image compression is well researched both in-, and outside deep architectures~\cite{compression},
-and non-ML approaches are still dominant on the web as can be seen in Figure~\ref{fig:file_formats}.
+the field of image compression is well researched both in-, and outside deep architectures~\cite{compression}.
+Non-ML approaches are still dominant on the web as can be seen in Figure~\ref{fig:file_formats}.
 To represent this, we also use the popular JPEG format for comparisons against our lossy compression schemes.
 
 \begin{figure}[H]
