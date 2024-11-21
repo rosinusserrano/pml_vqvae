@@ -16,14 +16,14 @@ For traditional, non-deep models, that means that features should aim to be info
 they should have some predictive value towards the final goal.
 In simple regression settings, this is the case if the feature correlates with the true value.
 Furthermore it is helpful for features to be independent form each other, as dependent features could overemphasize
-their importance due to the higher frequency.
+their importance due to the higher frequency \cite{featengineer}.
 Lastly, features should be simple, \textbf{because???}.
 
 
 The above listed reasons are all due to the high sensitivity of traditional ML models to
-small perturbations in data, which calls for efficient feature engineering~\cite{citationNeeded}
+small perturbations in data, which calls for efficient feature engineering~\cite{lecun2015deep}
 \textbf{maybe explain in 2 sentences how such features were found}
-In modern deep learning settings, this sensitivity has decreased significantly~\cite{citationNeeded}, which we also
+In modern deep learning settings, this sensitivity has decreased significantly~\cite{lecun2015deep}, which we also
 expect to apply to all of our models, both the baselines and the final \ac{vq}.
 
 As \ac{vq} works directly on pixel values, further feature extraction methods are not necessary.
