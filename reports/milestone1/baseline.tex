@@ -46,6 +46,7 @@ outperform basic feed-forward \ac{ae}s in image reconstruction tasks, as demonst
     \label{fig:ae}
 \end{figure}
 
+\subsection{Variational AE}\label{subsec:variational-ae}
 There exist multiple machine learning approaches with a setup similar to that of the \ac{vq}
 i.e.\ generative models with latent representations such as \ac{gan}.
 Differences in architectural details make these hard to compare against each other.
@@ -54,7 +55,6 @@ training the PixelCNN, approximate a distribution similar to the training data.
 However, a key difference is that these latents cannot be obtained by encoding real-world data, making it impossible to
 directly compare the compression task.
 
-\subsection{Variational AE}\label{subsec:variational-ae}
 Examining the differences between the different evolutionary steps towards the \ac{vq} could prove to be valuable
 for our understanding of its performance.
 Therefore, we also implement a \ac{vae}, which substantially differs from the \ac{ae} in the way that latents are
