@@ -1,6 +1,7 @@
-The \ac{vq} described in the paper both learns useful and compact, discrete representations of real world data,
-and generates new samples in this representation space and decoding them back to the original data space.
-A good baseline would align to this collection of tasks as close as possible.
+
+In order to judge different performance measures of our final model, we require a baseline.
+Such a baseline needs to align to the collection of tasks described in Section~\ref{sec:introduction} as close as
+possible to allow for good comparability of results.
 
 While there exist multiple machine learning approaches with a setup similar to that of the \ac{vq}
 i.e.\ generative models with latent representations such as \ac{gan}, differences in the details make these hard to
@@ -41,7 +42,7 @@ basic feed-forward \ac{ae} on the realm of image reconstruction by~\cite{convae}
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.7\textwidth]{images/ae}
+    \includegraphics[width=0.5\textwidth]{images/ae}
     \caption{Illustration of a basic \ac{ae} architecture from~\cite{ae_pic}}
     \label{fig:ae}
 \end{figure}
@@ -83,7 +84,7 @@ To represent this, we also use the popular JPEG format for comparisons against o
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.5\textwidth]{images/formats}
+    \includegraphics[width=0.3\textwidth]{images/formats}
     \caption{Percentages of websites using various image file formats~\cite{img_file_format}}
     \label{fig:file_formats}
 \end{figure}

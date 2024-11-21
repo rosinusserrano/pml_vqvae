@@ -1,3 +1,7 @@
+The metrics usable for the tasks described in Section~\ref{sec:introduction} are manifold.
+As not all metrics are suitable for all the work done by the model.
+We therefore split this section into two subsections.
+
 \subsection{Compression}\label{subsec:compression}
 For compression, the most straightforward metric is to measure the reduction of memory required to
 store the data.
@@ -9,8 +13,8 @@ always optimal to judge perceived similarity for humans, as can be seen in Figur
 
 \begin{figure}[ht]
     \centering
-    \includegraphics[width=0.8\textwidth]{images/ssim_mse}
-    \caption{from~\cite{scikit-ssim}}
+    \includegraphics[width=0.6\textwidth]{images/ssim_mse}
+    \caption{Two images with the same \ac{mse} with reference from~\cite{scikit-ssim}}
     \label{fig:mse_ssim}
 \end{figure}
 
@@ -45,6 +49,3 @@ Overall, since we have not yet implemented any Image Generation functionality, t
 is still to be evaluated by us.
 
 TODO: INTRODUCE FORMULAS FOR THE CRITERIONS
-
-\subsection{Class differences}
-
