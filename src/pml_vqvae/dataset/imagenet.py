@@ -28,8 +28,6 @@ def filter_small_imgs(imgnet: ImageNet):
     small_imgs = json.load(open("src/pml_vqvae/dataset/small_images.json"))
     indexes = small_imgs["idx"]
 
-    print(len(indexes))
-
     imgnet.imgs = [imgnet.imgs[i] for i in range(len(imgnet.imgs)) if i not in indexes]
     imgnet.samples = imgnet.imgs
     imgnet.targets = [img[1] for img in imgnet.imgs]
