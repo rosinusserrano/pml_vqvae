@@ -64,7 +64,7 @@ The full ImageNet dataset consists of 14.197.122 hand-labeled photographs collec
 engines, distributed over 21841 \textit{synonym sets} from the
 \textit{WordNet} hierarchy, pursuing to cover most nouns in the English language as described by~\cite{wordnet}.
 
-When talking about ImageNet, most authors refer to the \ac{ilsvrc} dataset.
+When talking about ImageNet, many authors refer to the \ac{ilsvrc} dataset.
 It is a subset of the full dataset, containing 1.281.167 unique labeled training images and 100.000 labeled test
 images distributed over 1000 classes, with an additional 50.000 unlabeled validation images for benchmarking
 purposes, which we will not consider.
@@ -84,18 +84,21 @@ The dataset aims to replicate the distribution of natural photographs, specifica
 examples across the eight dimensions illustrated in Figure~\ref{fig:imnet_dimensions}.
 Thereby, models trained on it can generalize along these.
 
-\textbf{Class Balance}
-The majority of classes contain 1300 examples, with some classes having fewer examples, as shown in
-Figure~\ref{fig:imnet_dist}.
 
-Based on this, we access the class distribution in the ImageNet dataset sufficiently balanced to not introduce bias, as
-most classes contain 1300 images, and the classes with fewer examples are still represented by a reasonable number
-of images, with all of them having more than 0.5 times the maximum number of samples.
-Moreover, the most problematic group of classes with low sample numbers are multiple classes referring to specific dog breeds
-like \textit{"black-and-tan coonhound"}, \textit{"otterhound"} and \textit{"English foxhound"} with 732,
-738 and 754 samples, respectively.
-As our goal for this project does not focus on generating image of different dog breeds, and just generating a
-believable dog image would likely suffice, we think our position is further strengthened.
+
+\textbf{Class Balance}
+To not introduce bias, the dataset should be sufficiently balanced between the classes.
+
+In the ImageNet dataset, a majority of classes contain 1300 examples, with some classes having fewer examples, as
+shown in Figure~\ref{fig:imnet_dist}.
+
+Based on this, we assess the class distribution in the ImageNet dataset as sufficiently balanced.
+Most classes contain an equal amount of samples, and the classes with fewer examples are still represented by a
+reasonable number of images.
+All of them contain more than half the maximum number of samples.
+Moreover, the three outlier classes with the lowest sample numbers are classes referring to specific dog
+breeds with 732, 738 and 754 samples, respectively.
+The general class of dogs is therefore still well represented.
 
 \begin{figure}[ht]
     \centering
