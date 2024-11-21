@@ -164,55 +164,61 @@ if __name__ == "__main__":
         ]
     )
 
-    ssims_arr = []
-    for model in [ae, vae]:
-        ssims = []
+    # ssims_arr = []
+    # for model in [ae, vae]:
+    #     ssims = []
 
-        for class_idx in trange(1000):
-            ssim = evaluate_on_class(
-                model,
-                "imagenet",
-                class_idx,
-                batch_structural_similarity,
-                n_samples=10000000,
-                batch_size=128,
-                transform=transforms,
-            )
+    #     for class_idx in trange(1000):
+    #         ssim = evaluate_on_class(
+    #             model,
+    #             "imagenet",
+    #             class_idx,
+    #             batch_structural_similarity,
+    #             n_samples=10000000,
+    #             batch_size=128,
+    #             transform=transforms,
+    #         )
 
-            ssims.append(ssim)
+    #         ssims.append(ssim)
 
-        ssims_arr.append(ssims)
+    #     ssims_arr.append(ssims)
 
-        print(f"{model.name()} got min ssim", min(ssims), "on class", torch.argmin(torch.tensor(ssims)))
-        print(f"{model.name()} got max ssim", max(ssims), "on class", torch.argmax(torch.tensor(ssims)))
+    #     print(f"{model.name()} got min ssim", min(ssims), "on class", torch.argmin(torch.tensor(ssims)))
+    #     print(f"{model.name()} got max ssim", max(ssims), "on class", torch.argmax(torch.tensor(ssims)))
     
-    plt.boxplot(ssims_arr, tick_labels=["Autoencoder", "VAE"])
-    plt.savefig("boxplot_ae_and_vae.png")
+    # plt.boxplot(ssims_arr, tick_labels=["Autoencoder", "VAE"])
+    # plt.savefig("boxplot_ae_and_vae.png")
 
-    plt.clf()
+    # plt.clf()
 
-    plt.boxplot([ssims_arr[0]])
-    plt.tick_params(bottom=False, labelbottom=False)
-    plt.savefig("boxplot_only_ae.png")
+    # plt.boxplot([ssims_arr[0]])
+    # plt.tick_params(bottom=False, labelbottom=False)
+    # plt.savefig("boxplot_only_ae.png")
 
-
+    """
+    BaselineAutoencoder got min ssim 0.47157985 on class tensor(607)
+BaselineAutoencoder got max ssim 0.87531286 on class tensor(896)
+100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 1000/1000 [42:48<00:00,  2.57s/it]
+BaselineVariationalAutoencoder got min ssim 0.13847223 on class tensor(509)
+BaselineVariationalAutoencoder got max ssim 0.44232032 on class tensor(405)
+    """
 
 
     ### PLOT IMAGES
 
     class_idx_dict = {
-        "MIN_AE_IDX": None,
-        "MAX_AE_IDX": None,
-        "MIN_VAE_IDX": None,
-        "MAX_AE_IDX": None
+        "MIN_AE_IDX": (607, ae),
+        "MAX_AE_IDX": (896, ae),
+        "MIN_VAE_IDX": (509, vae),
+        "MAX_VAE_IDX": (405, vae)
     }
 
-    for model in [ae, vae]:
-        for (idx_name, idx) in class_idx_dict.items():
-            evaluate_on_class(model,
-                "imagenet", idx,
-                partial(plot_original_and_reconstruction, outfile=f"{idx_name}_{idx}.png"),
-                batch_size=32,
-                transform=transforms,
-                break_after_first_batch=True
-            )
+    for idx_name, (idx, model) in class_idx_dict.items():
+        print(idx_name, idx)
+        evaluate_on_class(model,
+            "imagenet", idx,
+            partial(plot_original_and_reconstruction, outfile=f"{idx_name}_{idx}.png"),
+            batch_size=32,
+            transform=transforms,
+            break_after_first_batch=True
+        )
