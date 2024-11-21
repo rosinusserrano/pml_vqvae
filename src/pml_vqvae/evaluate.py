@@ -1,12 +1,16 @@
 "Functions to evaluate models"
 
-from typing import Callable
+from typing import Callable, Literal
+from functools import partial
 
 import torch
 from torch import nn
 from torchvision.transforms import v2
+from torchvision.utils import make_grid
 
 from skimage.metrics import structural_similarity
+
+import matplotlib.pyplot as plt
 
 from pml_vqvae.baseline.autoencoder import BaselineAutoencoder
 from pml_vqvae.baseline.vae import BaselineVariationalAutoencoder
@@ -47,8 +51,27 @@ def reconstruct_images(
         )
 
 
-def image_human_evaluation(batch, labels, preds):
+def plot_original_and_reconstruction(
+    original_images: torch.Tensor,
+    reconstructed_images: torch.Tensor,
+    ncols: int = 8,
+    mode: Literal["horizontal", "vertical"] = "vertical",
+    outfile: str | None = None,
+):
     "Produce a plot that shows images side by side"
+    orig_grid = make_grid(original_images, nrow=ncols, padding=1)
+    recon_grid = make_grid(reconstructed_images, nrow=ncols, padding=1)
+
+    grid = make_grid(
+        torch.stack((orig_grid, recon_grid)),
+        padding=2,
+        nrow=(2 if mode == "horizontal" else 1),
+    )
+
+    if outfile is not None:
+        plt.imsave(outfile, grid.permute(1, 2, 0).detach().cpu().numpy())
+    else:
+        plt.imshow(grid.permute(1, 2, 0))
 
 
 def batch_structural_similarity(
@@ -63,10 +86,10 @@ def batch_structural_similarity(
             original.detach().cpu().numpy(),
             reconstruction.detach().cpu().numpy(),
             channel_axis=0,
-            data_range=1.
+            data_range=1.0,
         )
         ssim_batch.append(ssim)
-    
+
     return sum(ssim_batch) / len(ssim_batch)
 
 
@@ -78,11 +101,12 @@ def evaluate_on_class(
     transform: Callable,
     class_idx: int,
     evaluation_metric: Callable,
-    break_after_first_batch: bool = False
+    break_after_first_batch: bool = False,
 ):
     _, dataloader = load_data(
         dataset,
         transformation=transform,
+        batch_size=batch_size,
         n_test=n_samples,
         n_train=1000 if dataset == "imagenet" else 10,
         class_idx=[class_idx],
@@ -98,10 +122,9 @@ def evaluate_on_class(
             preds = model(batch)
 
             metric_value = evaluation_metric(labels, preds)
-            print(metric_value)
             if metric_value is not None:
                 metric_values.append(metric_value)
-            
+
             if break_after_first_batch:
                 break
 
@@ -136,7 +159,7 @@ if __name__ == "__main__":
     print("Evaluating")
 
     avg_ssim_on_class_0 = evaluate_on_class(
-        model, "imagenet", 1000, 64, transforms, 0, batch_structural_similarity
+        model, "imagenet", 1000, 32, transforms, 0, plot_original_and_reconstruction
     )
 
     print(f"On class 0 got avg SSIM of {avg_ssim_on_class_0:.4f}")
