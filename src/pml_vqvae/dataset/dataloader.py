@@ -55,11 +55,12 @@ def load_data(
 
     if dataset == "imagenet":
         # if n_train or n_test is specified, make sure it is a multiple of 1000 as there are 1000 classes
-        if n_train is not None or n_test is not None:
+        if n_train is not None:
             assert n_train % 1000 == 0, "n_train must be a multiple of 1000"
-            assert n_test % 1000 == 0, "n_test must be a multiple of 1000"
-
             n_train = n_train // 1000
+
+        if n_test is not None:
+            assert n_test % 1000 == 0, "n_test must be a multiple of 1000"
             n_test = n_test // 1000
 
         train_set = ImageNetDataset(
