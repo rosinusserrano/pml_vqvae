@@ -86,6 +86,7 @@ class Config:
                     "vis_train_interval",
                     "n_train",
                     "n_test",
+                    "class_idx"
                 ]:
                     raise ValueError(f"Parameter {key} is not set in the configuration")
 
