@@ -1,20 +1,21 @@
 experiment:
-  name: "BaselineVae" # name of the experiment
-  description: "Test Vae Logging" # description of the experiment
+  name: "autoencoder imagenet" # name of the experiment
+  description: "" # description of the experiment
   seed: 42 # seed for reproducibility
   test_interval: 1  # test the model every test_interval epochs, None to disable
   vis_train_interval: 1 # plot the training loss every plot_train_interval epochs, None to disable
   wandb_log: True # log the experiment to wandb
 
 data:
-  n_train: 10 # number of training samples
-  n_test: 10 # number of test samples
-  dataset: "cifar" # either cifar or imagenet
+  n_train: 100000 # number of training samples
+  n_test: 10000 # number of test samples
+  dataset: "imagenet" # either cifar or imagenet
+  class_idx: None # list of class indices to use, empty list to use all classes
 
 train:
-  batch_size: 10
-  epochs: 5
-  learning_rate: 0.01
+  batch_size: 128
+  epochs: 10
+  learning_rate: 0.0002
 
 model:
   model_name: "autoencoder" # either autoencoder or vae

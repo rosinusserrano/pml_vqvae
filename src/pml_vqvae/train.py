@@ -129,7 +129,7 @@ def train(config: Config):
     # stolen from https://pytorch.org/vision/main/transforms.html
     transforms = v2.Compose(
         [
-            v2.RandomResizedCrop(size=(128, 128), antialias=True),
+            v2.RandomResizedCrop(size=(128, 128), antialias=True, scale=(0.1, 1.0)),
             v2.RandomHorizontalFlip(p=0.5),
             v2.ToDtype(torch.float32, scale=True),
             v2.Normalize(mean=[0, 0, 0], std=[255.0, 255.0, 255.0]),
@@ -141,6 +141,7 @@ def train(config: Config):
         n_train=config.n_train,
         n_test=config.n_test,
         seed=config.seed,
+        class_idx=config.class_idx,
         batch_size=config.batch_size,
     )
 

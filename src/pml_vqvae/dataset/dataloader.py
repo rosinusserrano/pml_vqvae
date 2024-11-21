@@ -19,6 +19,7 @@ def load_data(
     num_workers: int = 1,
     batch_size: int = 32,
     shuffle: bool = True,
+    class_idx: list = None,
     seed: int = None,
 ):
     """Load data from specified dataset
@@ -31,6 +32,7 @@ def load_data(
         num_workers (int, optional): Number of workers to use for data loading. Defaults to 1.
         batch_size (int, optional): Batch size. Defaults to 32.
         shuffle (bool, optional): Shuffle data. Defaults to True.
+        class_idx (list, optional): List of class indices to load. Defaults to None.
         seed (int, optional): Seed for reproducibility. Defaults to None.
 
     Returns:
@@ -65,6 +67,7 @@ def load_data(
             samples_per_class=n_train,
             transform=transformation,
             seed=seed,
+            class_idx=class_idx,
         )
 
         test_set = ImageNetDataset(
@@ -72,6 +75,7 @@ def load_data(
             samples_per_class=n_test,
             transform=transformation,
             seed=seed,
+            class_idx=class_idx,
         )
 
     elif dataset == "cifar":
@@ -88,10 +92,15 @@ def load_data(
             samples_per_class=n_train,
             transform=transformation,
             seed=seed,
+            class_idx=class_idx,
         )
 
         test_set = CifarDataset(
-            split="test", samples_per_class=n_test, transform=transformation, seed=seed
+            split="test",
+            samples_per_class=n_test,
+            transform=transformation,
+            seed=seed,
+            class_idx=class_idx,
         )
 
     train_loader = torch.utils.data.DataLoader(
