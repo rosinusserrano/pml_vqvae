@@ -31,7 +31,7 @@ Image pixels are numerical values with a spatial correlation that \ac{vq} levera
 Since \ac{vq} follows the Encoder-Decoder structure, learning a compressed representation of the input image in latent
 space, the model itself can be seen as a feature extraction/compression method.
 
-\subsection{Dataset Overview}\label{subsec:dataset-overview}
+\subsection{Overview}\label{subsec:dataset-overview}
 In the paper, the \ac{vq} is trained on three image datasets: \textit{ImageNet}, \textit{CIFAR-10}
 , and video frames from \textit{DeepMind Lab}.
 As stated in Section~\ref{sec:introduction}, we will focus our training on the ImageNet and CIFAR-10
@@ -42,7 +42,17 @@ While they were originally designed for image classification and detection tasks
 these applications; by discarding the labels, they can also be leveraged for image generation tasks.
 An overview of these two datasets is provided in Table~\ref{tab:datasets}
 
-\subsubsection{ImageNet}\label{subsec:imagenet}
+\begin{table}[ht]
+    \begin{tabular}{lllll}
+        Dataset  & \# train images & \# test images & \# classes & image size           \\ \hline \hline
+        ILSVRC   & 1.281.167       & 100.000        & 1000       & 8x10px - 9331x6530px \\
+        CIFAR-10 & 50.000          & 10.000         & 10         & 32x32px              \\ \hline \hline
+    \end{tabular}
+    \caption{Key data on ImageNet/\ac{ilsvrc}}
+    \label{tab:datasets}
+\end{table}
+
+\subsection{ImageNet}\label{subsec:imagenet}
 The full ImageNet dataset consists of 14.197.122 hand-labeled photographs collected from flickr and other search
 engines, distributed over 21841 \textit{synonym sets} from the
 \textit{WordNet} hierarchy, pursuing to cover most nouns in the English language as described by~\cite{wordnet}.
@@ -147,13 +157,3 @@ As the images in the CIFAR-10 dataset are already 32x32 pixels, we do not need t
 Hence, we will only apply MinMax Normalizing and potentially Standardizing, same as for the ImageNet data.
 
 Example images from the CIFAR-10 dataset are shown in figure~\ref{fig:cifar10_example_normalized}.
-
-\begin{table}[ht]
-    \begin{tabular}{lllll}
-        Dataset  & \# train images & \# test images & \# classes & image size           \\ \hline \hline
-        ILSVRC   & 1.281.167       & 100.000        & 1000       & 8x10px - 9331x6530px \\
-        CIFAR-10 & 50.000          & 10.000         & 10         & 32x32px              \\ \hline \hline
-    \end{tabular}
-    \caption{Datset overview: ImageNet and CIFAR-10}
-    \label{tab:datasets}
-\end{table}
