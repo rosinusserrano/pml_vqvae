@@ -2,12 +2,13 @@ Image generation forms an unsupervised learning task and therefore does not requ
 The same applies for image compression.
 Thus, any kind of image data can potentially be used for training and testing.
 
-It is important to note that for conditional image generation, characterized by some guiding input like a class or
-style that is supposed to be included in the generated image, labels can be of importance.
-This does apply in our case, since in the paper, the \ac{vq} is used to generate images from specific classes.
+n the case of conditional image generation, labels can be of importance, though, as they might be used as a guiding
+parameter in generation.
+For instance, class labels or specific styles  can be used as an input to guide the generation towards a specific class or style.
+In a later phase of this project we will use the class labels to guide the PixelCNN to generate instances of one specific class.
 
-Overall, the image generation and reconstruction performance of a model is highly dependent on the quality and diversity
-of the training data.
+Generally speaking the image generation and reconstruction performance of a model is highly dependent on the quality
+and diversity of the training data.
 
 \subsection{Feature Extraction}\label{subsec:feature-extraction}
 In machine learning, a set of features is ``good'' if it allows the model to achieve a certain task
@@ -16,12 +17,10 @@ For traditional, non-deep models, that means that features should aim to be info
 they should have some predictive value towards the final goal.
 In simple regression settings, this is the case if the feature correlates with the true value.
 Furthermore it is helpful for features to be independent form each other, as dependent features could overemphasize
-their importance due to the higher frequency \cite{featengineer}.
-Lastly, features should be simple, \textbf{because???}.
+their importance due to the higher frequency~\cite{featengineer}.
 
-
-The above listed reasons are all due to the high sensitivity of traditional ML models to
-small perturbations in data, which calls for efficient feature engineering~\cite{lecun2015deep}
+The reasons listed above are due to the high sensitivity of traditional ML models to small perturbations in data,
+which calls for efficient feature engineering~\cite{lecun2015deep}
 \textbf{maybe explain in 2 sentences how such features were found}
 In modern deep learning settings, this sensitivity has decreased significantly~\cite{lecun2015deep}, which we also
 expect to apply to all of our models, both the baselines and the final \ac{vq}.
@@ -81,8 +80,9 @@ All information on ImageNet and ILSVRC described up until this point is taken fr
 evaluates the history of \ac{ilsvrc} in its first five years.
 Hereinafter, we will refer to this subset as ImageNet if not stated otherwise.
 
-The ImageNet dataset is designed to capture a diverse range of real-world scenarios across eight dimensions, as
-illustrated in Figure~\ref{fig:imnet_dimensions}.
+The dataset aims to replicate the distribution of natural photographs, specifically including a diverse range of
+examples across the eight dimensions illustrated in Figure~\ref{fig:imnet_dimensions}.
+Thereby, models trained on it can generalize along these.
 
 \textbf{Class Balance}
 The majority of classes contain 1300 examples, with some classes having fewer examples, as shown in
