@@ -7,6 +7,8 @@ While much of the current work in realistic high resolution image generation, e.
 \ac{dnn}, the field of image compression is well researched both in-, and outside deep architectures~\cite{compression}.
 Non-ML approaches are still dominant on the web as can be seen in Figure~\ref{fig:file_formats}.
 Due to this prevalence of such approaches, we compare our results to the popular JPEG format for lossy compression.
+The algorithm is described by~\cite{jpeg} and can be set to different levels, trading image quality for compression
+rate.
 
 \begin{figure}[H]
     \centering
@@ -15,17 +17,9 @@ Due to this prevalence of such approaches, we compare our results to the popular
     \label{fig:file_formats}
 \end{figure}
 
-There exist multiple machine learning approaches with a setup similar to that of the \ac{vq}
-i.e.\ generative models with latent representations such as \ac{gan}.
-Differences in architectural details make these hard to compare against each other.
-Revisiting the example of \ac{gan} as described by~\cite{gan}, the latents, like those in the \ac{vq} after
-training the PixelCNN, approximate a distribution similar to the training data.
-However, a key difference is that these latents cannot be obtained by encoding real-world data, making it impossible to
-directly compare the compression task.
-
 \subsection{Autoencoder}\label{subsec:autoencoder}
-We selected a basic \ac{ae} as our general baseline method because it serves as the foundation for the original
-\ac{vae}, which was later developed into the \ac{vq}.
+We selected a basic \ac{ae} as our \ac{ml} baseline method for compression because it serves as the foundation
+for the original \ac{vae}, which was later developed into the \ac{vq}.
 
 A basic \ac{ae}, as described by~\cite{autoenc} and shown in Figure~\ref{fig:ae}, is a neural network designed to compress and reconstruct data. In our case, the input is an image. During the encoding stage, the network compresses the input data to a lower-dimensional representation using one or more fully connected hidden layers.
 The output of this stage is passed to a latent layer, whose dimensionality determines the size of the compressed representation.
@@ -51,6 +45,14 @@ outperform basic feed-forward \ac{ae}s in image reconstruction tasks, as demonst
     \caption{Illustration of a basic \ac{ae} architecture from~\cite{ae_pic}}
     \label{fig:ae}
 \end{figure}
+
+There exist multiple machine learning approaches with a setup similar to that of the \ac{vq}
+i.e.\ generative models with latent representations such as \ac{gan}.
+Differences in architectural details make these hard to compare against each other.
+Revisiting the example of \ac{gan} as described by~\cite{gan}, the latents, like those in the \ac{vq} after
+training the PixelCNN, approximate a distribution similar to the training data.
+However, a key difference is that these latents cannot be obtained by encoding real-world data, making it impossible to
+directly compare the compression task.
 
 \subsection{Variational AE}\label{subsec:variational-ae}
 Examining the differences between the different evolutionary steps towards the \ac{vq} could prove to be valuable
