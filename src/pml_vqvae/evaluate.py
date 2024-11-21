@@ -9,6 +9,7 @@ from torchvision.transforms import v2
 from skimage.metrics import structural_similarity
 
 from pml_vqvae.baseline.autoencoder import BaselineAutoencoder
+from pml_vqvae.baseline.vae import BaselineVariationalAutoencoder
 from pml_vqvae.baseline.pml_model_interface import PML_model
 from pml_vqvae.dataset.dataloader import load_data
 from pml_vqvae.visuals import show_image_grid, show_image_grid_v2
@@ -59,19 +60,25 @@ def batch_structural_similarity(
     for idx in range(batch_size):
         original, reconstruction = original_batch[idx], reconstruction_batch[idx]
         ssim = structural_similarity(
-            original.permute(1, 2, 0).detach().cpu().numpy(),
-            reconstruction.permute(1, 2, 0).detach().cpu().numpy(),
+            original.detach().cpu().numpy(),
+            reconstruction.detach().cpu().numpy(),
+            channel_axis=0,
+            data_range=1.
         )
         ssim_batch.append(ssim)
+    
+    return sum(ssim_batch) / len(ssim_batch)
 
 
 def evaluate_on_class(
     model: nn.Module,
     dataset: str,
     n_samples: int,
+    batch_size: int,
     transform: Callable,
     class_idx: int,
     evaluation_metric: Callable,
+    break_after_first_batch: bool = False
 ):
     _, dataloader = load_data(
         dataset,
@@ -90,9 +97,13 @@ def evaluate_on_class(
 
             preds = model(batch)
 
-            metric_value = evaluation_metric(batch, labels, preds)
+            metric_value = evaluation_metric(labels, preds)
+            print(metric_value)
             if metric_value is not None:
                 metric_values.append(metric_value)
+            
+            if break_after_first_batch:
+                break
 
     avg_metric_value = None
     if len(metric_values) != 0:
@@ -103,12 +114,15 @@ def evaluate_on_class(
 
 if __name__ == "__main__":
 
-    model_file_path = "artifacts/model_3.pth"
+    print("Loading model")
 
-    model = BaselineAutoencoder()
+    model_file_path = "artifacts/[FINAL] vae imagenet 10 epochs_output/model_10.pth"
+
+    model = BaselineVariationalAutoencoder()
     model.load_state_dict(
         torch.load(model_file_path, weights_only=True, map_location=torch.device("cpu"))
     )
+    model.to(DEVICE)
 
     transforms = v2.Compose(
         [
@@ -119,6 +133,10 @@ if __name__ == "__main__":
         ]
     )
 
+    print("Evaluating")
+
     avg_ssim_on_class_0 = evaluate_on_class(
-        model, "imagenet", 10000, transforms, 0, batch_structural_similarity
+        model, "imagenet", 1000, 64, transforms, 0, batch_structural_similarity
     )
+
+    print(f"On class 0 got avg SSIM of {avg_ssim_on_class_0:.4f}")
