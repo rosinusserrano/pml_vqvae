@@ -62,16 +62,14 @@ def load_data(
         if n_test is not None:
             assert n_test % 1000 == 0, "n_test must be a multiple of 1000"
             n_test = n_test // 1000
-
-        train_set = ImageNetDataset(
+        train_set = None if n_train == 0 else ImageNetDataset(
             split="train",
             samples_per_class=n_train,
             transform=transformation,
             seed=seed,
             class_idx=class_idx,
         )
-
-        test_set = ImageNetDataset(
+        test_set = None if n_test == 0 else ImageNetDataset(
             split="val",
             samples_per_class=n_test,
             transform=transformation,
@@ -104,11 +102,11 @@ def load_data(
             class_idx=class_idx,
         )
 
-    train_loader = torch.utils.data.DataLoader(
+    train_loader = None if n_train == 0 else torch.utils.data.DataLoader(
         train_set, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers
     )
 
-    test_loader = torch.utils.data.DataLoader(
+    test_loader = None if n_test == 0 else torch.utils.data.DataLoader(
         test_set, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers
     )
 
