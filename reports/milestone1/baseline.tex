@@ -1,7 +1,19 @@
-
 In order to judge different performance measures of our final model, we require a baseline.
 Such a baseline needs to align to the collection of tasks described in Section~\ref{sec:introduction} as close as
 possible to allow for good comparability of results.
+
+\subsection{Non-ML Baseline: JPEG}\label{subsec:jpeg}
+While much of the current work in realistic high resolution image generation, e.g. \ac{gan} or \ac{vq}, is based on
+\ac{dnn}, the field of image compression is well researched both in-, and outside deep architectures~\cite{compression}.
+Non-ML approaches are still dominant on the web as can be seen in Figure~\ref{fig:file_formats}.
+Due to this prevalence of such approaches, we compare our results to the popular JPEG format for lossy compression.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.3\textwidth]{images/formats}
+    \caption{Percentages of websites using various image file formats~\cite{img_file_format}}
+    \label{fig:file_formats}
+\end{figure}
 
 There exist multiple machine learning approaches with a setup similar to that of the \ac{vq}
 i.e.\ generative models with latent representations such as \ac{gan}.
@@ -60,24 +72,3 @@ reconstruct the input, but to learn a posterior distribution $p(x|z)$ while
 the encoder $q(z|x)$ tries to be as close as possible to $p(z)$.
 Thus enabling us to generate new dataset samples by sampling $z \sim p(z)$ and then feeding
 it through the decoder.
-\vskip 1em
-\textbf{A Note on Overfitting:}
-Overfitting refers to the phenomenon where a model starts to memorize the training data instead of learning useful
-features from the training data that generalize well to unseen data as is the goal.
-
-While theoretically, this may very well be an issue with \ac{ae} and \ac{vae}, we have not experienced this happening
-yet with either when training with adequate training-set sizes.
-This is very likely due to the large dataset size and the inductive bias of the convolution operation~\cite{citationNeeded}.
-
-\subsection{Non-ML Baseline: JPEG}\label{subsec:jpeg}
-While much of the current work in realistic high resolution image generation is based on \ac{dnn}~\cite{citationNeeded},
-the field of image compression is well researched both in-, and outside deep architectures~\cite{compression}.
-Non-ML approaches are still dominant on the web as can be seen in Figure~\ref{fig:file_formats}.
-To represent this, we also use the popular JPEG format for comparisons against our lossy compression schemes.
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.3\textwidth]{images/formats}
-    \caption{Percentages of websites using various image file formats~\cite{img_file_format}}
-    \label{fig:file_formats}
-\end{figure}

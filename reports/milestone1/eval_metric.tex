@@ -29,7 +29,7 @@ perception is highly adapted for extracting structural information from a scene~
 \[
 \text{SSIM}(x, y) = \frac{(2\mu_x \mu_y + C_1)(2\sigma_{xy} + C_2)}{(\mu_x^2 + \mu_y^2 + C_1)(\sigma_x^2 + \sigma_y^2 + C_2)}
 \]
-$\text{where } C_1 = (K_1L)^2 \text{ and } C_2 = (K_2L)^2 \text{ are constants to avoid dividing by zero.}$
+$\text{where } C_1 \text{ and } C_2 \text{ are constants to avoid dividing by zero.}$
 
 
 Even though this analysis favours \ac{ssim}, we use \ac{mse} as our loss function for our baseline models,
