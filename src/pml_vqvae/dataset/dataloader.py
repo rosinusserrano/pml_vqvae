@@ -1,3 +1,4 @@
+from typing import Callable
 from torchvision.transforms import RandomCrop
 import torchvision
 import torch
@@ -12,7 +13,7 @@ DATASET_NAMES = ["imagenet", "cifar"]
 
 def load_data(
     dataset: str,
-    transformation: torchvision.transforms = None,
+    transformation: Callable | None = None,
     n_train: int = None,
     n_test: int = None,
     num_workers: int = 1,
