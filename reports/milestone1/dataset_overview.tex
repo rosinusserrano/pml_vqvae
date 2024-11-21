@@ -16,14 +16,17 @@ efficiently.
 For traditional, non-deep models, that means that features should aim to be informative, meaning that
 they should have some predictive value towards the final goal.
 In simple regression settings, this is the case if the feature correlates with the true value.
-Furthermore it is helpful for features to be independent form each other, as dependent features could overemphasize
+Furthermore, it is helpful for features to be independent form each other, as dependent features could overemphasize
 their importance due to the higher frequency~\cite{featengineer}.
 
 The reasons listed above are due to the high sensitivity of traditional ML models to small perturbations in data,
 which calls for efficient feature engineering~\cite{lecun2015deep}
 \textbf{maybe explain in 2 sentences how such features were found}
 In modern deep learning settings, this sensitivity has decreased significantly~\cite{lecun2015deep}, which we also
-expect to apply to all of our models, both the baselines and the final \ac{vq}.
+expect to apply to all of our models.
+Normalization remains essential because features with larger scales tend to have a greater influence on gradients and
+the final output compared to those with smaller scales.
+Furthermore, normalized and standardized features generally lead to better convergence behaviour~\cite{mueller}.
 
 As \ac{vq} works directly on pixel values, further feature extraction methods are not necessary.
 Image pixels are numerical values with a spatial correlation that \ac{vq} leverage.
@@ -130,17 +133,11 @@ In order to train the \ac{vq} on the ImageNet dataset, we will do the following 
     the \texttt{v2.RandomResizedCrop} function from the TorchVision package.
     We set \texttt{scale=(0.2, 1.0)} and \texttt{ratio=1} to crop a square image with a sufficient area in
     relation to the original image, and enable anti-alias to reduce artifacts.
-    \item \textbf{MinMax Normalizing}
-    When input features have different scales, normalizing is a necessity for stable convergence.
-    In the case of images, the pixel values represented by integers in the range of 0 to 255
-    in each channel are already normalized to some degree.
-    We scale them to floats in [0,1], further stabilizing the training process \cite{citationNeeded}.
-    \item \textbf{Standardization:}
-    Standardizing is a common step in machine learning and also often used for ImageNet, e.g.\ for training ResNet
-    ~\cite{resnet}.
-    It is also part of the standard TensorFlow and PyTorch preprocessing pipeline for ImageNet, and can protect
-    against unwanted conditioning on image brightness. \\
-    We standardize the images with the mean $\mu = (0.485, 0.456, 0.406)$ and standard deviation
+    \item \textbf{MinMax Normalizing and Standardization}
+    Due to the observations on normalization and standardization described in Subsection
+    ~\ref{subsec:feature-extraction}, we scale each channel from integers in $\{0,\dots,255\}$ to floats on
+    $[0,1]$.
+    We also standardize the images with the mean $\mu = (0.485, 0.456, 0.406)$ and standard deviation
     $\sigma = (0.229, 0.224, 0.225)$ of ImageNet for the three color channels, respectively.
 \end{itemize}
 
