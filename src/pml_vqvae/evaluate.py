@@ -12,6 +12,8 @@ from skimage.metrics import structural_similarity
 
 import matplotlib.pyplot as plt
 
+from tqdm import trange
+
 from pml_vqvae.baseline.autoencoder import BaselineAutoencoder
 from pml_vqvae.baseline.vae import BaselineVariationalAutoencoder
 from pml_vqvae.baseline.pml_model_interface import PML_model
@@ -59,6 +61,7 @@ def plot_original_and_reconstruction(
     outfile: str | None = None,
 ):
     "Produce a plot that shows images side by side"
+
     orig_grid = make_grid(original_images, nrow=ncols, padding=1)
     recon_grid = make_grid(reconstructed_images, nrow=ncols, padding=1)
 
@@ -69,7 +72,7 @@ def plot_original_and_reconstruction(
     )
 
     if outfile is not None:
-        plt.imsave(outfile, grid.permute(1, 2, 0).detach().cpu().numpy())
+        plt.imsave(outfile, grid.permute(1, 2, 0).detach().clamp(0, 1).cpu().numpy())
     else:
         plt.imshow(grid.permute(1, 2, 0))
 
@@ -96,24 +99,23 @@ def batch_structural_similarity(
 def evaluate_on_class(
     model: nn.Module,
     dataset: str,
-    n_samples: int,
-    batch_size: int,
-    transform: Callable,
     class_idx: int,
     evaluation_metric: Callable,
+    n_samples: int | None = None,
+    batch_size: int = 32,
+    transform: Callable | None = None,
     break_after_first_batch: bool = False,
-):
+): 
     _, dataloader = load_data(
         dataset,
         transformation=transform,
         batch_size=batch_size,
         n_test=n_samples,
-        n_train=1000 if dataset == "imagenet" else 10,
+        n_train=0,
         class_idx=[class_idx],
     )
 
     metric_values = []
-
     with eval_mode(model):
         for batch, labels in dataloader:
             batch = batch.to(DEVICE)
@@ -137,29 +139,80 @@ def evaluate_on_class(
 
 if __name__ == "__main__":
 
-    print("Loading model")
+    print("Loading models")
 
-    model_file_path = "artifacts/[FINAL] vae imagenet 10 epochs_output/model_10.pth"
-
-    model = BaselineVariationalAutoencoder()
-    model.load_state_dict(
-        torch.load(model_file_path, weights_only=True, map_location=torch.device("cpu"))
+    ae_fp = "artifacts/[FINAL] autoencoder imagenet 10 epochs_output/model_10.pth"
+    ae = BaselineAutoencoder()
+    ae.load_state_dict(
+        torch.load(ae_fp, weights_only=True, map_location=torch.device("cpu"))
     )
-    model.to(DEVICE)
+    ae.to(DEVICE)
+
+    vae_fp = "artifacts/[FINAL] vae imagenet 10 epochs_output/model_10.pth"
+    vae = BaselineVariationalAutoencoder()
+    vae.load_state_dict(
+        torch.load(vae_fp, weights_only=True, map_location=torch.device("cpu"))
+    )
+    vae.to(DEVICE)
 
     transforms = v2.Compose(
         [
-            v2.RandomResizedCrop(size=(128, 128), antialias=True),
-            v2.RandomHorizontalFlip(p=0.5),
+            v2.RandomResizedCrop(size=(128, 128), antialias=True, scale=(1.0, 1.0)),
+            # v2.RandomHorizontalFlip(p=0.5),
             v2.ToDtype(torch.float32, scale=True),
             v2.Normalize(mean=[0, 0, 0], std=[255.0, 255.0, 255.0]),
         ]
     )
 
-    print("Evaluating")
+    ssims_arr = []
+    for model in [ae, vae]:
+        ssims = []
 
-    avg_ssim_on_class_0 = evaluate_on_class(
-        model, "imagenet", 1000, 32, transforms, 0, plot_original_and_reconstruction
-    )
+        for class_idx in trange(1000):
+            ssim = evaluate_on_class(
+                model,
+                "imagenet",
+                class_idx,
+                batch_structural_similarity,
+                n_samples=10000000,
+                batch_size=128,
+                transform=transforms,
+            )
 
-    print(f"On class 0 got avg SSIM of {avg_ssim_on_class_0:.4f}")
+            ssims.append(ssim)
+
+        ssims_arr.append(ssims)
+
+        print(f"{model.name()} got min ssim", min(ssims), "on class", torch.argmin(torch.tensor(ssims)))
+        print(f"{model.name()} got max ssim", max(ssims), "on class", torch.argmax(torch.tensor(ssims)))
+    
+    plt.boxplot(ssims_arr, tick_labels=["Autoencoder", "VAE"])
+    plt.savefig("boxplot_ae_and_vae.png")
+
+    plt.clf()
+
+    plt.boxplot([ssims_arr[0]])
+    plt.tick_params(bottom=False, labelbottom=False)
+    plt.savefig("boxplot_only_ae.png")
+
+
+
+
+    ### PLOT IMAGES
+
+    class_idx_dict = {
+        "MIN_AE_IDX": None,
+        "MAX_AE_IDX": None,
+        "MIN_VAE_IDX": None,
+        "MAX_AE_IDX": None
+    }
+
+    for model in [ae, vae]:
+        for (idx_name, idx) in class_idx_dict.items():
+            evaluate_on_class(model,
+                "imagenet", idx,
+                partial(plot_original_and_reconstruction, outfile=f"{idx_name}_{idx}.png"),
+                batch_size=32,
+                transform=transforms,
+                break_after_first_batch=True
+            )
