@@ -10,7 +10,7 @@ import os
 import torch
 from torch import nn
 
-from pml_vqvae.visuals import show_image_grid
+from pml_vqvae.visuals import show
 
 from pml_vqvae.baseline.pml_model_interface import PML_model
 from pml_vqvae.nnutils import ResidualBlock
@@ -152,8 +152,8 @@ class BaselineVariationalAutoencoder(PML_model):
 
     @staticmethod
     def visualize_output(batch, output, target, prefix: str = "", base_dir: str = "."):
-        show_image_grid(batch, outfile=os.path.join(base_dir, f"{prefix}_original.png"))
-        show_image_grid(
+        show(batch, outfile=os.path.join(base_dir, f"{prefix}_original.png"))
+        show(
             output[0],
             outfile=os.path.join(base_dir, f"{prefix}_reconstruction.png"),
         )

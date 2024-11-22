@@ -1,5 +1,10 @@
 # pml_vqvae
 
+## Information for Milestone 1: Data and Prototype
+
+- The `load_data()` function can be found in `src/pml_vqvae/dataset/dataloader.py`
+- The function `show()` is implemented in `src/pml_vqvae/visuals.py`
+
 ## How to run
 
 ### Using the CLI

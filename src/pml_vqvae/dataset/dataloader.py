@@ -1,8 +1,5 @@
-from torchvision.transforms import RandomCrop
 import torchvision
 import torch
-
-from pml_vqvae.visuals import show_image_grid
 
 from pml_vqvae.dataset.cifar10 import CifarDataset
 from pml_vqvae.dataset.imagenet import ImageNetDataset
