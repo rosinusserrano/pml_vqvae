@@ -42,6 +42,12 @@ We chose to use 2 latent channels per latent variable using the 32 bit float of 
     \label{fig:imnet_worst_perf2_vae}
 \end{figure}
 
+\subsubsection{JPEG}\label{subsubsec:autoencoder}
+To compare the compression ability of our baseline methods to JPEG compression, we first had to identify the quality with which JPEG compresses images to approximately 4 bits per pixel.
+We found that 4 bits per pixel where achieved even when using JPEG compression with a quality parameter of 100.
+This shows that neural image compression with the baseline methods we implemented merely exist for research purposes and do not pose an actual benefit when the goal would be to compress images.
+
+
 \subsubsection{Autoencoder}\label{subsubsec:autoencoder}
 When feeding in $3 \times 128 \times 128$ ImageNet images, our latents are of size $\mathbb{R}^{2\times 32 \times 32}$.
 From initially $24\text{ bits/pixel}$, the images are compressed down to $4\text{ bits/pixel}$.
