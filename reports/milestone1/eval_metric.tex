@@ -1,4 +1,3 @@
-The metrics usable for the tasks described in Section~\ref{sec:introduction} are manifold.
 As not all metrics are suitable for all the work done by the model.
 We therefore split this section into two subsections.
 
@@ -8,13 +7,12 @@ store the data.
 To normalize over image resolution, we choose to evaluate the \ac{bpp}.
 
 The second, and less objective measure, is image similarity after reconstruction.
-While the \ac{mse} and by transfer \ac{psnr} describe pixel-wise similarity very well, it is not
+While the \ac{mse} describes pixel-wise similarity very well, it is not
 always optimal to judge perceived similarity for humans, as can be seen in Figure~\ref{fig:mse_ssim}.
 
 \[
-\text{MSE} = \frac{1}{n} \sum_{i=1}^{n} (y_i - x_i)^2 \quad \quad \text{PSNR} = 10 \cdot \log_{10} \left( \frac{\text{MAX$^2$}}{\text{MSE}} \right)
+\text{MSE} = \frac{1}{n} \sum_{i=1}^{n} (y_i - x_i)^2
 \]
-where $\text{MAX}$ is the maximum possible pixel value (255 for our 8-bit images).
 
 \begin{figure}[ht]
     \centering
@@ -34,7 +32,7 @@ $\text{where } C_1 \text{ and } C_2 \text{ are constants to avoid dividing by ze
 
 Even though this analysis favours \ac{ssim}, we use \ac{mse} as our loss function for our baseline models,
 since the \ac{vq} implementation we plan to replicate does the same, and we want to maximize comparability.
-We use \ac{ssim} for result evaluation, and add \ac{psnr} values for further experiments.
+We use \ac{ssim} for result evaluation.
 
 \subsection{Image Generation}\label{subsec:image-generation}
 An important metric in Image Generation is the \ac{nll} normalized to the amount of pixels (dimensions) in an image, given in bits/dim.
@@ -45,9 +43,9 @@ compress the test data with the entropy coding scheme that is optimal for a mode
 
 The \ac{fid}, introduced by~\cite{fid}, is another interesting metric.
 It compares the distribution of features of a generator with that of real images via a network trained on a big
-dataset, often also imagenet.
+dataset, often also ImageNet.
 
-Another criterion not to be left out is the classic human turing test, as in evaluating the images by hand.
+Another criterion to consider is the classic human turing test, as in evaluating the images by hand.
 Even though this is not scalable, it is the ultimate classifier for human perception, and can be a good starting
 point.
 
@@ -56,5 +54,3 @@ similar inception score, so we excluded the latter.
 Research advises against using Parzen Window Estimates~\cite{note_on_eval}, so we avoided them as well.
 
 Since we have not yet implemented any image generation functionality, the value of these metrics remains to be evaluated.
-
-TODO: INTRODUCE FORMULAS FOR THE CRITERIONS

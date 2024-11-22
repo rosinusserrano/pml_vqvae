@@ -2,7 +2,7 @@ Image generation forms an unsupervised learning task and therefore does not requ
 The same applies for image compression.
 Thus, any kind of image data can potentially be used for training and testing.
 
-n the case of conditional image generation, labels can be of importance, though, as they might be used as a guiding
+In the case of conditional image generation, labels can be of importance though, as they might be used as a guiding
 parameter in generation.
 For instance, class labels or specific styles  can be used as an input to guide the generation towards a specific class or style.
 In a later phase of this project we will use the class labels to guide the PixelCNN to generate instances of one specific class.
@@ -20,8 +20,7 @@ Furthermore, it is helpful for features to be independent form each other, as de
 their importance due to the higher frequency~\cite{featengineer}.
 
 The reasons listed above are due to the high sensitivity of traditional ML models to small perturbations in data,
-which calls for efficient feature engineering~\cite{lecun2015deep}
-\textbf{maybe explain in 2 sentences how such features were found}
+which calls for efficient feature engineering.
 In modern deep learning settings, this sensitivity has decreased significantly~\cite{lecun2015deep}, which we also
 expect to apply to all of our models.
 
@@ -43,17 +42,6 @@ datasets for now.
 Both are among the most common image datasets used in machine learning.
 While they were originally designed for image classification and detection tasks, their utility extends beyond
 these applications; by discarding the labels, they can also be leveraged for image generation tasks.
-An overview of these two datasets is provided in Table~\ref{tab:datasets}
-
-\begin{table}[ht]
-    \begin{tabular}{lllll}
-        Dataset  & \# train images & \# test images & \# classes & image size           \\ \hline \hline
-        ILSVRC   & 1.281.167       & 100.000        & 1000       & 8x10px - 9331x6530px \\
-        CIFAR-10 & 50.000          & 10.000         & 10         & 32x32px              \\ \hline \hline
-    \end{tabular}
-    \caption{Key properties of ImageNet/\ac{ilsvrc}}
-    \label{tab:datasets}
-\end{table}
 
 \subsection{ImageNet}\label{subsec:imagenet}
 
@@ -90,11 +78,10 @@ Thereby, models trained on it can generalize along these.
 
 
 
-\textbf{Class Balance}
+\subsubsection{Class Balance}
 To not introduce bias, the dataset should be sufficiently balanced between the classes.
 
-In the ImageNet dataset, a majority of classes contain 1300 examples, with some classes having fewer examples, as
-shown in Figure~\ref{fig:imnet_dist}.
+In the ImageNet dataset, the classes contain between 732 and 1300 examples, with most of them at exactly 1300.
 
 Based on this, we assess the class distribution in the ImageNet dataset as sufficiently balanced.
 Most classes contain an equal amount of samples, and the classes with fewer examples are still represented by a
@@ -104,34 +91,28 @@ Moreover, the three outlier classes with the lowest sample numbers are classes r
 breeds with 732, 738 and 754 samples, respectively.
 The general class of dogs is therefore still well represented.
 
-\begin{figure}[ht]
-    \centering
-    \includegraphics[width=0.5\textwidth]{../../sample_images/imagenet_dist}
-    \caption{Distribution of images per class in the ImageNet dataset}
-    \label{fig:imnet_dist}
-\end{figure}
-
-\textbf{Image Shapes}
+\subsubsection{Image Shapes}
 Upon examining, we found that the images have highly irregular resolutions.
 The width and height ranges from 8-9331px and 20-6530px, respectively, with a mean resolution of 471.7x404.7 pixels.
-Figure~\ref{fig:imnet_sizes_err} depicts the resolution ranges for each class.
+Figure~\ref{fig:bigboy} depicts the resolution ranges for each class.
 
-As to be seen in figure~\ref{fig:optimum_resolution}, some images have a very irregular ratio, which imposes a challenge
+As to be seen in Figure~\ref{fig:optimum_resolution}, some images have a very irregular ratio, which imposes a challenge
 for resizing.
-Very small images do not contain enough information, which when upscaled, result in a blurry image (illustrated in
-figure~\ref{fig:small_image}).
+Very small images do not contain enough information, which when upscaled, result in a blurry image, illustrated in
+the same Figure~\ref{fig:optimum_resolution}).
 
 \subsubsection{Data Cleaning and Preprocessing}
 In order to train the \ac{vq} on the ImageNet dataset, we will do the following preprocessing steps.
 
 \begin{itemize}
     \item \textbf{Data Cleaning}
-    Based on our knowledge from examining the image shapes, remove images with a resolution below 32px on any axis
+    Based on our knowledge from examining the image shapes, remove images with a resolution below 32px on any axis,
+    which were 41 in total
     \item \textbf{Image Resizing}
     For training and testing, we resize all images to 128x128 pixels, similar to the paper.
     We use a composition of random cropping to extract a square image and resizing it to 128x128 pixels with
     the \texttt{v2.RandomResizedCrop} function from the TorchVision package.
-    We set \texttt{scale=(0.2, 1.0)} and \texttt{ratio=1} to crop a square image with a sufficient area in
+    We set \texttt{scale=(0.1, 1.0)} and \texttt{ratio=1} to crop a square image with a sufficient area in
     relation to the original image, and enable anti-alias to reduce artifacts.
     \item \textbf{MinMax Normalizing and Standardization}
     Due to the observations on normalization and standardization described in Subsection
@@ -144,7 +125,7 @@ In order to train the \ac{vq} on the ImageNet dataset, we will do the following 
 Example images from ImageNet dataset after preprocessing are depicted in figure~\ref{fig:imnet_example_normalized}.
 
 \subsection{CIFAR-10}\label{subsec:cifar-10}
-CIFAR-10~\cite{cifar10} is another popular image classification dataset, as well as the larger version CIFAR-100.
+CIFAR-10~\cite{cifar10} is another popular image classification dataset.
 CIFAR-10 consists of 60\,000 32x32 pixel images, which are distributed over 10 classes.
 The dataset is split into 50\,000 training images and 10\,000 test images.
 The classes are mutually exclusive, so each image belongs to exactly one class.
