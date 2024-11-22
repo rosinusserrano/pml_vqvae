@@ -3,6 +3,9 @@
 from typing import Callable, Literal
 from functools import partial
 
+from PIL.Image import Image
+import os
+
 import torch
 from torch import nn
 from torchvision.transforms import v2
@@ -96,6 +99,11 @@ def batch_structural_similarity(
     return sum(ssim_batch) / len(ssim_batch)
 
 
+def get_jpeg_bits_per_pixel(images_batch: torch.Tensor, ):
+    """sas"""
+    v2.functional.
+
+
 def evaluate_on_class(
     model: nn.Module,
     dataset: str,
@@ -137,23 +145,7 @@ def evaluate_on_class(
     return avg_metric_value
 
 
-if __name__ == "__main__":
-
-    print("Loading models")
-
-    ae_fp = "artifacts/[FINAL] autoencoder imagenet 10 epochs_output/model_10.pth"
-    ae = BaselineAutoencoder()
-    ae.load_state_dict(
-        torch.load(ae_fp, weights_only=True, map_location=torch.device("cpu"))
-    )
-    ae.to(DEVICE)
-
-    vae_fp = "artifacts/[FINAL] vae imagenet 10 epochs_output/model_10.pth"
-    vae = BaselineVariationalAutoencoder()
-    vae.load_state_dict(
-        torch.load(vae_fp, weights_only=True, map_location=torch.device("cpu"))
-    )
-    vae.to(DEVICE)
+def make_ssim_boxplots(models):
 
     transforms = v2.Compose(
         [
@@ -164,49 +156,40 @@ if __name__ == "__main__":
         ]
     )
 
-    # ssims_arr = []
-    # for model in [ae, vae]:
-    #     ssims = []
+    ssims_arr = []
+    for model in models:
+        ssims = []
 
-    #     for class_idx in trange(1000):
-    #         ssim = evaluate_on_class(
-    #             model,
-    #             "imagenet",
-    #             class_idx,
-    #             batch_structural_similarity,
-    #             n_samples=10000000,
-    #             batch_size=128,
-    #             transform=transforms,
-    #         )
+        for class_idx in trange(1000):
+            ssim = evaluate_on_class(
+                model,
+                "imagenet",
+                class_idx,
+                batch_structural_similarity,
+                n_samples=10000000,
+                batch_size=128,
+                transform=transforms,
+            )
 
-    #         ssims.append(ssim)
+            ssims.append(ssim)
 
-    #     ssims_arr.append(ssims)
+        ssims_arr.append(ssims)
 
-    #     print(f"{model.name()} got min ssim", min(ssims), "on class", torch.argmin(torch.tensor(ssims)))
-    #     print(f"{model.name()} got max ssim", max(ssims), "on class", torch.argmax(torch.tensor(ssims)))
+        print(f"{model.name()} got min ssim", min(ssims), "on class", torch.argmin(torch.tensor(ssims)))
+        print(f"{model.name()} got max ssim", max(ssims), "on class", torch.argmax(torch.tensor(ssims)))
     
-    # plt.boxplot(ssims_arr, tick_labels=["Autoencoder", "VAE"])
-    # plt.savefig("boxplot_ae_and_vae.png")
+    plt.boxplot(ssims_arr, tick_labels=["Autoencoder", "VAE"])
+    plt.savefig("boxplot_ae_and_vae.png")
 
-    # plt.clf()
+    plt.clf()
 
-    # plt.boxplot([ssims_arr[0]])
-    # plt.tick_params(bottom=False, labelbottom=False)
-    # plt.savefig("boxplot_only_ae.png")
-
-    """
-    BaselineAutoencoder got min ssim 0.47157985 on class tensor(607)
-BaselineAutoencoder got max ssim 0.87531286 on class tensor(896)
-100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 1000/1000 [42:48<00:00,  2.57s/it]
-BaselineVariationalAutoencoder got min ssim 0.13847223 on class tensor(509)
-BaselineVariationalAutoencoder got max ssim 0.44232032 on class tensor(405)
-    """
+    plt.boxplot([ssims_arr[0]])
+    plt.tick_params(bottom=False, labelbottom=False)
+    plt.savefig("boxplot_only_ae.png")
 
 
-    ### PLOT IMAGES
-
-    class_idx_dict = {
+def image_comparison_plots(models, class_idx_dict):
+    example_class_idx_dict = {
         "MIN_AE_IDX": (607, ae),
         "MAX_AE_IDX": (896, ae),
         "MIN_VAE_IDX": (509, vae),
@@ -222,3 +205,62 @@ BaselineVariationalAutoencoder got max ssim 0.44232032 on class tensor(405)
             transform=transforms,
             break_after_first_batch=True
         )
+
+
+if __name__ == "__main__":
+
+    # print("Loading models")
+
+    # ae_fp = "artifacts/[FINAL] autoencoder imagenet 10 epochs_output/model_10.pth"
+    # ae = BaselineAutoencoder()
+    # ae.load_state_dict(
+    #     torch.load(ae_fp, weights_only=True, map_location=torch.device("cpu"))
+    # )
+    # ae.to(DEVICE)
+
+    # vae_fp = "artifacts/[FINAL] vae imagenet 10 epochs_output/model_10.pth"
+    # vae = BaselineVariationalAutoencoder()
+    # vae.load_state_dict(
+    #     torch.load(vae_fp, weights_only=True, map_location=torch.device("cpu"))
+    # )
+    # vae.to(DEVICE)
+
+    transforms = v2.Compose(
+        [
+            v2.RandomResizedCrop(size=(128, 128), antialias=True, scale=(1.0, 1.0)),
+            # v2.RandomHorizontalFlip(p=0.5),
+            v2.ToDtype(torch.float32, scale=True),
+            v2.Normalize(mean=[0, 0, 0], std=[255.0, 255.0, 255.0]),
+        ]
+    )
+
+    _, dataloader = load_data(
+        "imagenet",
+        transformation=transforms,
+        batch_size=64,
+        n_test=1000,
+        n_train=0,
+    )
+
+    pil = v2.ToPILImage()
+
+    bits_per_pixels = []
+
+    for batch, labels in dataloader:
+
+        images: list[Image] = pil(batch)
+
+        for q in [40, 50, 60, 70]:
+
+            for c in images:
+
+                c.save("jpeg.jpg", "JPEG", quality=q)
+                filesize = os.path.getsize("jpeg.jpg") * 8
+                bits_per_pixels.append(filesize / (128*128*3))
+
+            avg = sum(bits_per_pixels) / len(bits_per_pixels)
+
+            print(f"Avg bits per pixel {avg}")
+
+
+
