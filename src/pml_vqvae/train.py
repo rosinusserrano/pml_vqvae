@@ -122,17 +122,29 @@ def train(config: TrainConfig):
 
     print(f"Training {model.name()} on {config.dataset} for {config.epochs} epochs")
 
-    # Load data
     print("Loading dataset...")
-    # stolen from https://pytorch.org/vision/main/transforms.html
-    transforms = v2.Compose(
-        [
-            v2.RandomResizedCrop(size=(128, 128), antialias=True, scale=(0.1, 1.0)),
-            v2.RandomHorizontalFlip(p=0.5),
-            v2.ToDtype(torch.float32, scale=True),
-            v2.Normalize(mean=[0, 0, 0], std=[255.0, 255.0, 255.0]),
-        ]
+
+    transforms = (
+        v2.Compose(
+            [
+                v2.RandomResizedCrop(size=(128, 128), antialias=True, scale=(0.1, 1.0)),
+                v2.RandomHorizontalFlip(p=0.5),
+                v2.ToDtype(torch.float32, scale=True),
+                v2.Normalize(mean=[0, 0, 0], std=[255.0, 255.0, 255.0]),
+                v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+            ]
+        )
+        if config.dataset == "imagenet"
+        else v2.Compose(
+            [
+                v2.RandomResizedCrop(size=(32, 32), antialias=True, scale=(0.5, 1.0)),
+                v2.RandomHorizontalFlip(p=0.5),
+                v2.ToDtype(torch.float32, scale=True),
+                v2.Normalize(mean=[0, 0, 0], std=[255.0, 255.0, 255.0]),
+            ]
+        )
     )
+
     train_loader, test_loader = load_data(
         config.dataset,
         transformation=transforms,
