@@ -3,7 +3,7 @@
 from typing import Callable, Literal
 from functools import partial
 
-from PIL.Image import Image
+from PIL import Image
 import os
 
 import torch
@@ -99,11 +99,6 @@ def batch_structural_similarity(
     return sum(ssim_batch) / len(ssim_batch)
 
 
-def get_jpeg_bits_per_pixel(images_batch: torch.Tensor, ):
-    """sas"""
-    v2.functional.
-
-
 def evaluate_on_class(
     model: nn.Module,
     dataset: str,
@@ -113,7 +108,7 @@ def evaluate_on_class(
     batch_size: int = 32,
     transform: Callable | None = None,
     break_after_first_batch: bool = False,
-): 
+):
     _, dataloader = load_data(
         dataset,
         transformation=transform,
@@ -175,9 +170,19 @@ def make_ssim_boxplots(models):
 
         ssims_arr.append(ssims)
 
-        print(f"{model.name()} got min ssim", min(ssims), "on class", torch.argmin(torch.tensor(ssims)))
-        print(f"{model.name()} got max ssim", max(ssims), "on class", torch.argmax(torch.tensor(ssims)))
-    
+        print(
+            f"{model.name()} got min ssim",
+            min(ssims),
+            "on class",
+            torch.argmin(torch.tensor(ssims)),
+        )
+        print(
+            f"{model.name()} got max ssim",
+            max(ssims),
+            "on class",
+            torch.argmax(torch.tensor(ssims)),
+        )
+
     plt.boxplot(ssims_arr, tick_labels=["Autoencoder", "VAE"])
     plt.savefig("boxplot_ae_and_vae.png")
 
@@ -193,18 +198,37 @@ def image_comparison_plots(models, class_idx_dict):
         "MIN_AE_IDX": (607, ae),
         "MAX_AE_IDX": (896, ae),
         "MIN_VAE_IDX": (509, vae),
-        "MAX_VAE_IDX": (405, vae)
+        "MAX_VAE_IDX": (405, vae),
     }
 
     for idx_name, (idx, model) in class_idx_dict.items():
         print(idx_name, idx)
-        evaluate_on_class(model,
-            "imagenet", idx,
+        evaluate_on_class(
+            model,
+            "imagenet",
+            idx,
             partial(plot_original_and_reconstruction, outfile=f"{idx_name}_{idx}.png"),
             batch_size=32,
             transform=transforms,
-            break_after_first_batch=True
+            break_after_first_batch=True,
         )
+
+
+def jpeg_compression_check():
+    for q in [90, 92, 93, 94, 95, 100]:
+        bits_per_pixels = []
+
+        print(f"JPEG quality: {q}")
+
+        for fname in os.listdir("sample_images/pngs"):
+            img: Image.Image = Image.open(f"sample_images/pngs/{fname}")
+            img.save("jpeg.jpg", "JPEG", quality=q)
+            filesize = os.path.getsize("jpeg.jpg") * 8
+            bits_per_pixels.append(filesize / (img.width * img.height))
+
+        avg = sum(bits_per_pixels) / len(bits_per_pixels)
+
+        print(f"Avg bits per pixel {avg}")
 
 
 if __name__ == "__main__":
@@ -224,43 +248,3 @@ if __name__ == "__main__":
     #     torch.load(vae_fp, weights_only=True, map_location=torch.device("cpu"))
     # )
     # vae.to(DEVICE)
-
-    transforms = v2.Compose(
-        [
-            v2.RandomResizedCrop(size=(128, 128), antialias=True, scale=(1.0, 1.0)),
-            # v2.RandomHorizontalFlip(p=0.5),
-            v2.ToDtype(torch.float32, scale=True),
-            v2.Normalize(mean=[0, 0, 0], std=[255.0, 255.0, 255.0]),
-        ]
-    )
-
-    _, dataloader = load_data(
-        "imagenet",
-        transformation=transforms,
-        batch_size=64,
-        n_test=1000,
-        n_train=0,
-    )
-
-    pil = v2.ToPILImage()
-
-    bits_per_pixels = []
-
-    for batch, labels in dataloader:
-
-        images: list[Image] = pil(batch)
-
-        for q in [40, 50, 60, 70]:
-
-            for c in images:
-
-                c.save("jpeg.jpg", "JPEG", quality=q)
-                filesize = os.path.getsize("jpeg.jpg") * 8
-                bits_per_pixels.append(filesize / (128*128*3))
-
-            avg = sum(bits_per_pixels) / len(bits_per_pixels)
-
-            print(f"Avg bits per pixel {avg}")
-
-
-
