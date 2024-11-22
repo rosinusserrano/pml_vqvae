@@ -3,6 +3,8 @@
 from typing import Callable, Literal
 from functools import partial
 
+import numpy as np
+
 from PIL import Image
 import os
 
@@ -215,7 +217,7 @@ def image_comparison_plots(models, class_idx_dict):
 
 
 def jpeg_compression_check():
-    for q in [90, 92, 93, 94, 95, 100]:
+    for q in [90, 92, 93, 94, 95, 96, 97, 98, 99, 100]:
         bits_per_pixels = []
 
         print(f"JPEG quality: {q}")
@@ -229,6 +231,25 @@ def jpeg_compression_check():
         avg = sum(bits_per_pixels) / len(bits_per_pixels)
 
         print(f"Avg bits per pixel {avg}")
+
+
+def png_jjpeg100_ssim():
+    ssims = []
+    for fname in os.listdir("sample_images/pngs"):
+        img: Image.Image = Image.open(f"sample_images/pngs/{fname}")
+        img.save("jpeg.jpg", "JPEG", quality=97)
+        jpg = Image.open("jpeg.jpg")
+
+        ssims.append(
+            structural_similarity(
+                np.asarray(img),
+                np.asarray(jpg),
+                channel_axis=2 if len(np.asarray(img).shape) == 3 else None,
+                data_range=255.0,
+            )
+        )
+
+    print(sum(ssims) / len(ssims))
 
 
 if __name__ == "__main__":
@@ -248,3 +269,7 @@ if __name__ == "__main__":
     #     torch.load(vae_fp, weights_only=True, map_location=torch.device("cpu"))
     # )
     # vae.to(DEVICE)
+
+    jpeg_compression_check()
+
+    png_jjpeg100_ssim()
