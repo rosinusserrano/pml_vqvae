@@ -122,7 +122,7 @@ In order to train the \ac{vq} on the ImageNet dataset, we will do the following 
     $\sigma = (0.229, 0.224, 0.225)$ of ImageNet for the three color channels, respectively.
 \end{itemize}
 
-Example images from ImageNet dataset after preprocessing are depicted in figure~\ref{fig:imnet_example_normalized}.
+Example images from ImageNet dataset after preprocessing are depicted in figure~\ref{fig:cifar_imagenet_normalized}.
 
 \subsection{CIFAR-10}\label{subsec:cifar-10}
 CIFAR-10~\cite{cifar10} is another popular image classification dataset.
@@ -138,4 +138,4 @@ No image belongs to more than one class and there are no missing values or dupli
 As the images in the CIFAR-10 dataset are already 32x32 pixels, we do not need to resize them.
 Hence, we will only apply MinMax Normalizing and potentially Standardizing, same as for the ImageNet data.
 
-Example images from the CIFAR-10 dataset are shown in figure~\ref{fig:cifar10_example_normalized}.
+Example images from the CIFAR-10 dataset are shown in figure~\ref{fig:cifar_imagenet_normalized}.
