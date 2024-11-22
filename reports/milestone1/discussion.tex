@@ -1,17 +1,43 @@
 The following sections will discuss the results of our baseline experiments, further ideas for the project, and real-world applications of the project.
 
 \subsection{Baseline Experiments}\label{subsec:baseline-results}
-    We present some results of our baseline training runs. We did an examplarily training for 10 epochs on a subset of ImageNet to see that it converges. The subset contained 100.000 images with 1000 samples per class. See ... for the full configuration details.
-
+    We present some results of our baseline training runs.
+    We did an examplarily training for 10 epochs on a subset of ImageNet to see that it converges.
+    The training subset contained 100,000 images with 100 samples per class, while the test subset contained 10,000 samples, 10 per class.
+    We used the PyTorch implementation of the Adam ~\cite{citationNeeded} optimizer with a learning rate of 0.001.
+    We used a batch size of 128 which resulted in roughly 780 optimization steps per epoch.
+    Both the VAE and the Autoencoder have the same encoder-decoder structure which is similar to the implementation of the VQ-VAE.
+    I.e. the decoder consists of two downsampling layers, followed by two residual blocks, followed by a final compression layer, which dictates the compression rate of the model.
+    The downsampling layeras and the residuals blocks all have 256 channels.
+    The decoder basically applies the same operations in reverse order, where the downsampling layers are interchanged with upsampling layers.
+    For the number of channels of the latent variable $z$ we chose 2, which causes the latent variable $z$ to be in $\mathbb{R}^{2\times 32 \times 32}$ when feeding in $3 \times 128 \times 128$ ImageNet images.
+    This causes the latent variable to be compressed into $4\text{ bits}\/\text{pixel}$, which is similar to the compression rate of JPEG retaining 70\% of image quality.
+    
     \subsubsection{Autoencoder}\label{subsubsec:autoencoder}
-        We were able to show that our implementation of an \ac{ae} is able to reconstruct images from the ImageNet dataset. W
+        We were able to show that our implementation of an \ac{ae} is able to reconstruct images from the ImageNet dataset width very good fidelity.
+        Judging by the plots in figure ~\cite{citationNeeded}, the model has neither converged on test nor the training data.
+        Nonetheless the model produces very good reconstructions, when evaluating subjectively.
+        The average of the MSSIM of the test data is \~0.78 as can be seen in figure ~\cite{citationNeeded}.
+
+
 
         For this trainig, we used a latent dimension of 32x32x2 pixels, which means 4 bits per pixel for an 128x128x3 input images. That is a compression rate of 4,7 \% compared to the original image size.
 
+        % 32 * 32 * 2 = 2048. Ich würde nicht sagen dass es relatively small is. Es ist auch nicht uncommon am ende auf einen 512 dimensional vector zu mappen. 
         We are surprised by the results of our basic \ac{ae} and its capability to reconstruct images. Even with a realitively small latent dimension and only 10 epochs of training it is able to reconstruct images with a satifiying human percetiple quality.
+    
+    \subsubsection{VAE}\label{subsubsec:vae_training}
+        After training the VAE we were not able to obtain good reconstructions.
+        The decoder produced samples that were always very similar, indicating that it suffered from the poterior collapse.
+        Thus we only achieve a very bad average MSSIM of only 0,3 (see figure ~\cite{citationNeeded}).
         
 
-\subsubsection{Class Differences}\label{subsubsec:class-differences}
+    \subsubsection{Class Differences}\label{subsubsec:class-differences}
+        Going deeper into analyzing the performance of our baseline methods, we evaluated their SSIM per class.
+        Hoping to gain insights to potentially improve robustness of future implementations, MEHR GELABER KP.
+        The distribution of MSSIM of the images of each class for both VAE and Autoencoder are shown in figure~\cite{citationNeeded}.
+        
+
 
 \subsection{Dataset}\label{subsec:dataset}
 
