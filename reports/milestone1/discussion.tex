@@ -1,75 +1,74 @@
 The following sections will discuss the results of our baseline experiments, further ideas for the project, and real-world applications of the project.
 
 \subsection{Baseline Experiments}\label{subsec:baseline-results}
-    We present some results of our baseline training runs.
-    We did an examplarily training for 10 epochs on a subset of ImageNet to see that it converges.
-    The training subset contained 100,000 images with 100 samples per class, while the test subset contained 10,000 samples, 10 per class.
-    We used the PyTorch implementation of the Adam ~\cite{citationNeeded} optimizer with a learning rate of 0.001.
-    We used a batch size of 128 which resulted in roughly 780 optimization steps per epoch.
-    Both the VAE and the Autoencoder have the same encoder-decoder structure which is similar to the implementation of the VQ-VAE.
-    I.e. the decoder consists of two downsampling layers, followed by two residual blocks, followed by a final compression layer, which dictates the compression rate of the model.
-    The downsampling layeras and the residuals blocks all have 256 channels.
-    The decoder basically applies the same operations in reverse order, where the downsampling layers are interchanged with upsampling layers.
-    For the number of channels of the latent variable $z$ we chose 2, which causes the latent variable $z$ to be in $\mathbb{R}^{2\times 32 \times 32}$ when feeding in $3 \times 128 \times 128$ ImageNet images.
-    This causes the latent variable to be compressed into $4\text{ bits}\/\text{pixel}$, which is similar to the compression rate of JPEG retaining 70\% of image quality.
+We did an exemplary training for 10 epochs on a subset of ImageNet to see if it converges.
+The training subset contained 100,000 images with 100 samples per class, while the test subset contained 10,000 samples, 10 per class.
+We used the PyTorch implementation of the Adam ~\cite{citationNeeded} optimizer with a learning rate of 0.001,
+with a batch size of 128.
+This resulted in roughly 780 optimization steps per epoch.
+We chose to use 2 latent channels per latent variable using the 32 bit float of pytorch.
+As such, our latents are of size $\mathbb{R}^{2\times 32 \times 32}$ when feeding in $3 \times 128 \times 128$
+ImageNet images.
+We therefore reach a compression down to compressed $4\text{ bits}\/\text{pixel}$, which is similar to the file size
+at a compression rate of JPEG at 70\% quality~\cite{citationNeeded}.e of JPEG retaining 70\% of image quality.
 
-    \begin{figure}
-        \centering
-        \includegraphics[width=0.4\textwidth]{../../sample_images/evaluation/boxplot_ae_and_vae.png}
-        \caption{Boxplots of per class average SSIM on test data}
-        \label{fig:boxplots}
-    \end{figure}
+\begin{figure}
+    \centering
+    \includegraphics[width=0.4\textwidth]{../../sample_images/evaluation/boxplot_ae_and_vae}
+    \caption{Boxplots of per class average SSIM on test data}
+    \label{fig:boxplots}
+\end{figure}
 
-    \begin{figure}
-        \centering
-        \includegraphics[width=0.4\textwidth]{../../sample_images/evaluation/MAX_AE_IDX_896.png}
-        \caption{Best performing class (896) of Autoencoder with SSIM of 0.88}
-        \label{fig:imnet_best_perf_ae}
-    \end{figure}
+\begin{figure}
+    \centering
+    \includegraphics[width=0.4\textwidth]{../../sample_images/evaluation/MAX_AE_IDX_896}
+    \caption{Best performing class (896) of Autoencoder with SSIM of 0.88}
+    \label{fig:imnet_best_perf_ae}
+\end{figure}
 
-    \begin{figure}
-        \centering
-        \includegraphics[width=0.4\textwidth]{../../sample_images/evaluation/MIN_AE_IDX_607.png}
-        \caption{Worst performing class (607) of autoencoder with SSIM of 0.47}
-        \label{fig:imnet_worst_perf_ae}
-    \end{figure}
+\begin{figure}
+    \centering
+    \includegraphics[width=0.4\textwidth]{../../sample_images/evaluation/MIN_AE_IDX_607}
+    \caption{Worst performing class (607) of autoencoder with SSIM of 0.47}
+    \label{fig:imnet_worst_perf_ae}
+\end{figure}
 
-    \begin{figure}
-        \centering
-        \includegraphics[width=0.4\textwidth]{../../sample_images/evaluation/MAX_VAE_IDX_405.png}
-        \caption{Best performing class (405) of VAE with SSIM 0.44}
-        \label{fig:imnet_best_perf2_vae}
-    \end{figure}
-    
-    \begin{figure}
-        \centering
-        \includegraphics[width=0.4\textwidth]{../../sample_images/evaluation/MIN_VAE_IDX_509.png}
-        \caption{Worst performing class (509) of VAE with SSIM 0.19}
-        \label{fig:imnet_worst_perf2_vae}
-    \end{figure}
-    
-    \subsubsection{Autoencoder}\label{subsubsec:autoencoder}
-        We were able to show that our implementation of an \ac{ae} is able to reconstruct images from the ImageNet dataset width very good fidelity.
-        Judging by the plots in figure ~\cite{citationNeeded}, the model has neither converged on test nor the training data.
-        Nonetheless the model produces very good reconstructions, when evaluating subjectively.
-        The average of the MSSIM of the test data is \~0.78 as can be seen in figure ~\cite{citationNeeded}.
+\begin{figure}
+    \centering
+    \includegraphics[width=0.4\textwidth]{../../sample_images/evaluation/MAX_VAE_IDX_405}
+    \caption{Best performing class (405) of VAE with SSIM 0.44}
+    \label{fig:imnet_best_perf2_vae}
+\end{figure}
 
-        For this trainig, we used a latent dimension of 32x32x2 pixels, which means 4 bits per pixel for an 128x128x3 input images. That is a compression rate of 4,7 \% compared to the original image size.
+\begin{figure}
+    \centering
+    \includegraphics[width=0.4\textwidth]{../../sample_images/evaluation/MIN_VAE_IDX_509}
+    \caption{Worst performing class (509) of VAE with SSIM 0.19}
+    \label{fig:imnet_worst_perf2_vae}
+\end{figure}
 
-        % 32 * 32 * 2 = 2048. Ich würde nicht sagen dass es relatively small is. Es ist auch nicht uncommon am ende auf einen 512 dimensional vector zu mappen. 
-        We are surprised by the results of our basic \ac{ae} and its capability to reconstruct images. Even with a realitively small latent dimension and only 10 epochs of training it is able to reconstruct images with a satifiying human percetiple quality.
-    
-    \subsubsection{VAE}\label{subsubsec:vae_training}
-        After training the VAE we were not able to obtain good reconstructions.
-        The decoder produced samples that were always very similar, indicating that it suffered from the poterior collapse.
-        Thus we only achieve a very bad average MSSIM of only 0.3 (see figure ~\cite{citationNeeded}).
+\subsubsection{Autoencoder}\label{subsubsec:autoencoder}
+We were able to show that our implementation of an \ac{ae} is able to reconstruct images from the ImageNet dataset width very good fidelity.
+Judging by the plots in figure ~\cite{citationNeeded}, the model has neither converged on test nor the training data.
+Nonetheless the model produces very good reconstructions, when evaluating subjectively.
+The average of the MSSIM of the test data is \~0.78 as can be seen in figure ~\cite{citationNeeded}.
+
+For this trainig, we used a latent dimension of 32x32x2 pixels, which means 4 bits per pixel for an 128x128x3 input images. That is a compression rate of 4,7 \% compared to the original image size.
+
+% 32 * 32 * 2 = 2048. Ich würde nicht sagen dass es relatively small is. Es ist auch nicht uncommon am ende auf einen 512 dimensional vector zu mappen.
+We are surprised by the results of our basic \ac{ae} and its capability to reconstruct images. Even with a realitively small latent dimension and only 10 epochs of training it is able to reconstruct images with a satifiying human percetiple quality.
+
+\subsubsection{VAE}\label{subsubsec:vae_training}
+After training the VAE we were not able to obtain good reconstructions.
+The decoder produced samples that were always very similar, indicating that it suffered from the poterior collapse.
+Thus we only achieve a very bad average MSSIM of only 0.3 (see figure ~\cite{citationNeeded}).
 
 
-    \subsubsection{Class Differences}\label{subsubsec:class-differences}
-        Going deeper into analyzing the performance of our baseline methods, we evaluated their SSIM per class.
-        Hoping to gain insights to potentially improve robustness of future implementations, MEHR GELABER KP.
-        The distribution of MSSIM of the images of each class for both VAE and Autoencoder are shown in figure~\cite{citationNeeded}.
-        
+\subsubsection{Class Differences}\label{subsubsec:class-differences}
+Going deeper into analyzing the performance of our baseline methods, we evaluated their SSIM per class.
+Hoping to gain insights to potentially improve robustness of future implementations, MEHR GELABER KP.
+The distribution of MSSIM of the images of each class for both VAE and Autoencoder are shown in figure~\cite{citationNeeded}.
+
 
 
 \subsection{Dataset}\label{subsec:dataset}
@@ -78,13 +77,13 @@ The following sections will discuss the results of our baseline experiments, fur
     \item \textbf{Realword application} \ac{cifar} and ImageNet have been foundational datasets for over a decade and a half.
     Their primary use-case has shifted from being cutting-edge datasets for training state-of-the-art models, e.g. AlexNet ~\cite{AlexNet} or CNN at that time,
     to serving as a base for experiments and benchmarks.
-    
+
     Nowadays, state-of-the-art generative models rely on much larger datasets, often containing billions of samples. A notable example is LAION-5B ~\cite{laion5b} which was used to train Sable Diffusion ~\cite{stable_diff}
-    
+
     ImageNet remains highly relevant in current research, as many novel approaches continue to be evaluated on this dataset due to its versatility. Its extensive capacity allows for the generalization of good performance to larger and more diverse datasets. Additionally, the Fréchet Inception Distance (FID), a metric for assessing image similarity, is calculated using ImageNet.
-    
+
     Similar trends can be observed with CIFAR-10; however, its low resolution restricts its applicability for benchmarking contemporary image generation approaches.
-    
+
     Thus, while we still expect to achieve good results with our final model, we do not anticipate achieving the level of visual fidelity demonstrated by state-of-the-art image generation models
 
     \item \textbf{Suitability} The results from our initial training runs, using only a small subset of the training data, demonstrate promising outcomes. We are confident that, when trained on the full ImageNet dataset, our models will achieve improved performance, particularly in terms of reconstruction.
@@ -92,23 +91,23 @@ The following sections will discuss the results of our baseline experiments, fur
     Sampling functionality has not yet been implemented; however, we are certain that the dataset is equally suitable for training generative models. The dataset will likely not be a limitation for our task.
 
     \item \textbf{Challenges} The biggest challenge but also the biggest advantage of the ImageNet dataset is its size. The size imposes a challenge in terms of assessing the data, i.e. the shapes, properties of indivisual classes and their distribution. It is impossible to look at all the images, so we had to draw conclusions from sample image inspection and statistical analysis.
-    
+
     On the other hand, the size and diversity of the data is a huge advantage for training the models. The models will be able to learn a wide range of features and patterns, and to generalize it to unseen data.
 \end{itemize}
 
 \subsection{A prospect on further Experiements}\label{subsec:further-ideas}
-    We utilize the structural similarity index as a metric for image similarity to evaluate the reconstruction quality of our models \ref{subsec:compression}. For comparison to the paper, we still use \ac{mse} loss for training our \ac{ae}. Though, as discussed in \ref{subsec:compression}, \ac{mse} might not be the optimal metric in terms of human perception.
+We utilize the structural similarity index as a metric for image similarity to evaluate the reconstruction quality of our models \ref{subsec:compression}. For comparison to the paper, we still use \ac{mse} loss for training our \ac{ae}. Though, as discussed in \ref{subsec:compression}, \ac{mse} might not be the optimal metric in terms of human perception.
 
-    \ac{ssim} is a metric for precisely this purpose, so we think our models might benifit from using it as a loss function instead of \ac{mse}. In ~\cite{ssim_as_loss}, it is shown that using a loss function trageted to human perception can improve the quality of convolutional neural networks for image reconstruction, in particular using \ac{ssim}. 
+\ac{ssim} is a metric for precisely this purpose, so we think our models might benifit from using it as a loss function instead of \ac{mse}. In ~\cite{ssim_as_loss}, it is shown that using a loss function trageted to human perception can improve the quality of convolutional neural networks for image reconstruction, in particular using \ac{ssim}.
 
 \subsection{Working Title: Final words}\label{subsec:final-words}
-    Image reconstrution as well as image generation are two realitively well researched topics. Presumably, because of their wide range of applications. While the most prominent methods, i.e. \ac{ae} and \ac{vae}, are two simple yet powerful models, they still have their limitations. 
+Image reconstrution as well as image generation are two realitively well researched topics. Presumably, because of their wide range of applications. While the most prominent methods, i.e. \ac{ae} and \ac{vae}, are two simple yet powerful models, they still have their limitations.
 
-    \ac{ae} are powerful reconstructors, but they are not able to generate new images, because of their deterministic nature and their discrete latent representation.
+\ac{ae} are powerful reconstructors, but they are not able to generate new images, because of their deterministic nature and their discrete latent representation.
 
-    \ac{vae} can sample in the latent space and generate new images by virtue of their stochastic properties. Yet, you sometime favour a discrete latent over latent distributions, because of their simplicity, interpretability and compatibilty with other modalities ~\cite{vqvae}.
+\ac{vae} can sample in the latent space and generate new images by virtue of their stochastic properties. Yet, you sometime favour a discrete latent over latent distributions, because of their simplicity, interpretability and compatibilty with other modalities ~\cite{vqvae}.
 
-    \ac{vq} is an attempt to fill that gap. It enables to reconstruct images, generate new samples while having a discrete latent representation.
+\ac{vq} is an attempt to fill that gap. It enables to reconstruct images, generate new samples while having a discrete latent representation.
 
 \vskip 1em
 \textbf{A Note on Overfitting:}
@@ -116,6 +115,6 @@ Overfitting refers to the phenomenon where a model starts to memorize the traini
 features, in turn not generalizing well to unseen data.
 
 While theoretically, this may very well be an issue with \ac{ae} and \ac{vae}, we have not experienced this happening
-yet with either when training with adequate training-set sizes.
+yet with either when training with adequate training-set sizes.a
 This is likely due to the large dataset sizes we use and the inductive bias of the convolution operation~
 \cite{citationNeeded}.
