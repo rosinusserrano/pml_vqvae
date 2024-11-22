@@ -1,6 +1,6 @@
 import argparse
 
-from pml_vqvae.config_class import TrainConfig
+from pml_vqvae.train_config import TrainConfig
 
 
 class CLI_handler:

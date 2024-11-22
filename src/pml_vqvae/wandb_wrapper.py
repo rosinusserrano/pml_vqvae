@@ -1,6 +1,6 @@
 import wandb
 import os
-from pml_vqvae.config_class import TrainConfig
+from pml_vqvae.train_config import TrainConfig
 import numpy as np
 
 
