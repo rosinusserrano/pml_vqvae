@@ -1,9 +1,5 @@
 "Python script to train different models"
 
-from pml_vqvae.baseline.pml_model_interface import PML_model
-from pml_vqvae.cli_handler import CLI_handler
-from pml_vqvae.train_config import TrainConfig
-from pml_vqvae.dataset.dataloader import load_data
 from torch.utils.data import DataLoader
 import torch
 from torch.optim import Adam, Optimizer
@@ -12,6 +8,10 @@ import yaml
 from tqdm.auto import tqdm
 from pml_vqvae.stats_keeper import StatsKeeper
 from pml_vqvae.wandb_wrapper import WANDBWrapper
+from pml_vqvae.baseline.pml_model_interface import PML_model
+from pml_vqvae.cli_handler import CLI_handler
+from pml_vqvae.train_config import TrainConfig
+from pml_vqvae.dataset.dataloader import load_data
 
 # import wandb
 DEFAULT_CONFIG = "config.yaml"
@@ -197,7 +197,7 @@ def train(config: TrainConfig):
 cli_handler = CLI_handler()
 args = cli_handler.parse_args()
 
-with open(DEFAULT_CONFIG, "r") as file:
+with open(DEFAULT_CONFIG, "r", encoding="utf-8") as file:
     config = TrainConfig.from_dict(yaml.safe_load(file))
 
 # Overwrite config when cli arguments are provided
