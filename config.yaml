@@ -10,7 +10,7 @@ data:
   n_train: 100000 # number of training samples
   n_test: 10000 # number of test samples
   dataset: "imagenet" # either cifar or imagenet
-  class_idx: None # list of class indices to use, empty list to use all classes
+  class_idx: null # list of class indices to use, empty list to use all classes
 
 train:
   batch_size: 128
