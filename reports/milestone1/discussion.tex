@@ -1,4 +1,4 @@
-The following sections will discuss the results of our baseline experiments, further ideas for the project, and real-world applications of the project.
+The following sections will present the results of our baseline experiments, explore additional ideas for the project, and discuss potential real-world applications.
 
 \subsection{Baseline Experiments}\label{subsec:baseline-results}
 \begin{wrapfigure}{r}{0.4\textwidth}
@@ -34,13 +34,13 @@ The average of the SSIM of the test data is $\approx 0.78$ as can be seen in Fig
 
 \subsubsection{VAE}
 When using the same latent size as for the \ac{ae}, the \ac{vae} was not able to obtain reconstructions
-passing a first visual check.
+passing a first visual inspection.
 The numeric metrics were also very low, with an average \ac{ssim} below 0.4.
 The decoder produced samples that were always very similar, indicating that it may have suffered from posterior
 collapse.
 When posterior collapse occurs, the learned latent variables fail to encode any meaningful information, effectively
 defaulting to the prior distribution.
-We plan to revisit our implementation later and analyze if we can make it more useful as a baseline.
+We plan to revisit our implementation at a later stage and evaluate whether we can enhance it to serve as a more effective baseline.
 
 \begin{figure}[H]
     \centering
@@ -50,14 +50,14 @@ We plan to revisit our implementation later and analyze if we can make it more u
 \end{figure}
 
 \subsubsection{JPEG}\label{subsubsec:jpeg}
-To compare the compression ability of our baseline methods to JPEG compression, we first had to identify the quality with which JPEG compresses images to approximately 4 bits per pixel.
+To compare the compression ability of our baseline methods to JPEG compression, we first had to determine the quality with which JPEG compresses images to approximately 4 bits per pixel.
 In a rather small scale experiment, we found that 4 bits per pixel where achieved when using JPEG compression with a quality parameter of 97, which in turn resulted in a \ac{ssim} score of 0.95.
-This shows that neural image compression with the baseline methods are surpassed by JPEG compression.
+This shows that neural image compression using the baseline methods are outperformed by JPEG compression.
 
 \subsection{Further inspection}
 We further inspected the performance of our models on a per class basis. Figure \ref{fig:boxplots} shows the distribution of SSIM of the images of each class for both VAE and Autoencoder. \ac{vae} performs worse in all classes. The \ac{ae} is on average better than the \ac{vae} on the test data, though there are performance differences between class. 
 
-\ac{ae} performs significantly worse than average on some classes.
+\ac{ae} performs significantly worse on some classes.
 The lowest SSIM score is 0.47 for class \textit{jack-o'-lantern}, though there is
 hard to see any difference between that class images and those of the best performing class
 \textit{washbasin} (0.88 SSIM)~\ref{fig:imnet_best_perf_ae}.
@@ -67,7 +67,7 @@ comparability in dark regions. The images from the \textit{jack-o'-lantern} clas
 It is surprising that the best-reconstructed images by the \ac{vae}, with an SSIM of 0.44, are significantly worse than the worst-reconstructed images by the \ac{ae}, despite having a very similar SSIM.
 
 \subsection{Dataset}\label{subsec:dataset}
-We discuss the applicability of the dataset to real-world applications and its suitability for our task.
+We discuss the relevance of the dataset to real-world applications and its suitability for our task.
 \subsubsection{Real-world Application}
 CIFAR-10 and ImageNet have been foundational datasets for over a decade and a half.
 Their primary use-case has shifted from being cutting-edge datasets for training state-of-the-art models like the

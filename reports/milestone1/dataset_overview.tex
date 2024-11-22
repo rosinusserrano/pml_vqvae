@@ -11,7 +11,7 @@ Generally speaking the image generation and reconstruction performance of a mode
 and diversity of the training data.
 
 \subsection{Feature Extraction}\label{subsec:feature-extraction}
-In machine learning, a set of features is ``good'' if it allows the model to achieve a certain task
+In \ac{ml}, a set of features is ``good'' if it allows the model to achieve a certain task
 efficiently.
 For traditional, non-deep models, that means that features should aim to be informative, meaning that
 they should have some predictive value towards the final goal.
@@ -19,10 +19,7 @@ In simple regression settings, this is the case if the feature correlates with t
 Furthermore, it is helpful for features to be independent form each other, as dependent features could overemphasize
 their importance due to the higher frequency~\cite{featengineer}.
 
-The reasons listed above are due to the high sensitivity of traditional ML models to small perturbations in data,
-which calls for efficient feature engineering.
-In modern deep learning settings, this sensitivity has decreased significantly~\cite{lecun2015deep}, which we also
-expect to apply to all of our models.
+The reasons outlined above stem from the high sensitivity of traditional \ac{ml} models to small perturbations in data, which necessitates extensive feature engineering. However, in modern deep learning frameworks, this sensitivity has significantly diminished~\cite{lecun2015deep}, and we expect this trend to apply to all of our models as well.
 
 However, normalization remains essential because features with larger scales tend to have a greater influence on gradients and
 the final output compared to those with smaller scales.
@@ -39,7 +36,7 @@ In the paper, the \ac{vq} is trained on three image datasets: \textit{ImageNet},
 As stated in Section~\ref{sec:introduction}, we will focus our training on the ImageNet and CIFAR-10
 datasets for now.
 
-Both are among the most common image datasets used in machine learning.
+Both are among the most common image datasets used in \ac{ml}.
 While they were originally designed for image classification and detection tasks, their utility extends beyond
 these applications; by discarding the labels, they can also be leveraged for image generation tasks.
 
@@ -53,7 +50,7 @@ these applications; by discarding the labels, they can also be leveraged for ima
 \end{wrapfigure}
 
 The full ImageNet dataset consists of 14\,197\,122 hand-labeled photographs collected from flickr and other search
-engines, distributed over 21841 \textit{synonym sets} from the
+engines, distributed over 21\,841 \textit{synonym sets} from the
 \textit{WordNet} hierarchy, pursuing to cover most nouns in the English language as described by~\cite{wordnet}.
 
 When talking about ImageNet, many authors refer to the \ac{ilsvrc} dataset.
@@ -76,8 +73,6 @@ The dataset aims to replicate the distribution of natural photographs, specifica
 examples across the eight dimensions illustrated in Figure~\ref{fig:imnet_dimensions}.
 Thereby, models trained on it can generalize along these.
 
-
-
 \subsubsection{Class Balance}
 To not introduce bias, the dataset should be sufficiently balanced between the classes.
 
@@ -98,15 +93,14 @@ Figure~\ref{fig:bigboy} depicts the resolution ranges for each class.
 
 As to be seen in Figure~\ref{fig:optimum_resolution}, some images have a very irregular ratio, which imposes a challenge
 for resizing.
-Very small images do not contain enough information, which when upscaled, result in a blurry image, illustrated in
-the same Figure~\ref{fig:optimum_resolution}).
+Very small images do not contain enough information, which when upscaled, result in a blurry image, shown on the right in Figure~\ref{fig:optimum_resolution}).
 
 \subsubsection{Data Cleaning and Preprocessing}
 In order to train the \ac{vq} on the ImageNet dataset, we will do the following preprocessing steps.
 
 \begin{itemize}
     \item \textbf{Data Cleaning}
-    Based on our knowledge from examining the image shapes, remove images with a resolution below 32px on any axis,
+    Based on our knowledge from examining the image shapes, we removed images with a resolution below 32px on any axis,
     which were 41 in total
     \item \textbf{Image Resizing}
     For training and testing, we resize all images to 128x128 pixels, similar to the paper.
@@ -131,7 +125,7 @@ The dataset is split into 50\,000 training images and 10\,000 test images.
 The classes are mutually exclusive, so each image belongs to exactly one class.
 The classes are: \textit{airplane, automobile, bird, cat, deer, dog, frog, horse, ship, truck}
 
-The train set contains exactly 5000 images per class, while the test set contains 1000 images per class.
+The train set contains exactly 5\,000 images per class, while the test set contains 1\,000 images per class.
 No image belongs to more than one class and there are no missing values or duplicates in the dataset.
 
 \subsubsection{Preprocessing}

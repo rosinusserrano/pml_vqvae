@@ -36,7 +36,7 @@ The output of this stage is passed to a latent layer, whose dimensionality deter
 The decoding stage, which mirrors the structure of the encoding stage, upsamples the latent representation to reconstruct the original input.
 The final output, the reconstruction, has the same shape as the input data, allowing for a direct comparison between the two.
 
-The model can be trained by applying gradient descent on some form of cost function that describes reconstruction error
+The model can be trained by applying gradient descent on a cost function of some form that describes reconstruction error
 like \ac{mse}, theoretically pushing the network to encode the information most important to deconstruction in the
 latent.
 
