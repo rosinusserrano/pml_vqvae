@@ -111,26 +111,3 @@ def load_data(
     )
 
     return train_loader, test_loader
-
-
-if __name__ == "__main__":
-
-    t, te = load_data(
-        "imagenet",
-        batch_size=20,
-        n_train=1000,
-        n_test=1000,
-        seed=2020,
-        transformation=RandomCrop(128, pad_if_needed=True),
-    )
-
-    # train_set = ImageNet(root=DATASET_DIR + "imagenet_torchvision/data", split="train")
-    # loader = torch.utils.data.DataLoader(
-    #     train_set, batch_size=1, shuffle=True, num_workers=1
-    # )
-
-    # set seed for reproducibility
-    # torch.manual_seed(2809)
-    sample_images = next(iter(t))[0]
-
-    show_image_grid(sample_images, outfile="test.png")

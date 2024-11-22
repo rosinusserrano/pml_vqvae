@@ -156,17 +156,9 @@ class CifarDataset(Dataset):
         # Number of classes
         info["n_classes"] = len(self.classes)
 
-        # mean number of samples
-        # info["samples_per_class"] =
-
         # write to json file
         if outfile is not None:
             with open(outfile, "w") as f:
                 json.dump(info, f)
 
         return info
-
-
-if __name__ == "__main__":
-
-    data = CifarDataset(split="train", samples_per_class=1)

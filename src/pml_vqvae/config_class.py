@@ -112,13 +112,3 @@ class Config:
             return BaselineAutoencoder()
 
         raise ValueError(f"Model {self.model_name} is not available.")
-
-
-if __name__ == "__main__":
-
-    with open("config.yaml", "r") as file:
-        config = yaml.safe_load(file)
-
-    config = Config.from_dict(config)
-
-    print("done")
