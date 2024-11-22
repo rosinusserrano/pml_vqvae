@@ -133,8 +133,6 @@ class BaselineVariationalAutoencoder(PML_model):
             dim=0,
         )
 
-        # The division by the detached loss is done to equally balance
-        # the contribution of each loss function to the final loss
         loss = reconstruction_loss + 0.00025 * kld_loss
 
         return loss, reconstruction_loss.detach(), kld_loss.detach()
