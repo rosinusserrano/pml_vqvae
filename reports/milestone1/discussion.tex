@@ -13,12 +13,12 @@ The following sections will discuss the results of our baseline experiments, fur
     For the number of channels of the latent variable $z$ we chose 2, which causes the latent variable $z$ to be in $\mathbb{R}^{2\times 32 \times 32}$ when feeding in $3 \times 128 \times 128$ ImageNet images.
     This causes the latent variable to be compressed into $4\text{ bits}\/\text{pixel}$, which is similar to the compression rate of JPEG retaining 70\% of image quality.
 
-    \begin{wrapfigure}{r}{0.4\textwidth}
+    \begin{figure}
         \centering
         \includegraphics[width=0.4\textwidth]{../../sample_images/evaluation/boxplot_ae_and_vae.png}
         \caption{Boxplots of per class average SSIM on test data}
         \label{fig:boxplots}
-    \end{wrapfigure}
+    \end{figure}
 
     \begin{figure}
         \centering
@@ -62,7 +62,7 @@ The following sections will discuss the results of our baseline experiments, fur
     \subsubsection{VAE}\label{subsubsec:vae_training}
         After training the VAE we were not able to obtain good reconstructions.
         The decoder produced samples that were always very similar, indicating that it suffered from the poterior collapse.
-        Thus we only achieve a very bad average MSSIM of only 0,3 (see figure ~\cite{citationNeeded}).
+        Thus we only achieve a very bad average MSSIM of only 0.3 (see figure ~\cite{citationNeeded}).
 
 
     \subsubsection{Class Differences}\label{subsubsec:class-differences}
