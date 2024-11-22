@@ -12,14 +12,47 @@ The following sections will discuss the results of our baseline experiments, fur
     The decoder basically applies the same operations in reverse order, where the downsampling layers are interchanged with upsampling layers.
     For the number of channels of the latent variable $z$ we chose 2, which causes the latent variable $z$ to be in $\mathbb{R}^{2\times 32 \times 32}$ when feeding in $3 \times 128 \times 128$ ImageNet images.
     This causes the latent variable to be compressed into $4\text{ bits}\/\text{pixel}$, which is similar to the compression rate of JPEG retaining 70\% of image quality.
+
+    \begin{wrapfigure}{r}{0.4\textwidth}
+        \centering
+        \includegraphics[width=0.4\textwidth]{../../sample_images/evaluation/boxplot_ae_and_vae.png}
+        \caption{Boxplots of per class average SSIM on test data}
+        \label{fig:boxplots}
+    \end{wrapfigure}
+
+    \begin{wrapfigure}{r}{0.4\textwidth}
+        \centering
+        \includegraphics[width=0.4\textwidth]{../../sample_images/evaluation/MAX_AE_IDX_896.png}
+        \caption{Best performing class (896) of Autoencoder with SSIM of 0.88}
+        \label{fig:imnet_dimensions}
+    \end{wrapfigure}
+
+    \begin{wrapfigure}{r}{0.4\textwidth}
+        \centering
+        \includegraphics[width=0.4\textwidth]{../../sample_images/evaluation/MIN_AE_IDX_607.png}
+        \caption{Worst performing class (607) of autoencoder with SSIM of 0.47}
+        \label{fig:imnet_dimensions}
+    \end{wrapfigure}
+
+    \begin{wrapfigure}{r}{0.4\textwidth}
+        \centering
+        \includegraphics[width=0.4\textwidth]{../../sample_images/evaluation/MAX_VAE_IDX_405.png}
+        \caption{Best performing class (405) of VAE with SSIM 0.44}
+        \label{fig:imnet_dimensions}
+    \end{wrapfigure}
+    
+    \begin{wrapfigure}{r}{0.4\textwidth}
+        \centering
+        \includegraphics[width=0.4\textwidth]{../../sample_images/evaluation/MIN_VAE_IDX_509.png}
+        \caption{Worst performing class (509) of VAE with SSIM 0.19}
+        \label{fig:imnet_dimensions}
+    \end{wrapfigure}
     
     \subsubsection{Autoencoder}\label{subsubsec:autoencoder}
         We were able to show that our implementation of an \ac{ae} is able to reconstruct images from the ImageNet dataset width very good fidelity.
         Judging by the plots in figure ~\cite{citationNeeded}, the model has neither converged on test nor the training data.
         Nonetheless the model produces very good reconstructions, when evaluating subjectively.
         The average of the MSSIM of the test data is \~0.78 as can be seen in figure ~\cite{citationNeeded}.
-
-
 
         For this trainig, we used a latent dimension of 32x32x2 pixels, which means 4 bits per pixel for an 128x128x3 input images. That is a compression rate of 4,7 \% compared to the original image size.
 
@@ -30,7 +63,7 @@ The following sections will discuss the results of our baseline experiments, fur
         After training the VAE we were not able to obtain good reconstructions.
         The decoder produced samples that were always very similar, indicating that it suffered from the poterior collapse.
         Thus we only achieve a very bad average MSSIM of only 0,3 (see figure ~\cite{citationNeeded}).
-        
+
 
     \subsubsection{Class Differences}\label{subsubsec:class-differences}
         Going deeper into analyzing the performance of our baseline methods, we evaluated their SSIM per class.
