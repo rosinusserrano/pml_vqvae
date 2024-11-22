@@ -160,10 +160,3 @@ class BaselineVariationalAutoencoder(PML_model):
 
     def name(self):
         return "BaselineVariationalAutoencoder"
-
-
-if __name__ == "__main__":
-    model = BaselineVariationalAutoencoder()
-    example_input = torch.randn((16, 3, 128, 128))
-
-    model(example_input)

@@ -4,7 +4,7 @@ experiment:
   seed: 42 # seed for reproducibility
   test_interval: 1  # test the model every test_interval epochs, None to disable
   vis_train_interval: 1 # plot the training loss every plot_train_interval epochs, None to disable
-  wandb_log: True # log the experiment to wandb
+  wandb_log: False # log the experiment to wandb
 
 data:
   n_train: 100000 # number of training samples

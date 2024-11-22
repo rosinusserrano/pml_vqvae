@@ -226,10 +226,3 @@ class ImageNetDataset(Dataset):
                 json.dump(info, f)
 
         return info
-
-
-if __name__ == "__main__":
-
-    data = ImageNetDataset(split="train", samples_per_class=10)
-
-    info = data.summary()

@@ -94,7 +94,6 @@ def show_image_grid_v2(
     outfile: str = None,
     rows: int = None,
     cols: int = None,
-    inch_per_pixel: float = 0.05,
 ):
     """Plot a grid of images.
 
@@ -144,11 +143,3 @@ def show_image_grid_v2(
         plt.savefig(outfile)
     else:
         plt.show()
-
-
-def reconstruct_images(model: PML_model, original_images: torch.Tensor):
-    reconstructions = model(original_images)
-
-
-if __name__ == "__main__":
-    pass
