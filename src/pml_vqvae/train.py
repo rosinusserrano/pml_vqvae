@@ -203,6 +203,6 @@ with open(DEFAULT_CONFIG, "r") as file:
 # Overwrite config when cli arguments are provided
 config = cli_handler.adjust_config(config, args)
 
-print(config)
+print(f"Starting training with the following onconfiguration:\n\n{config}\n")
 
 train(config)
