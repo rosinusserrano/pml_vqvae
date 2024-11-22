@@ -1,4 +1,17 @@
-\subsection{Baseline Results}\label{subsec:baseline-results}
+The following sections will discuss the results of our baseline experiments, further ideas for the project, and real-world applications of the project.
+
+\subsection{Baseline Experiments}\label{subsec:baseline-results}
+    We present some results of our baseline training runs. We did an examplarily training for 10 epochs on a subset of ImageNet to see that it converges. The subset contained 100.000 images with 1000 samples per class. See ... for the full configuration details.
+    
+    \subsubsection{Autoencoder}\label{subsubsec:autoencoder}
+        We were able to show that our implementation of an \ac{ae} is able to reconstruct images from the ImageNet dataset. W
+
+        For this trainig, we used a latent dimension of 32x32x2 pixels, which means 4 bits per pixel for an 128x128x3 input images. That is a compression rate of 4,7 \% compared to the original image size.
+
+        We are surprised by the results of our basic \ac{ae} and its capability to reconstruct images. Even with a realitively small latent dimension and only 10 epochs of training it is able to reconstruct images with a satifiying human percetiple quality.
+        
+        
+
 \subsubsection{Class Differences}\label{subsubsec:class-differences}
 \subsection{Further Ideas for the Project}\label{subsec:further-ideas}
 \subsection{Real World Applications}\label{subsec:real-world-applications}
