@@ -1,7 +1,7 @@
 "Python script to train different models"
 
 from pml_vqvae.baseline.pml_model_interface import PML_model
-from pml_vqvae.cli_input_handler import CLI_handler
+from pml_vqvae.cli_handler import CLI_handler
 from pml_vqvae.train_config import TrainConfig
 from pml_vqvae.dataset.dataloader import load_data
 from torch.utils.data import DataLoader
@@ -10,7 +10,7 @@ from torch.optim import Adam, Optimizer
 from torchvision.transforms import v2
 import yaml
 from tqdm.auto import tqdm
-from pml_vqvae.stats_class import StatsKeeper
+from pml_vqvae.stats_keeper import StatsKeeper
 from pml_vqvae.wandb_wrapper import WANDBWrapper
 
 # import wandb
