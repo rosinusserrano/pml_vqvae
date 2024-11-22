@@ -15,30 +15,28 @@ The following sections will discuss the results of our baseline experiments, fur
 \subsubsection{Class Differences}\label{subsubsec:class-differences}
 \subsection{Further Ideas for the Project}\label{subsec:further-ideas}
 \subsection{Real World Use of the Datasets}\label{subsec:real-world-applications}
-\ac{cifar} and ImageNet have been around for one and a half decades.
-Overall, their use-case has shifted from being the cutting edge datasets to train on to
-more of a dataset for experiments and benchmarks.
+\ac{cifar} and ImageNet have been foundational datasets for over a decade and a half.
+Over time, their primary use-case has shifted from being cutting-edge datasets for training state-of-the-art models
+to serving as a base for experiments and benchmarks.
 
-The outstanding status of ImageNet in its early days gets apparent when looking at AlexNet~\cite{AlexNet}.
-The paper on training a \ac{cnn} on ImageNet with \ac{GPU}s has been cited a staggering 166 thousand times as of the
-time of this report and is seen as one the starting points of the rise of \ac{dnn}.
+The prominent role of ImageNet in its early days is evident when looking at AlexNet~\cite{AlexNet}.
+The groundbreaking paper on training a \ac{cnn} on ImageNet using GPUs has been cited an extraordinary 166 thousand
+times as of the time of this report and is regarded as one of the pivotal moments in the rise of \ac{dnn}.
 
-Today, the newest (text-based) image generation networks use much bigger datasets, with sample sizes stretching into
-the billions.
-One prominent example of such datasets is LAION-5B described by~\cite{laion5b}, which is for example used by Stable
-Diffusion based on the work of~\cite{stable_diff}.
-When examining this paper in greater detail, the continued relevance of ImageNet becomes clear.
-First, the dataset is used to train experimental networks, which would be prohibitively expensive to train on larger,
-modern datasets.
-Furthermore, metrics like the \ac{fid}, also introduced in Section~\ref{sec:evaluation-metrics}, are used calculated on
-ImageNet, further underscoring its importance for research.
+Today, the most recent text-to-image generation models rely on much larger datasets, often containing billions of samples.
+A notable example is LAION-5B, as described by~\cite{laion5b}, which is utilized in models such as Stable
+Diffusion, based on the work of~\cite{stable_diff}.
+However, upon closer examination of this paper, the ongoing significance of ImageNet becomes evident.
+It can be observed that it is used as a dataset for training experimental networks, where using larger, modern
+datasets would be prohibitively expensive.
+Additionally, metrics such as the \ac{fid}, discussed in Section~\ref{sec:evaluation-metrics}, are calculated using
+ImageNet, further highlighting its continued importance in research.
 
-Similar observations can be made for \ac{cifar-10}, but its limited resolution makes it less suitable for
-benchmarking modern approaches to image generation.
+Similar trends can be observed for CIFAR-10.
+However, its low resolution limits its applicability for benchmarking modern approaches to image generation.
 
-Given these observations, while we anticipate producing some convincing results with our final model,
-we do not expect to match the visual fidelity achieved by state-of-the-art image generation models.
-
+Based on these observations, while we expect our final model to produce some believable results, we do not anticipate
+achieving the level of visual fidelity demonstrated by state-of-the-art image generation models.
 
 \vskip 1em
 \textbf{A Note on Overfitting:}
