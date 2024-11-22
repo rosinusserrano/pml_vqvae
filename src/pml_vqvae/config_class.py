@@ -7,7 +7,7 @@ AVAIL_DATASETS = ["cifar", "imagenet"]
 AVAIL_MODELS = ["vae", "autoencoder"]
 
 
-class Config:
+class TrainConfig:
     """Configuration class for the training process"""
 
     def __init__(self):
@@ -86,7 +86,7 @@ class Config:
                     "vis_train_interval",
                     "n_train",
                     "n_test",
-                    "class_idx"
+                    "class_idx",
                 ]:
                     raise ValueError(f"Parameter {key} is not set in the configuration")
 

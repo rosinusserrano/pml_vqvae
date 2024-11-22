@@ -1,11 +1,11 @@
 import wandb
 import os
-from pml_vqvae.config_class import Config
+from pml_vqvae.config_class import TrainConfig
 import numpy as np
 
 
 class WANDBWrapper:
-    def __init__(self, config: Config):
+    def __init__(self, config: TrainConfig):
         self.config = config
         self.log = config.wandb_log
 

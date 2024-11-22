@@ -3,7 +3,7 @@ import wandb
 import os
 import torch
 from pml_vqvae.baseline.pml_model_interface import PML_model
-from pml_vqvae.config_class import Config
+from pml_vqvae.config_class import TrainConfig
 import numpy as np
 
 

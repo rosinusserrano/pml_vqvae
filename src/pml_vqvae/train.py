@@ -3,7 +3,7 @@
 import os
 from pml_vqvae.baseline.pml_model_interface import PML_model
 from pml_vqvae.cli_input_handler import CLI_handler
-from pml_vqvae.config_class import Config
+from pml_vqvae.config_class import TrainConfig
 from pml_vqvae.dataset.dataloader import load_data
 from torch.utils.data import DataLoader
 import torch
@@ -110,7 +110,7 @@ def train_epoch(
     return batch, target, output
 
 
-def train(config: Config):
+def train(config: TrainConfig):
     """Train a model on a dataset for a number of epochs
 
     Args:
@@ -188,7 +188,7 @@ cli_handler = CLI_handler()
 args = cli_handler.parse_args()
 
 with open(DEFAULT_CONFIG, "r") as file:
-    config = Config.from_dict(yaml.safe_load(file))
+    config = TrainConfig.from_dict(yaml.safe_load(file))
 
 # Overwrite config when cli arguments are provided
 config = cli_handler.adjust_config(config, args)
