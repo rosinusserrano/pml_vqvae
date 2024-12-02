@@ -1,8 +1,17 @@
+"""Utility classes / functions shared between different neural network modules."""
+
+from argparse import ArgumentError
 import torch
 from torch import nn
 
 
 class PrintModule(nn.Module):
+    """Simply prints the shape of the input.
+
+    This "layer" doesn't really do anything and is just used for debugging. It
+    simply prints out the shape of the input and can thus be used to examine
+    how the data is transformed throughout the network."""
+
     def __init__(self):
         super().__init__()
 
@@ -23,7 +32,7 @@ class ResidualBlock(nn.Module):
         self.downsample = in_channels != out_channels
 
         if kernel_size % 2 == 0:
-            raise Exception("Use odd kernel size for residual block.")
+            raise ValueError("Use odd kernel size for residual block.")
 
         padding = int((kernel_size - 1) / 2)
 

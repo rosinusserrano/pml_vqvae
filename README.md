@@ -1,11 +1,28 @@
 # pml_vqvae
 
+## Information for Milestone 1: Data and Prototype
+
+- The `load_data()` function can be found in `src/pml_vqvae/dataset/dataloader.py`
+- The function `show()` is implemented in `src/pml_vqvae/visuals.py`
+- The baseline models, namely the Variational Autoencoder and the standard Autoencoder,
+  are in `src/pml_vqvae/baseline/vae.py` and `src/pml_vqvae/baseline/autoencoder.py`
+  respectively
+- Since the project will be placed in the subfolder `/home/<username>/MS1/`,
+  issues with failing package import can be solved by adding that path to the
+  `PYTHONPATH`  environment variable (see below at [Using the CLI](#using-the-cli))
+
 ## How to run
 
 ### Using the CLI
 
 To run start the training, you can run the training script with
 `python src/pml_vqvae/train.py`
+
+In case there are issues with imports, an easy fix would be to add the `src`
+folder to the `PYTHONPATH` environment variable. This can be achieved with
+```bash
+export PYTHONPATH="/home/<username>/pml_vqvae/src:$PYTHONPATH"
+```
 
 On default (without extra parameters givin in the command), the training script will look up the `config.yaml`-file and will train according those defined parameters.
 

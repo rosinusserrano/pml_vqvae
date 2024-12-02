@@ -1,6 +1,6 @@
 import argparse
 
-from pml_vqvae.config_class import Config
+from pml_vqvae.train_config import TrainConfig
 
 
 class CLI_handler:
@@ -92,7 +92,7 @@ class CLI_handler:
         args = self.parser.parse_args()
         return args
 
-    def adjust_config(self, config: Config, args: argparse.Namespace):
+    def adjust_config(self, config: TrainConfig, args: argparse.Namespace):
         """Adjust the configuration object based on the command line arguments
 
         Args:
