@@ -1,0 +1,27 @@
+Throughout the course, we aim to implement a \ac{vq} as introduced by~\cite{vqvae}
+and to reproduce the results.
+The novel model has two functionalities:
+\begin{itemize}
+    \item \textbf{Compression}: Encoding real-world data into learned discrete representations and decoding
+    these back to the original data space with minimal error
+    \item \textbf{Generation}: Generating new, realistic samples in the representation space, which can also be
+    decoded to create realistic samples in the original data space
+\end{itemize}
+To begin, we focus solely on the field of 2D images, specifically using the ImageNet and CIFAR-10 datasets.
+In the later stages of this project, we will either try to further increase the models capabilities in this one field,
+or widen our work over the other modalities touched upon by the paper introducing the model, i.e.\ audio and video
+frames.
+
+For the first milestone, we explored the datasets and implemented a baseline method for subsequent comparison to our
+final model.
+
+This report is structured as follows: We begin with an overview of the aforementioned datasets, the preprocessing and
+data-cleaning steps we apply.
+
+The next section describes the evaluation metrics suitable to judge the performance of our model, followed by a
+section on the baseline method(s) we implement and use.
+We conclude with a discussion of the results from the baseline models, along with experiments that could not be addressed in this milestone but remain of interest. Additionally, we highlight potential real-world use cases for the dataset.
+
+Since an in-depth explanation of the \ac{vq} model is beyond the scope of this report, we refer the reader to the
+original paper,
+which we also mean to do whenever we use the term ``the paper'' without any additional citation.

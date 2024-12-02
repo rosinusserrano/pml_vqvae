@@ -1,0 +1,65 @@
+\documentclass[10pt,a4paper,twoside]{article}
+\usepackage[a4paper,top=20mm,bottom=20mm,outer=5cm]{geometry}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage{graphicx}
+%\usepackage{hyperref}
+\usepackage{amsmath}
+%\usepackage{cleveref}
+\usepackage{natbib}
+\bibliographystyle{abbrvnat}
+\setcitestyle{authoryear}
+
+\title{Project Machine Learning\\--- Milestone 1 ---}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                     %
+%   EVERYTHING BELOW CAN BE CHANGED   %
+%                                     %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\author{Konstantin Ausborn, Timon Palm, Marco Rosinus Serrano}
+\date{\today}
+
+% our own packages
+\usepackage{acronym}
+\usepackage{wrapfig}
+\usepackage{listings}
+\usepackage{float}
+\usepackage{hyperref}
+\usepackage{cleveref}
+\usepackage{amsfonts}
+
+% acronyms
+\acrodef{ae}[AE]{Autoencoder}
+\acrodef{vae}[VAE]{Variational Autoencoder}
+\acrodef{vq}[VQ-VAE]{Vector Quantized Variatonal Autoencoder}
+\acrodef{gan}[GAN]{Generative Adversarial Networks}
+\acrodef{dnn}[DNN]{Deep Neural Networks}
+\acrodef{bpp}{bits per pixel}
+\acrodef{mse}[MSE]{Mean Squared Error}
+\acrodef{psnr}[PSNR]{Peak Signal to Noise Ratio}
+\acrodef{nll}[NLL]{Negative Log Likelihood}
+\acrodef{fid}[FID]{Fréchet Inception Distance}
+\acrodef{ssim}[SSIM]{Structural Similarity Index Measure}
+\acrodef{ilsvrc}[ILSVRC]{ImageNet Large Scale Visual Recognition Challenge 2012}
+\acrodef{ml}[ML]{Machine Learning}
+\acrodef{cnn}[CNN]{Convolutional Neural Network}
+\acrodef{cifar}{CIFAR-10}
+
+\begin{document}
+    \maketitle
+    \section{Introduction}\label{sec:introduction}
+    \input{intro}
+    \section{Datasets}\label{sec:datasets}
+    \input{dataset_overview}
+    \section{Evaluation Metrics}\label{sec:evaluation-metrics}
+    \input{eval_metric}
+    \section{Baseline Methods}\label{sec:baseline-methods}
+    \input{baseline}
+    \section{Discussion}\label{sec:discussion}
+    \input{discussion}
+    \bibliography{bibliography}
+    \section{Appendix}\label{sec:appendix}
+    \input{appendix}
+\end{document}
