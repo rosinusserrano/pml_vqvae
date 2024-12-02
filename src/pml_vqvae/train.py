@@ -1,19 +1,17 @@
 "Python script to train different models"
 
-import os
-from pml_vqvae.baseline.pml_model_interface import PML_model
-from pml_vqvae.cli_input_handler import CLI_handler
-from pml_vqvae.config_class import Config
-from pml_vqvae.dataset.dataloader import load_data
 from torch.utils.data import DataLoader
 import torch
 from torch.optim import Adam, Optimizer
 from torchvision.transforms import v2
 import yaml
 from tqdm.auto import tqdm
-import wandb
-from pml_vqvae.stats_class import StatsKeeper
+from pml_vqvae.stats_keeper import StatsKeeper
 from pml_vqvae.wandb_wrapper import WANDBWrapper
+from pml_vqvae.baseline.pml_model_interface import PML_model
+from pml_vqvae.cli_handler import CLI_handler
+from pml_vqvae.train_config import TrainConfig
+from pml_vqvae.dataset.dataloader import load_data
 
 # import wandb
 DEFAULT_CONFIG = "config.yaml"
@@ -110,7 +108,7 @@ def train_epoch(
     return batch, target, output
 
 
-def train(config: Config):
+def train(config: TrainConfig):
     """Train a model on a dataset for a number of epochs
 
     Args:
@@ -124,25 +122,36 @@ def train(config: Config):
 
     print(f"Training {model.name()} on {config.dataset} for {config.epochs} epochs")
 
-    # Load data
     print("Loading dataset...")
-    # stolen from https://pytorch.org/vision/main/transforms.html
-    transforms = v2.Compose(
-        [
-            v2.RandomResizedCrop(
-                size=(128, 128), scale=(0.2, 1.0), ratio=1.0, antialias=True
-            ),  # scale: minmax of cropped area to original area, ratio: we desire a sqaure image
-            v2.RandomHorizontalFlip(p=0.5),  # do we need it? Does it change anything?
-            v2.ToDtype(torch.float32, scale=True),
-            v2.Normalize(mean=[0, 0, 0], std=[255.0, 255.0, 255.0]),
-        ]
+
+    transforms = (
+        v2.Compose(
+            [
+                v2.RandomResizedCrop(size=(128, 128), antialias=True, scale=(0.1, 1.0)),
+                v2.RandomHorizontalFlip(p=0.5),
+                v2.ToDtype(torch.float32, scale=True),
+                v2.Normalize(mean=[0, 0, 0], std=[255.0, 255.0, 255.0]),
+                v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+            ]
+        )
+        if config.dataset == "imagenet"
+        else v2.Compose(
+            [
+                v2.RandomResizedCrop(size=(32, 32), antialias=True, scale=(0.5, 1.0)),
+                v2.RandomHorizontalFlip(p=0.5),
+                v2.ToDtype(torch.float32, scale=True),
+                v2.Normalize(mean=[0, 0, 0], std=[255.0, 255.0, 255.0]),
+            ]
+        )
     )
+
     train_loader, test_loader = load_data(
         config.dataset,
         transformation=transforms,
         n_train=config.n_train,
         n_test=config.n_test,
         seed=config.seed,
+        class_idx=config.class_idx,
         batch_size=config.batch_size,
     )
 
@@ -188,12 +197,12 @@ def train(config: Config):
 cli_handler = CLI_handler()
 args = cli_handler.parse_args()
 
-with open(DEFAULT_CONFIG, "r") as file:
-    config = Config.from_dict(yaml.safe_load(file))
+with open(DEFAULT_CONFIG, "r", encoding="utf-8") as file:
+    config = TrainConfig.from_dict(yaml.safe_load(file))
 
 # Overwrite config when cli arguments are provided
 config = cli_handler.adjust_config(config, args)
 
-print(config)
+print(f"Starting training with the following onconfiguration:\n\n{config}\n")
 
 train(config)

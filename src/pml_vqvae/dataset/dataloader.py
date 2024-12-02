@@ -1,8 +1,5 @@
-from torchvision.transforms import RandomCrop
 import torchvision
 import torch
-
-from pml_vqvae.visuals import show_image_grid
 
 from pml_vqvae.dataset.cifar10 import CifarDataset
 from pml_vqvae.dataset.imagenet import ImageNetDataset
@@ -18,6 +15,7 @@ def load_data(
     num_workers: int = 1,
     batch_size: int = 32,
     shuffle: bool = True,
+    class_idx: list = None,
     seed: int = None,
 ):
     """Load data from specified dataset
@@ -30,6 +28,7 @@ def load_data(
         num_workers (int, optional): Number of workers to use for data loading. Defaults to 1.
         batch_size (int, optional): Batch size. Defaults to 32.
         shuffle (bool, optional): Shuffle data. Defaults to True.
+        class_idx (list, optional): List of class indices to load. Defaults to None.
         seed (int, optional): Seed for reproducibility. Defaults to None.
 
     Returns:
@@ -64,6 +63,7 @@ def load_data(
             samples_per_class=n_train,
             transform=transformation,
             seed=seed,
+            class_idx=class_idx,
         )
 
         test_set = ImageNetDataset(
@@ -71,6 +71,7 @@ def load_data(
             samples_per_class=n_test,
             transform=transformation,
             seed=seed,
+            class_idx=class_idx,
         )
 
     elif dataset == "cifar":
@@ -87,10 +88,15 @@ def load_data(
             samples_per_class=n_train,
             transform=transformation,
             seed=seed,
+            class_idx=class_idx,
         )
 
         test_set = CifarDataset(
-            split="test", samples_per_class=n_test, transform=transformation, seed=seed
+            split="test",
+            samples_per_class=n_test,
+            transform=transformation,
+            seed=seed,
+            class_idx=class_idx,
         )
 
     train_loader = torch.utils.data.DataLoader(
@@ -102,26 +108,3 @@ def load_data(
     )
 
     return train_loader, test_loader
-
-
-if __name__ == "__main__":
-
-    t, te = load_data(
-        "imagenet",
-        batch_size=20,
-        n_train=1000,
-        n_test=1000,
-        seed=2020,
-        transformation=RandomCrop(128, pad_if_needed=True),
-    )
-
-    # train_set = ImageNet(root=DATASET_DIR + "imagenet_torchvision/data", split="train")
-    # loader = torch.utils.data.DataLoader(
-    #     train_set, batch_size=1, shuffle=True, num_workers=1
-    # )
-
-    # set seed for reproducibility
-    # torch.manual_seed(2809)
-    sample_images = next(iter(t))[0]
-
-    show_image_grid(sample_images, outfile="test.png")

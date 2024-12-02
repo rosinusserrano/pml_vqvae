@@ -1,5 +1,56 @@
 # pml_vqvae
 
+## Information for Milestone 1: Data and Prototype
+
+- The `load_data()` function can be found in `src/pml_vqvae/dataset/dataloader.py`
+- The function `show()` is implemented in `src/pml_vqvae/visuals.py`
+- The baseline models, namely the Variational Autoencoder and the standard Autoencoder,
+  are in `src/pml_vqvae/baseline/vae.py` and `src/pml_vqvae/baseline/autoencoder.py`
+  respectively
+- Since the project will be placed in the subfolder `/home/<username>/MS1/`,
+  issues with failing package import can be solved by adding that path to the
+  `PYTHONPATH`  environment variable (see below at [Using the CLI](#using-the-cli))
+
+## How to run
+
+### Using the CLI
+
+To run start the training, you can run the training script with
+`python src/pml_vqvae/train.py`
+
+In case there are issues with imports, an easy fix would be to add the `src`
+folder to the `PYTHONPATH` environment variable. This can be achieved with
+```bash
+export PYTHONPATH="/home/<username>/pml_vqvae/src:$PYTHONPATH"
+```
+
+On default (without extra parameters givin in the command), the training script will look up the `config.yaml`-file and will train according those defined parameters.
+
+If you want to change the default values you can either change them in the `config.yaml` or you can pass the values yu want to change via the cli, e.g.
+
+    python src/pml_vqvae/train.py --learning_rate 0.1
+
+This will take the `config.yaml` as the foundation and overwrites all the given values passed in the command. See the `python src/pml_vqvae/train.py -h` for more information.
+
+### Running on Cluster
+
+1. ssh to cluster entry-node by `ssh <username>@hydra.ml.tu-berlin.de`
+2. Build container if not exist, see Section [Build Container](#build-container)
+3. Request a GPU node `srun --partition=gpu-test --gpus=1 --pty bash`
+4. Go to project directory `cd pml_vqvae`
+5. Run `./run_script.sh`
+
+## Build Container
+1. Obtain a node on the cpu only partition with enough run time `srun --partition=cpu-2h --pty bash`
+1. Switch to the project root (`pml_vqvae`)
+2. Build the container with `apptainer build pml.sif pml.def` (can take up to 15min)
+
+## How to Log with Weights and Biases
+
+1. You need to have a [Weights and Biases](https://wandb.ai/site/) (wandb) account
+2. Add your wandb api key to your environment variables `export WANDB_API_KEY=<your key>`. If you run train the model within an apptainer make sure to add the environment variable to your `pml.def`-file
+3. Create an experiment by adjusting the `config.yaml`-file. make sure `log_wandb=True`
+
 ## When editing LaTex in VS Code
 
 ### Setup
@@ -33,36 +84,3 @@ Generally, you should be able to open the .tex document that you are interested 
 1. Sync Source with PDF (Reverse Sync)
     - Shortcut: Ctrl + Click in the PDF Preview
     - Description: Jumps from a location in the PDF preview back to the corresponding place in the .tex source
-
-## How to Log with Weights and Biases
-
-1. You need to have a [Weights and Biases](https://wandb.ai/site/) (wandb) account
-2. Add your wandb api key to your environment variables `export WANDB_API_KEY=<your key>`. If you run train the model within an apptainer make sure to add the environment variable to your `pml.def`-file
-3. Create an experiment by adjusting the `config.yaml`-file. make sure `log_wandb=True`
-
-## How to run
-
-### Using the CLI
-
-To run start the training, you can run the training script with
-`python src/pml_vqvae/train.py`
-
-On default (without extra parameters givin in the command), the training script will look up the `config.yaml`-file and will train according those defined parameters.
-
-If you want to change the default values you can either change them in the `config.yaml` or you can pass the values yu want to change via the cli, e.g.
-
-    python src/pml_vqvae/train.py --learning_rate 0.1
-
-This will take the `config.yaml` as the foundation and overwrites all the given values passed in the command. See the `python src/pml_vqvae/train.py -h` for more information.
-
-### Running on Cluster
-
-1. ssh to cluster entry-node by `ssh <username>@hydra.ml.tu-berlin.de`
-2. Build container if not exist, see Section [Build Container](#build-container)
-3. Request a GPU node `srun --partition=gpu-test --gpus=1 --pty bash`
-4. Go to project directory `cd pml_vqvae`
-5. Run `./run_script.sh`
-
-## Build Container
-1. Obtain a node on the cpu only partition with enough run time `srun --partition=cpu-2h --pty bash`
-2. Build the container with `apptainer build pml.sif pml.def` (can take up to 15min)

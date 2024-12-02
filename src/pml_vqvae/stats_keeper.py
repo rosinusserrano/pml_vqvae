@@ -1,10 +1,6 @@
 import matplotlib.pyplot as plt
-import wandb
-import os
 import torch
 from pml_vqvae.baseline.pml_model_interface import PML_model
-from pml_vqvae.config_class import Config
-import numpy as np
 
 
 class StatsKeeper:

@@ -210,4 +210,4 @@ artifacts/
 pml.sif
 wandb/
 *.pdf
-!task_pdfs/*.pdf
+!task_pdfs/

@@ -1,13 +1,13 @@
+import os
+
 from pml_vqvae.baseline.autoencoder import BaselineAutoencoder
 from pml_vqvae.baseline.vae import BaselineVariationalAutoencoder
-import yaml
-import os
 
 AVAIL_DATASETS = ["cifar", "imagenet"]
 AVAIL_MODELS = ["vae", "autoencoder"]
 
 
-class Config:
+class TrainConfig:
     """Configuration class for the training process"""
 
     def __init__(self):
@@ -26,6 +26,7 @@ class Config:
         self.n_train = None
         self.n_test = None
         self.seed = None
+        self.class_idx = None
 
         # train
         self.batch_size = None
@@ -85,6 +86,7 @@ class Config:
                     "vis_train_interval",
                     "n_train",
                     "n_test",
+                    "class_idx",
                 ]:
                     raise ValueError(f"Parameter {key} is not set in the configuration")
 
@@ -110,13 +112,3 @@ class Config:
             return BaselineAutoencoder()
 
         raise ValueError(f"Model {self.model_name} is not available.")
-
-
-if __name__ == "__main__":
-
-    with open("config.yaml", "r") as file:
-        config = yaml.safe_load(file)
-
-    config = Config.from_dict(config)
-
-    print("done")

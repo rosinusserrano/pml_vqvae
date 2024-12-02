@@ -5,7 +5,9 @@ import torch
 import numpy as np
 
 
-def create_cifar_subset(file_dir: str, n_samples: int, seed: int = None):
+def create_cifar_subset(
+    file_dir: str, n_samples: int, seed: int = None, class_idx_list=None
+):
     """Create a subset of the CIFAR-10 dataset with n_samples per class. The subset
     is created by randomly selecting n_samples images from each class. Thus the image
     distribution is uniform.
@@ -15,6 +17,7 @@ def create_cifar_subset(file_dir: str, n_samples: int, seed: int = None):
         file_dir (str): Path to the CIFAR-10 dataset
         n_samples (int): Number of samples per class
         seed (int, optional): Seed for reproducibility. Defaults to None.
+        class_idx_list (list, optional): List of class indices to load. Defaults to None.
 
     Returns:
         np.array: Subset of the CIFAR-10 dataset
@@ -33,26 +36,33 @@ def create_cifar_subset(file_dir: str, n_samples: int, seed: int = None):
 
     img_subset = []
     img_pointer = 0
-
+    labels = []
     for class_idx in range(10):
         class_imgs = []
         for idx in range(img_pointer, len(sorted_labels)):
             if sorted_labels[idx] != class_idx or idx == len(sorted_labels) - 1:
                 img_pointer = idx
-                if len(class_imgs) > n_samples:
+
+                # if only select specific classes and its at current iteration not that class, skip
+                if class_idx_list and class_idx not in class_idx_list:
+                    break
+
+                if n_samples and len(class_imgs) > n_samples:
                     np.random.seed(seed=seed)
                     indices = np.random.choice(
                         len(class_imgs), n_samples, replace=False
                     )
                     img_subset.extend([class_imgs[i] for i in indices])
+                    labels.extend([class_idx] * n_samples)
                 else:
                     img_subset.extend(class_imgs)
+                    labels.extend([class_idx] * len(class_imgs))
                 break
             else:
                 class_imgs.append(sorted_images[idx])
 
     img_subset = np.array(img_subset)
-    labels = np.array([class_idx for class_idx in range(10) for _ in range(n_samples)])
+    labels = np.array(labels)
 
     return img_subset, labels
 
@@ -65,6 +75,7 @@ class CifarDataset(Dataset):
         samples_per_class (int, optional): Number of samples per class. Defaults to None.
         seed (int, optional): Seed for reproducibility. Defaults to None.
         transform ([type], optional): Transformation to apply to the data. Defaults to None.
+        class_idx ([type], optional): List of class indices to load. Defaults to None.
     """
 
     def __init__(
@@ -73,6 +84,7 @@ class CifarDataset(Dataset):
         samples_per_class: int = None,
         seed: int = None,
         transform=None,
+        class_idx=None,
     ):
         super().__init__()
         self.root_dir = "/home/space/datasets/cifar10/processed"
@@ -98,9 +110,12 @@ class CifarDataset(Dataset):
             "truck",
         ]
 
-        if samples_per_class is not None:
+        if samples_per_class is not None or class_idx is not None:
             self.images, self.labels = create_cifar_subset(
-                self.filename, samples_per_class, seed=seed
+                self.filename,
+                samples_per_class,
+                seed=seed,
+                class_idx_list=class_idx,
             )
         else:
             # open npz file
@@ -141,17 +156,9 @@ class CifarDataset(Dataset):
         # Number of classes
         info["n_classes"] = len(self.classes)
 
-        # mean number of samples
-        # info["samples_per_class"] =
-
         # write to json file
         if outfile is not None:
             with open(outfile, "w") as f:
                 json.dump(info, f)
 
         return info
-
-
-if __name__ == "__main__":
-
-    data = CifarDataset(split="train", samples_per_class=1)
