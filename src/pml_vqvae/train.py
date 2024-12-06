@@ -43,11 +43,8 @@ def test(model: PML_model, test_loader: DataLoader, stats_keeper: StatsKeeper):
         output = model(batch)
         loss = model.loss_fn(output, target)
 
-        # collect model specific stats
-        stats = model.collect_stats(output, target, loss)
-
         # collect all stats in Object for later plotting
-        dsp = stats_keeper.add_batch_stats(stats, len(batch), train=False)
+        dsp = stats_keeper.add_batch_stats(model.batch_stats, len(batch), train=False)
 
         # make a nice progress bar
         test_tqdm.set_description(dsp)
@@ -91,11 +88,8 @@ def train_epoch(
         loss = model.loss_fn(output, target)
         model.backward(loss)
 
-        # collect model specific stats
-        stats = model.collect_stats(output, target, loss)
-
         # collect all stats in Object for later plotting
-        dsp = stats_keeper.add_batch_stats(stats, len(batch))
+        dsp = stats_keeper.add_batch_stats(model.batch_stats, len(batch))
 
         # make a nice progress bar
         train_tqdm.set_description(dsp)

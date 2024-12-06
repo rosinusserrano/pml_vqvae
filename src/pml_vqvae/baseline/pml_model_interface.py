@@ -3,6 +3,12 @@ import torch
 
 # Just an interface to make sure all models have some methods
 class PML_model(torch.nn.Module):
+    train_stats: dict[str, float] = {}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.batch_stats = {}
+
     def name(self):
         raise NotImplementedError
 

@@ -115,8 +115,7 @@ class BaselineVariationalAutoencoder(PML_model):
 
         return x_hat, mean, logvar
 
-    @staticmethod
-    def loss_fn(model_outputs, target):
+    def loss_fn(self, model_outputs, target):
         """Computes the VAE loss which consist of reconstruction loss and KL
         which consist of reconstruction loss and KL
         divergence between prior distribution z ~ N(0, I) and posterior
@@ -135,18 +134,16 @@ class BaselineVariationalAutoencoder(PML_model):
 
         loss = reconstruction_loss + 0.00025 * kld_loss
 
-        return loss, reconstruction_loss.detach(), kld_loss.detach()
-
-    def backward(self, loss):
-        loss[0].backward()
-
-    @staticmethod
-    def collect_stats(outputs, targets, loss):
-        return {
+        self.batch_stats = {
             "Loss": loss[0].detach().cpu().item(),
             "Reconstruction loss": loss[1].item(),
             "KL divergence loss": loss[2].item(),
         }
+
+        return loss
+
+    def backward(self, loss):
+        loss.backward()
 
     @staticmethod
     def visualize_output(batch, output, target, prefix: str = "", base_dir: str = "."):
