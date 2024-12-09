@@ -11,18 +11,38 @@ from pml_vqvae.nnutils import ResidualBlock
 
 
 class VQVAE(PML_model):
-    def __init__(self):
-        hidden_chan = 128
-        latent_chan = 256  # D in the paper
-        num_codes = 512  # K in the paper
+    """
+    VQ-VAE model
+    """
+
+    def __init__(
+        self, hidden_chan: int = 128, latent_chan: int = 128, num_codes: int = 512
+    ):
+        """
+        VQ-VAE model
+        :param hidden_chan: number of channels in the hidden layer
+        :param latent_chan: number of channels in the latent layer
+        :param num_codes: number of codes in the codebook
+        """
+
+        self.hidden_chan = hidden_chan
+        self.latent_chan = latent_chan  # D in the paper
+        self.num_codes = num_codes  # K in the paper
         self.beta = 0.25
         super().__init__()
 
         self.latent = None
         self.q_latent = None
 
-        # map the latent space to the codebook
-        self.codebase = torch.randn(num_codes, latent_chan)
+        # codebook of shape (num_codes, latent_chan)
+        self.codebase = torch.nn.Parameter(
+            # torch.FloatTensor(num_codes, latent_chan, requires_grad=True).uniform_(-1, 1).to("cuda")
+            # torch.linspace(-1, 1, num_codes)
+            # .reshape(-1, 1)
+            # .repeat(1, latent_chan)
+            torch.torch.rand(num_codes, latent_chan),
+            requires_grad=True,
+        )
 
         self.encoder_downsampling = torch.nn.Sequential(
             torch.nn.Conv2d(
@@ -55,8 +75,6 @@ class VQVAE(PML_model):
                 kernel_size=1,
                 stride=1,
             ),
-            torch.nn.ReLU(),
-            torch.nn.BatchNorm2d(latent_chan),
         )
         self.encoder_stack = torch.nn.Sequential(
             self.encoder_downsampling, self.encoder_residual, self.encoder_compression
@@ -118,48 +136,83 @@ class VQVAE(PML_model):
         codes = torch.argmin(distances, dim=1)
 
         # reshape the codes to (B, H, W)
-        codes = codes.reshape(b, h, w)
+        self.codes = codes.reshape(b, h, w)
 
-        maped_codes = self.codebase[codes]
+        # get code from codebase
+        maped_codes = self.codebase[self.codes]
 
         return codes, maped_codes
 
     def forward(self, x: torch.Tensor):
         self.latent = self.encoder_stack(x)
 
+        # print(self.latent.permute(0, 2, 3, 1)[0])
+
         # aka codes, discrete_latent: (B, H, W)
-        discrete_latent, q_latent = self.quantize(self.latent.detach())
+        self.discrete_latent, q_latent = self.quantize(self.latent.detach())
 
         # reshape to (B, C, H, W)
-        q_latent = q_latent.reshape(self.latent.shape)
+        q_latent = q_latent.permute(0, 3, 1, 2)
 
         # detach non differiable operation (quantization)
         # just copies the gradient from q_latent to latent
         self.q_latent = self.latent + (q_latent - self.latent).detach()
 
-        reconstruction = self.decoder_stack(self.q_latent)
+        reconstruction = self.decoder_stack(self.latent)
 
         return reconstruction
 
     def loss_fn(self, model_outputs, target):
 
+        e = self.codebase[self.discrete_latent].reshape(self.latent.shape)
+
         reconstruction_loss = torch.nn.functional.mse_loss(model_outputs, target)
-        embed_loss = torch.nn.functional.mse_loss(self.latent.detach(), self.q_latent)
-        commit_loss = torch.nn.functional.mse_loss(self.latent, self.q_latent.detach())
+        embed_loss = torch.nn.functional.mse_loss(self.latent.detach(), e)
+        commit_loss = torch.nn.functional.mse_loss(self.latent, e.detach())
 
         loss = reconstruction_loss + embed_loss + self.beta * commit_loss
 
         self.batch_stats = {
-            "Loss": loss.item(),
-            "Reconstruction Loss": reconstruction_loss.item(),
-            "Embed Loss": embed_loss.item(),
-            "Commit Loss": commit_loss.item(),
+            "Loss": loss.detach().cpu().item(),
+            "Reconstruction Loss": reconstruction_loss.detach().cpu().item(),
+            "Embed Loss": embed_loss.detach().cpu().item(),
+            "Commit Loss": commit_loss.detach().cpu().item(),
         }
 
         return loss
 
     def backward(self, loss: torch.Tensor):
         return loss.backward()
+
+    def vis_codes(self, idx, base_dir: str = "."):
+        fig = plt.figure(figsize=(8, 8))
+        colors = ["r", "g", "b", "y", "m", "c"]
+
+        latent = self.latent.cpu().detach().numpy()[0]
+        latent = np.moveaxis(latent, 0, -1)
+        latent = latent.reshape(-1, 2)
+
+        codes = self.codes.cpu().detach().numpy()[0].flatten()
+
+        for i, c in enumerate(self.codebase):
+            c = c.cpu().detach().numpy()
+            plt.scatter(c[0], c[1], marker="o", color=colors[i], label=f"{c}")
+
+        for la, c_dx in zip(latent, codes):
+            plt.scatter(la[0], la[1], marker="x", color=colors[c_dx])
+
+        plt.legend()
+
+        # set window
+        plt.xlim(-2, 2)
+        plt.ylim(-2, 2)
+
+        plt.title("Codes")
+        plt.xlabel("x1")
+        plt.ylabel("x2")
+
+        plt.savefig(os.path.join(base_dir, f"codes_{idx}.png"))
+        plt.clf()
 
     @staticmethod
     def visualize_output(batch, output, target, prefix: str = "", base_dir: str = "."):
