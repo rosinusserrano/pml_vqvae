@@ -1,7 +1,7 @@
 import os
 
-from pml_vqvae.baseline.autoencoder import BaselineAutoencoder
-from pml_vqvae.baseline.vae import BaselineVariationalAutoencoder
+from pml_vqvae.models.baseline.autoencoder import BaselineAutoencoder
+from pml_vqvae.models.baseline.vae import BaselineVariationalAutoencoder
 
 AVAIL_DATASETS = ["cifar", "imagenet"]
 AVAIL_MODELS = ["vae", "autoencoder"]
