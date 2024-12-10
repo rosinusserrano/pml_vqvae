@@ -8,7 +8,7 @@ import yaml
 from tqdm.auto import tqdm
 from pml_vqvae.stats_keeper import StatsKeeper
 from pml_vqvae.wandb_wrapper import WANDBWrapper
-from pml_vqvae.baseline.pml_model_interface import PML_model
+from pml_vqvae.models.baseline.pml_model_interface import PML_model
 from pml_vqvae.cli_handler import CLI_handler
 from pml_vqvae.train_config import TrainConfig
 from pml_vqvae.dataset.dataloader import load_data
