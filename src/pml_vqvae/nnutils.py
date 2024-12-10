@@ -1,8 +1,40 @@
 """Utility classes / functions shared between different neural network modules."""
 
-from argparse import ArgumentError
 import torch
 from torch import nn
+
+
+def upsample(in_channels: int, out_channels: int, activation: nn.Module = nn.ReLU()):
+    return nn.Sequential(
+        nn.ConvTranspose2d(
+            in_channels=in_channels,
+            out_channels=out_channels,
+            kernel_size=4,
+            stride=2,
+            padding=1,
+        ),
+        activation,
+        nn.BatchNorm2d(out_channels),
+    )
+
+
+def downsample(in_channels: int, out_channels: int, activation: nn.Module = nn.ReLU()):
+    return nn.Sequential(
+        # Downsampling
+        nn.Conv2d(
+            in_channels=in_channels,
+            out_channels=out_channels,
+            kernel_size=4,
+            stride=2,
+            padding=1,
+        ),
+        activation,
+        nn.BatchNorm2d(out_channels),
+    )
+
+
+def zip_channels_list(l: list[int]):
+    return zip(l[:-1], l[1:])
 
 
 class PrintModule(nn.Module):
