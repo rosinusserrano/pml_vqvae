@@ -1,3 +1,5 @@
+"""to run: apptainer run --env-file .env --nv --bind /home/space/,/etc/slurm,/opt/slurm,/opt/slurm-23.2,/etc/munge,/var/run/munge,/usr/lib/x86_64-linux-gnu/libmunge.so.2 pml.sif python hyperparameter_optimization.py"""
+
 from ax.service.ax_client import AxClient, ObjectiveProperties
 from ax.service.utils.report_utils import exp_to_df
 
@@ -23,7 +25,7 @@ class SlurmJobQueueClient:
         self.training_executor.update_parameters(
             slurm_partition="cpu-2h",
             # slurm_gpus_per_node=1,
-            slurm_cpus_per_task=4,
+            slurm_cpus_per_task=1,
             slurm_job_name="hyper_param_opt",
             slurm_additional_parameters={
                 "chdir": running_dir,
@@ -92,8 +94,8 @@ def main():
 
     slurm_queue_client = SlurmJobQueueClient()
 
-    total_budget = 20
-    num_parallel_jobs = 4
+    total_budget = 16
+    num_parallel_jobs = 3
     jobs = []
     submitted_jobs = 0
 
@@ -103,14 +105,19 @@ def main():
                 result = job.result()
                 ax_client.complete_trial(trial_index=trial_index, raw_data=result)
                 jobs.remove((job, trial_index))
-        if submitted_jobs < total_budget and len(jobs) < num_parallel_jobs:
+        while submitted_jobs < total_budget and len(jobs) < num_parallel_jobs:
             parameters_next, trial_index_next = ax_client.get_next_trial()
 
             job = slurm_queue_client.submit_training_job(parameters_next)
             print(f"Submitted as {job.job_id}")
             submitted_jobs += 1
             jobs.append((job, trial_index_next))
+            sleep(1)
 
         print(exp_to_df(ax_client.experiment))
 
-        sleep(5)
+        sleep(10)
+    ax_client.save_to_json_file()
+
+if __name__=="__main__":
+    main()
