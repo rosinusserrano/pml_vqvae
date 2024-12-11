@@ -17,7 +17,7 @@ def test(params):
     import socket
     print(socket.gethostname())
     listdir('/')
-    sleep(1)
+    sleep(10)
     import socket
     print(socket.gethostname())
 
@@ -32,7 +32,7 @@ class SlurmJobQueueClient:
         executor.update_parameters(
             slurm_partition="cpu-2h",
             #slurm_gpus_per_node=1,
-            slurm_ntasks_per_node=4,
+            slurm_cpus_per_task=4,
             slurm_job_name="hyper_param_opt",
             slurm_additional_parameters={"chdir": running_dir, "export": "ALL,PATH=$PATH:/usr/bin/python3:/opt/slurm/bin"},
 
@@ -40,8 +40,8 @@ class SlurmJobQueueClient:
         print("We are here")
         job = executor.submit(test, parameters)
         print(job.job_id)
-        sleep(20)
-        job.result()
+        print(job._tasks)
+        print(job.result())
         print(job.paths)
         output = 5
         print(output)
