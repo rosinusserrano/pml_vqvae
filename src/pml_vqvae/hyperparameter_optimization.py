@@ -1,10 +1,13 @@
-"""to run: apptainer run --env-file .env --nv --bind /home/space/,/etc/slurm,/opt/slurm,/opt/slurm-23.2,/etc/munge,/var/run/munge,/usr/lib/x86_64-linux-gnu/libmunge.so.2 pml.sif python hyperparameter_optimization.py"""
+"""to run: apptainer run --env-file .env --nv --bind /home/space/,/etc/slurm,/opt/slurm,/opt/slurm-23.2,/etc/munge,
+/var/run/munge,/usr/lib/x86_64-linux-gnu/libmunge.so.2 pml.sif python hyperparameter_optimization.py"""
 
+import warnings
 from ax.service.ax_client import AxClient, ObjectiveProperties
 from ax.service.utils.report_utils import exp_to_df
-
 import submitit
 from time import sleep
+
+warnings.simplefilter(action="ignore", category=FutureWarning)
 
 
 def test(parameters):
@@ -119,5 +122,6 @@ def main():
         sleep(10)
     ax_client.save_to_json_file()
 
-if __name__=="__main__":
+
+if __name__ == "__main__":
     main()
