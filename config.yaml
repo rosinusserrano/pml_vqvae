@@ -1,22 +1,22 @@
 experiment:
-  name: "autoencoder imagenet" # name of the experiment
+  name: "vqvae" # name of the experiment
   description: "" # description of the experiment
   seed: 42 # seed for reproducibility
   test_interval: 1  # test the model every test_interval epochs, None to disable
   vis_train_interval: 1 # plot the training loss every plot_train_interval epochs, None to disable
-  wandb_log: False # log the experiment to wandb
+  wandb_log: True # log the experiment to wandb
 
 data:
-  n_train: 100000 # number of training samples
-  n_test: 10000 # number of test samples
+  n_train: 10000 # number of training samples
+  n_test: 1000 # number of test samples
   dataset: "imagenet" # either cifar or imagenet
   class_idx: null # list of class indices to use, empty list to use all classes
 
 train:
-  batch_size: 128
+  batch_size: 64
   epochs: 10
   learning_rate: 0.0002
 
 model:
-  model_name: "autoencoder" # either autoencoder or vae
+  model_name: "vqvae" # either autoencoder or vae
   
