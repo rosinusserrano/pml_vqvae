@@ -6,13 +6,14 @@ from ax.service.ax_client import AxClient, ObjectiveProperties
 from ax.service.utils.report_utils import exp_to_df
 import submitit
 from time import sleep
+from pml_vqvae.test import test
 
 warnings.simplefilter(action="ignore", category=FutureWarning)
 
 
-def test(parameters):
-    sleep(10)
-    return parameters["learning_rate"] / parameters["beta_discrete_code_commitment"]
+#def test(parameters):
+#    sleep(10)
+#    return parameters["learning_rate"] / parameters["beta_discrete_code_commitment"]
 
 
 class SlurmJobQueueClient:
