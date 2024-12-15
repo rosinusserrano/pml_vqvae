@@ -19,7 +19,12 @@ DEFAULT_CONFIG = "config.yaml"
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 
-def test(model: PML_model, test_loader: DataLoader, stats_keeper: StatsKeeper):
+def test(
+    model: PML_model,
+    test_loader: DataLoader,
+    stats_keeper: StatsKeeper,
+    reconstruct: bool = False,
+):
     """Test a model on a dataset
 
     Args:
@@ -62,6 +67,7 @@ def train_epoch(
     train_loader: DataLoader,
     optimizer: Optimizer,
     stats_keeper: StatsKeeper,
+    reconstruct: bool = False,
 ):
     """Train a model on a dataset for one epoch
 
@@ -161,13 +167,24 @@ def train(config: TrainConfig):
     print("Training model...")
     for i in range(config.epochs):
         # train on all datat for one epoch
-        batch, _, output = train_epoch(model, train_loader, optimizer, stats_keeper)
+        batch, _, output = train_epoch(
+            model,
+            train_loader,
+            optimizer,
+            stats_keeper,
+            reconstruct=config.dataset == "mnist",
+        )
         wandb_wrapper.construct_examples(batch, output)
 
         # test
         if config.test_interval and i % config.test_interval == 0:
             with torch.no_grad():
-                batch, _, output = test(model, test_loader, stats_keeper)
+                batch, _, output = test(
+                    model,
+                    test_loader,
+                    stats_keeper,
+                    reconstruct=config.dataset == "mnist",
+                )
                 wandb_wrapper.construct_examples(batch, output, train=False)
 
         log_vis = True

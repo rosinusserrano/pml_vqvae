@@ -3,9 +3,10 @@ import os
 from pml_vqvae.baseline.autoencoder import BaselineAutoencoder
 from pml_vqvae.baseline.vae import BaselineVariationalAutoencoder
 from pml_vqvae.vqvae.vqvae import VQVAE
+from pml_vqvae.vqvae.pixel_cnn import GatedPixelCNN
 
-AVAIL_DATASETS = ["cifar", "imagenet"]
-AVAIL_MODELS = ["vae", "autoencoder", "vqvae"]
+AVAIL_DATASETS = ["cifar", "imagenet", "mnist"]
+AVAIL_MODELS = ["vae", "autoencoder", "vqvae", "pixelcnn"]
 
 
 class TrainConfig:
@@ -113,5 +114,7 @@ class TrainConfig:
             return BaselineAutoencoder()
         elif self.model_name == "vqvae":
             return VQVAE()
+        elif self.model_name == "pixelcnn":
+            return GatedPixelCNN(1, 256, 256, 3)
 
         raise ValueError(f"Model {self.model_name} is not available.")

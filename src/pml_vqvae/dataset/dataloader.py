@@ -1,6 +1,9 @@
 import torchvision
 import torch
 
+from torchvision.datasets import MNIST
+from torchvision.transforms import v2
+
 from pml_vqvae.dataset.cifar10 import CifarDataset
 from pml_vqvae.dataset.imagenet import ImageNetDataset
 
@@ -97,6 +100,19 @@ def load_data(
             transform=transformation,
             seed=seed,
             class_idx=class_idx,
+        )
+
+    elif dataset == "mnist":
+        train_set = MNIST(
+            root="/home/space/datasets/MNIST",
+            train=True,
+            transform=v2.ToTensor(),
+        )
+
+        test_set = MNIST(
+            root="/home/space/datasets/MNIST",
+            train=False,
+            transform=v2.ToTensor(),
         )
 
     train_loader = torch.utils.data.DataLoader(
