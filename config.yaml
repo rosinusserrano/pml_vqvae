@@ -1,5 +1,5 @@
 experiment:
-  name: "vqvae" # name of the experiment
+  name: "pixelcnn on mnist" # name of the experiment
   description: "" # description of the experiment
   seed: 42 # seed for reproducibility
   test_interval: 1  # test the model every test_interval epochs, None to disable
@@ -7,16 +7,16 @@ experiment:
   wandb_log: True # log the experiment to wandb
 
 data:
-  n_train: 10000 # number of training samples
-  n_test: 1000 # number of test samples
-  dataset: "imagenet" # either cifar or imagenet
+  n_train: null # number of training samples
+  n_test: null # number of test samples
+  dataset: "mnist" # either cifar or imagenet or mnist
   class_idx: null # list of class indices to use, empty list to use all classes
 
 train:
-  batch_size: 64
-  epochs: 10
+  batch_size: 128
+  epochs: 3
   learning_rate: 0.0002
 
 model:
-  model_name: "vqvae" # either autoencoder or vae
+  model_name: "pixelcnn" # either autoencoder or vae
   
