@@ -278,7 +278,7 @@ class PixelCNN(PML_model):
         return out
 
     def loss_fn(self, model_outputs, target):
-        return F.cross_entropy(model_outputs, torch.squeeze(target).long())
+        return F.cross_entropy(model_outputs, torch.squeeze(target * 255).long())
 
     def backward(self, loss: torch.Tensor):
         return loss.backward()
@@ -308,64 +308,55 @@ class PixelCNN(PML_model):
             outfile=os.path.join(base_dir, f"{prefix}_reconstruction.png"),
         )
 
+    def training(
+        self,
+        loader: torch.utils.data.DataLoader,
+        epochs: int = 10,
+        learning_rate: float = 1e-3,
+    ):
+        optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+
+        for epoch in range(epochs):
+            batch_losses = []
+            for batch, labels in loader:
+
+                optimizer.zero_grad()
+
+                batch = batch.to(DEVICE)
+                labels = labels.to(DEVICE)
+
+                output = model(batch, labels)
+
+                loss = model.loss_fn(output, batch)
+
+                model.backward(loss)
+                optimizer.step()
+
+                with torch.no_grad():
+                    batch_losses.append(loss.item())
+
+            with torch.no_grad():
+                probs = F.softmax(output, dim=1).cpu()
+                output_img = torch.argmax(probs, dim=1, keepdim=True)
+                model.visualize_output(batch.cpu(), output_img, prefix=f"train_{epoch}")
+                epoch_loss = sum(batch_losses) / len(batch_losses)
+                print(f"Epoch {epoch}, Loss: {epoch_loss}")
+
     def name(self):
         return "PixelCNN"
 
 
-def train(model: PixelCNN, loader):
-
-    optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
-
-    for epoch in range(10):
-        batch_losses = []
-        for index, (batch, labels) in enumerate(loader):
-
-            optimizer.zero_grad()
-
-            batch = batch.to(DEVICE)
-            labels = labels.to(DEVICE)
-
-            output = model(batch, labels)
-
-            # print(output[0, :, 0, 0])
-
-            loss = model.loss_fn(output, batch * 255)
-
-            model.backward(loss)
-            optimizer.step()
-
-            with torch.no_grad():
-                batch_losses.append(loss.item())
-
-            # if index >= 200:
-            #     break
-
-        with torch.no_grad():
-            output = F.softmax(output, dim=1).cpu()
-            _, output_max = torch.max(output, dim=1, keepdim=True)
-            model.visualize_output(batch.cpu(), output_max, prefix=f"train_{epoch}")
-            epoch_loss = sum(batch_losses) / len(batch_losses)
-            print(f"Epoch {epoch}, Loss: {epoch_loss}")
-
-
 if __name__ == "__main__":
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
     model = PixelCNN(
         input_shape=(28, 28), num_codes=256, hidden_chan=256, num_classes=10
     )
 
     model.to(DEVICE)
 
-    print(model)
-
     transforms = v2.Compose(
         [
-            # v2.ToTensor()
             v2.ToImage(),
             v2.ToDtype(torch.float32, scale=True),
-            # v2.Grayscale(num_output_channels=1),
-            # v2.Normalize(mean=[0], std=[255.0]),
         ]
     )
 
@@ -375,9 +366,6 @@ if __name__ == "__main__":
         download=True,
     )
 
-    # evens = list(range(0, len(mnist), 10000))
-    # mnist_subset = torch.utils.data.Subset(mnist, evens)
-
     loader = torch.utils.data.DataLoader(
         mnist,
         batch_size=128,
@@ -385,7 +373,7 @@ if __name__ == "__main__":
         num_workers=2,
     )
 
-    train(model, loader)
+    model.training(loader, epochs=10, learning_rate=1e-3)
 
     imgs = model.sample(
         torch.tensor([0, 1, 2, 3, 4, 5, 6, 7, 8, 9] * 2, dtype=torch.int).to(DEVICE)
