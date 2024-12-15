@@ -1,21 +1,26 @@
 import torch
 import os
 from pml_vqvae.baseline.pml_model_interface import PML_model
+from pml_vqvae.dataset.dataloader import load_data
 from pml_vqvae.visuals import show
+from torchvision.transforms import v2
+from pml_vqvae.vqvae.latent_generator import LatentGenerator
+import torchvision
+from torch.nn import functional as F
+
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 class MaskedConv2d(torch.nn.Conv2d):
     def __init__(self, mask, *args, **kwargs):
 
         p = kwargs["dilation"] * (kwargs["kernel_size"] - 1) // 2
-        padding = (p, p)
-        super().__init__(padding=padding, *args, **kwargs)
+        super().__init__(padding=(p, p), *args, **kwargs)
         self.register_buffer("mask", mask[None, None])
 
     def forward(self, x: torch.Tensor):
         self.weight.data *= self.mask
-        x = super(MaskedConv2d, self).forward(x)
-        return x
+        return super(MaskedConv2d, self).forward(x)
 
 
 class VerticalStack(MaskedConv2d):
@@ -39,14 +44,14 @@ class VerticalStack(MaskedConv2d):
 
     def forward(self, x: torch.Tensor, cond_embedding: torch.Tensor = None):
         self.weight.data *= self.mask
-        x = super(MaskedConv2d, self).forward(x)
+        out = super(MaskedConv2d, self).forward(x)
 
         if cond_embedding != None:
-            x += self.embed_matcher(cond_embedding).view(
+            out += self.embed_matcher(cond_embedding).view(
                 -1, 1, self.latent_shape[0], self.latent_shape[1]
             )
 
-        return x
+        return out
 
     def create_mask(self, mask_type: str, k: int):
 
@@ -83,24 +88,24 @@ class HorizontalStack(MaskedConv2d):
 
     def forward(self, x: torch.Tensor, cond_embedding: torch.Tensor = None):
         self.weight.data *= self.mask
-        x = super(MaskedConv2d, self).forward(x)
+        out = super(MaskedConv2d, self).forward(x)
 
         if cond_embedding != None:
-            x += self.embed_matcher(cond_embedding).view(
+            out += self.embed_matcher(cond_embedding).view(
                 -1, 1, self.latent_shape[0], self.latent_shape[1]
             )
 
-        return x
+        return out
 
     def create_mask(self, mask_type: str, k: int):
         mask = torch.zeros(k, k)
 
         # set all to the left of center point
-        mask[:, : k // 2] = 1
+        mask[k // 2, : k // 2] = 1
 
         # if we use the center pixel
         if mask_type == "B":
-            mask[:, k // 2] = 1
+            mask[k // 2, k // 2] = 1
 
         return mask
 
@@ -141,7 +146,11 @@ class CondGatedMaskedConv2d(torch.nn.Module):
             padding=0,
         )
 
-        self.embed_matcher = torch.nn.Linear(
+        self.h_embed_matcher = torch.nn.Linear(
+            num_classes, latent_shape[0] * latent_shape[1], bias=False
+        )
+
+        self.v_embed_matcher = torch.nn.Linear(
             num_classes, latent_shape[0] * latent_shape[1], bias=False
         )
 
@@ -149,12 +158,12 @@ class CondGatedMaskedConv2d(torch.nn.Module):
         # vertical stack
         v_stack_feat = self.conv_vertical(v_stack)  # [B, C, 28, 28]
 
-        embed = self.embed_matcher(class_cond_embedding).view(
+        v_embed = self.v_embed_matcher(class_cond_embedding).view(
             -1, 1, self.latent_shape[0], self.latent_shape[1]
         )
 
         # add class conditional embedding
-        conditioned_v_stack = v_stack_feat + embed
+        conditioned_v_stack = v_stack_feat + v_embed
         # (C, num_classes)
 
         # split up features
@@ -169,10 +178,12 @@ class CondGatedMaskedConv2d(torch.nn.Module):
 
         h_stack_feat = h_stack_feat + from_v_stack
 
+        h_embed = self.h_embed_matcher(class_cond_embedding).view(
+            -1, 1, self.latent_shape[0], self.latent_shape[1]
+        )
+
         # add class conditional embedding
-        conditioned_h_stack = h_stack_feat + self.embed_matcher(
-            class_cond_embedding
-        ).view(-1, 1, self.latent_shape[0], self.latent_shape[1])
+        conditioned_h_stack = h_stack_feat + h_embed
 
         # split up features
         h_val, h_gate = torch.chunk(conditioned_h_stack, 2, dim=1)
@@ -184,9 +195,9 @@ class CondGatedMaskedConv2d(torch.nn.Module):
         h_stack_out = self.conv_horiz1x1(h_stack_out)
 
         # add residual connection
-        h_stack_out += h_stack
+        h_stack_out = h_stack_out + h_stack
 
-        return v_stack_out, h_stack_out
+        return F.elu(v_stack_out), F.elu(h_stack_out)
 
 
 class PixelCNN(PML_model):
@@ -204,9 +215,12 @@ class PixelCNN(PML_model):
             1,
             2,
             1,
+            2,
+            1,
         ],  # dilations for the masked convolutions, it also defines the number of layers
     ):
         super().__init__()
+        self.input_shape = input_shape
 
         # class conditional embedding
         self.embedding = torch.nn.Embedding(num_classes, num_classes, max_norm=1.0)
@@ -247,39 +261,47 @@ class PixelCNN(PML_model):
             in_channels=hidden_chan, out_channels=num_codes, kernel_size=1, padding=0
         )
 
-        # too optain a probability distribution over the codes
-        self.softmax = torch.nn.Softmax(dim=1)
+    def forward(self, x: torch.Tensor, class_idx: torch.Tensor):
+        x = x * 2 - 1
 
-    def forward(self, x: torch.Tensor, class_idx: int):
         # get the embedding for the specific class
-        cond_embedding = self.embedding(torch.tensor([class_idx]))  # (1,10)
+        cond_embedding = self.embedding(class_idx)  # (1,10)
 
-        v_stack = self.v_stack(x, cond_embedding)  # [B, C, 30, 30]
-        h_stack = self.h_stack(x, cond_embedding)  # [B, C, 30, 30]
+        v_stack = F.elu(self.v_stack(x, cond_embedding))  # [B, C, 30, 30]
+        h_stack = F.elu(self.h_stack(x, cond_embedding))  # [B, C, 30, 30]
 
         for layer in self.layers:
             v_stack, h_stack = layer(v_stack, h_stack, cond_embedding)
 
-        out = self.conv_out(torch.relu(h_stack))
+        out = self.conv_out(F.elu(h_stack))
 
-        # apply softmax to get a probability distribution of the codes
-        x = self.softmax(out)
-
-        return x
+        return out
 
     def loss_fn(self, model_outputs, target):
-        return torch.nn.functional.cross_entropy(model_outputs, target)
+        return F.cross_entropy(model_outputs, torch.squeeze(target).long())
 
     def backward(self, loss: torch.Tensor):
         return loss.backward()
 
     @torch.no_grad()
-    def sample(self, class_idx_list: list):
-        # TODO: implement sampling
-        pass
+    def sample(self, class_idx_list: torch.Tensor):
+
+        shape = (len(class_idx_list), 1, *self.input_shape)
+
+        # Create empty image
+        imgs = torch.zeros(shape, dtype=torch.float32).to(DEVICE)
+
+        # Generation loop
+        for h in range(self.input_shape[0]):
+            for w in range(self.input_shape[1]):
+                probs = F.softmax(self.forward(imgs, class_idx_list), dim=1)[:, :, h, w]
+                tmp = torch.multinomial(probs, num_samples=1)
+                imgs[:, :, h, w] = tmp / 255.0
+
+        return imgs.cpu()
 
     @staticmethod
-    def visualize_output(batch, output, target, prefix: str = "", base_dir: str = "."):
+    def visualize_output(batch, output, prefix: str = "", base_dir: str = "."):
         show(batch, outfile=os.path.join(base_dir, f"{prefix}_original.png"))
         show(
             output,
@@ -290,29 +312,83 @@ class PixelCNN(PML_model):
         return "PixelCNN"
 
 
-def train(train_loader):
+def train(model: PixelCNN, loader):
 
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
 
     for epoch in range(10):
-        for batch, target in train_loader:
+        batch_losses = []
+        for index, (batch, labels) in enumerate(loader):
 
             optimizer.zero_grad()
 
-            batch = model.embed(batch, 0)
-            output = model(batch)
+            batch = batch.to(DEVICE)
+            labels = labels.to(DEVICE)
 
-            loss = model.loss_fn(output, target)
+            output = model(batch, labels)
+
+            # print(output[0, :, 0, 0])
+
+            loss = model.loss_fn(output, batch * 255)
+
             model.backward(loss)
             optimizer.step()
-            print(f"Epoch {epoch}, Loss: {loss.item()}")
+
+            with torch.no_grad():
+                batch_losses.append(loss.item())
+
+            # if index >= 200:
+            #     break
+
+        with torch.no_grad():
+            output = F.softmax(output, dim=1).cpu()
+            _, output_max = torch.max(output, dim=1, keepdim=True)
+            model.visualize_output(batch.cpu(), output_max, prefix=f"train_{epoch}")
+            epoch_loss = sum(batch_losses) / len(batch_losses)
+            print(f"Epoch {epoch}, Loss: {epoch_loss}")
 
 
 if __name__ == "__main__":
-    model = PixelCNN()
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    model = PixelCNN(
+        input_shape=(28, 28), num_codes=256, hidden_chan=256, num_classes=10
+    )
+
+    model.to(DEVICE)
+
     print(model)
-    input = torch.randn(2, 1, 32, 32)
-    output = model(input, 0)
-    print(output.shape)
-    print(output)
-    print("Done")
+
+    transforms = v2.Compose(
+        [
+            # v2.ToTensor()
+            v2.ToImage(),
+            v2.ToDtype(torch.float32, scale=True),
+            # v2.Grayscale(num_output_channels=1),
+            # v2.Normalize(mean=[0], std=[255.0]),
+        ]
+    )
+
+    mnist = torchvision.datasets.MNIST(
+        "./",
+        transform=transforms,
+        download=True,
+    )
+
+    # evens = list(range(0, len(mnist), 10000))
+    # mnist_subset = torch.utils.data.Subset(mnist, evens)
+
+    loader = torch.utils.data.DataLoader(
+        mnist,
+        batch_size=128,
+        shuffle=False,
+        num_workers=2,
+    )
+
+    train(model, loader)
+
+    imgs = model.sample(
+        torch.tensor([0, 1, 2, 3, 4, 5, 6, 7, 8, 9] * 2, dtype=torch.int).to(DEVICE)
+    )
+
+    show(imgs, outfile="samples.png", imgs_per_row=5)
