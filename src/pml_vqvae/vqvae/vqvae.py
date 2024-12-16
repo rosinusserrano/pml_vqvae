@@ -2,9 +2,6 @@ import torch
 import os
 import numpy as np
 import matplotlib.pyplot as plt
-import math
-
-from PIL import Image
 from pml_vqvae.baseline.pml_model_interface import PML_model
 from pml_vqvae.visuals import show
 from pml_vqvae.nnutils import ResidualBlock
@@ -34,12 +31,10 @@ class VQVAE(PML_model):
         self.latent = None
         self.q_latent = None
 
+        self.prior = None
+
         # codebook of shape (num_codes, latent_chan)
         self.codebase = torch.nn.Parameter(
-            # torch.FloatTensor(num_codes, latent_chan, requires_grad=True).uniform_(-1, 1).to("cuda")
-            # torch.linspace(-1, 1, num_codes)
-            # .reshape(-1, 1)
-            # .repeat(1, latent_chan)
             torch.torch.rand(num_codes, latent_chan),
             requires_grad=True,
         )
@@ -111,7 +106,7 @@ class VQVAE(PML_model):
                 stride=2,
                 padding=1,
             ),
-            # torch.nn.Tanh()
+            # torch.nn.Tanh(),
         )
 
         self.decoder_stack = torch.nn.Sequential(
@@ -146,8 +141,6 @@ class VQVAE(PML_model):
     def forward(self, x: torch.Tensor):
         self.latent = self.encoder_stack(x)
 
-        # print(self.latent.permute(0, 2, 3, 1)[0])
-
         # aka codes, discrete_latent: (B, H, W)
         self.discrete_latent, q_latent = self.quantize(self.latent.detach())
 
@@ -158,7 +151,7 @@ class VQVAE(PML_model):
         # just copies the gradient from q_latent to latent
         self.q_latent = self.latent + (q_latent - self.latent).detach()
 
-        reconstruction = self.decoder_stack(self.latent)
+        reconstruction = self.decoder_stack(self.q_latent)
 
         return reconstruction
 
@@ -177,6 +170,11 @@ class VQVAE(PML_model):
             "Reconstruction Loss": reconstruction_loss.detach().cpu().item(),
             "Embed Loss": embed_loss.detach().cpu().item(),
             "Commit Loss": commit_loss.detach().cpu().item(),
+            "Code Coverage": torch.bincount(
+                self.discrete_latent, minlength=self.num_codes
+            )
+            .cpu()
+            .numpy(),
         }
 
         return loss
@@ -221,6 +219,25 @@ class VQVAE(PML_model):
             output,
             outfile=os.path.join(base_dir, f"{prefix}_reconstruction.png"),
         )
+
+    def set_prior(self, prior: PML_model):
+        self.prior = prior
+
+    def sample(self, class_idx: torch.Tensor):
+        """
+        Sample from the model using the prior
+        :param class_idx: the class index
+        :return: the sample
+        """
+
+        if self.prior is None:
+            raise ValueError("No prior set. Use set_prior() to set a prior model")
+
+        latents = self.prior.sample(class_idx)
+
+        output = self.decoder_stack(latents)
+
+        return output
 
     def name(self):
         return "VQ-VAE"

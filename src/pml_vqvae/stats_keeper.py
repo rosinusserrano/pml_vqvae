@@ -1,6 +1,8 @@
 import matplotlib.pyplot as plt
 import torch
 from pml_vqvae.baseline.pml_model_interface import PML_model
+import numpy as np
+import wandb
 
 
 class StatsKeeper:
@@ -74,9 +76,9 @@ class StatsKeeper:
         if train:
             self.example_cnt += batch_size
 
-        return f"[{'train' if train else 'test'}] " + " | ".join(
-            [f"{k}: {v:.2f}" for k, v in stats.items()]
-        )
+        loss = stats.get("Loss", 0)
+
+        return f"Loss: {loss:.4f}"
 
     def batch_summarize(self, train: bool = True):
         """Summarize the stats for the epoch
@@ -87,7 +89,8 @@ class StatsKeeper:
 
         if train:
             train_epoch_stats = {
-                k: sum(v) / len(v) for k, v in self.train_batch_stats.items()
+                k: sum(v) / len(v) if k != "Code Coverage" else self.process_code_cnt(v)
+                for k, v in self.train_batch_stats.items()
             }
 
             for key, value in train_epoch_stats.items():
@@ -96,7 +99,8 @@ class StatsKeeper:
             self.train_batch_stats = {}
         else:
             test_epoch_stats = {
-                k: sum(v) / len(v) for k, v in self.test_batch_stats.items()
+                k: sum(v) / len(v) if k != "Code Coverage" else self.process_code_cnt(v)
+                for k, v in self.test_batch_stats.items()
             }
 
             for key, value in test_epoch_stats.items():
@@ -113,3 +117,12 @@ class StatsKeeper:
             plt.plot(self.test_epoch_stats[stat])
             plt.title(stat)
             plt.savefig(f"{output_dir}/plots/{stat}.png")
+
+    def process_code_cnt(self, code_cnts: list):
+        code_cnts = np.array(code_cnts)
+        code_cnts = code_cnts.sum(axis=0)
+
+        data = [[label, val] for (label, val) in zip(range(len(code_cnts)), code_cnts)]
+        table = wandb.Table(data=data, columns=["index", "count"])
+
+        return wandb.plot.histogram(table, value="count", title="Code Coverage")
