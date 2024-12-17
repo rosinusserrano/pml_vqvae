@@ -12,6 +12,7 @@ from pml_vqvae.baseline.pml_model_interface import PML_model
 from pml_vqvae.cli_handler import CLI_handler
 from pml_vqvae.train_config import TrainConfig
 from pml_vqvae.dataset.dataloader import load_data
+import matplotlib.pyplot as plt
 
 # import wandb
 DEFAULT_CONFIG = "config.yaml"
@@ -125,7 +126,7 @@ def train(config: TrainConfig):
                 v2.RandomHorizontalFlip(p=0.5),
                 v2.ToDtype(torch.float32, scale=True),
                 v2.Normalize(mean=[0, 0, 0], std=[255.0, 255.0, 255.0]),
-                v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+                # v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
             ]
         )
         if config.dataset == "imagenet"
@@ -149,7 +150,10 @@ def train(config: TrainConfig):
         batch_size=config.batch_size,
     )
 
-    optimizer = Adam(model.parameters(), lr=config.learning_rate)
+    optimizer = Adam(
+        model.parameters(),
+        lr=config.learning_rate,
+    )
 
     model.to(DEVICE)
 
@@ -164,6 +168,8 @@ def train(config: TrainConfig):
         batch, _, output = train_epoch(model, train_loader, optimizer, stats_keeper)
         wandb_wrapper.construct_examples(batch, output)
 
+        # model.vis_codes(i)
+
         # test
         if config.test_interval and i % config.test_interval == 0:
             with torch.no_grad():
@@ -175,6 +181,13 @@ def train(config: TrainConfig):
             log_vis = False
 
         epoch_stats = stats_keeper.get_latest_stats()
+
+        # code_cov = epoch_stats[0]["Code Coverage"]
+
+        # plt.bar(range(len(code_cov)), code_cov)
+        # plt.savefig(f"artifacts/code_coverage_{i}.png")
+        # plt.clf()
+
         wandb_wrapper.log_epoch(epoch_stats, epoch=i, log_vis=log_vis)
 
         model_dir = stats_keeper.save_model(model, config.output_dir, epoch=i)
