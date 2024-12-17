@@ -112,6 +112,9 @@ class StatsKeeper:
         """Visualize the stats and save the plots to the output directory"""
 
         for stat in self.train_epoch_stats.keys():
+            if stat == "Code Coverage":
+                continue
+
             plt.clf()
             plt.plot(self.train_epoch_stats[stat])
             plt.plot(self.test_epoch_stats[stat])

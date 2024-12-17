@@ -211,3 +211,4 @@ pml.sif
 wandb/
 *.pdf
 !task_pdfs/
+MNIST/

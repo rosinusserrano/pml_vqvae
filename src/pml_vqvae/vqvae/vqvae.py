@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from pml_vqvae.baseline.pml_model_interface import PML_model
 from pml_vqvae.visuals import show
 from pml_vqvae.nnutils import ResidualBlock
+import torch.nn.functional as F
 
 
 class VQVAE(PML_model):
@@ -35,7 +36,7 @@ class VQVAE(PML_model):
 
         # codebook of shape (num_codes, latent_chan)
         self.codebase = torch.nn.Parameter(
-            torch.torch.rand(num_codes, latent_chan),
+            torch.FloatTensor(num_codes, latent_chan).uniform_(-1, 1),
             requires_grad=True,
         )
 
@@ -46,6 +47,7 @@ class VQVAE(PML_model):
                 kernel_size=4,
                 stride=2,
                 padding=1,
+                padding_mode="reflect",
             ),
             torch.nn.ReLU(),
             torch.nn.BatchNorm2d(hidden_chan),
@@ -55,6 +57,7 @@ class VQVAE(PML_model):
                 kernel_size=4,
                 stride=2,
                 padding=1,
+                padding_mode="reflect",
             ),
             torch.nn.ReLU(),
             torch.nn.BatchNorm2d(hidden_chan),
@@ -106,7 +109,7 @@ class VQVAE(PML_model):
                 stride=2,
                 padding=1,
             ),
-            # torch.nn.Tanh(),
+            torch.nn.Sigmoid(),
         )
 
         self.decoder_stack = torch.nn.Sequential(
@@ -184,7 +187,8 @@ class VQVAE(PML_model):
 
     def vis_codes(self, idx, base_dir: str = "."):
         fig = plt.figure(figsize=(8, 8))
-        colors = ["r", "g", "b", "y", "m", "c"]
+
+        colors = plt.get_cmap("tab20")
 
         latent = self.latent.cpu().detach().numpy()[0]
         latent = np.moveaxis(latent, 0, -1)
@@ -192,18 +196,20 @@ class VQVAE(PML_model):
 
         codes = self.codes.cpu().detach().numpy()[0].flatten()
 
+        # plot the codebase
         for i, c in enumerate(self.codebase):
             c = c.cpu().detach().numpy()
-            plt.scatter(c[0], c[1], marker="o", color=colors[i], label=f"{c}")
+            plt.scatter(c[0], c[1], marker="o", color=colors(i % 20), label=f"{c}")
 
         for la, c_dx in zip(latent, codes):
-            plt.scatter(la[0], la[1], marker="x", color=colors[c_dx])
+            plt.scatter(la[0], la[1], marker="x", color=colors(c_dx % 20))
 
-        plt.legend()
+        if len(self.codebase) <= 5:
+            plt.legend()
 
         # set window
-        plt.xlim(-2, 2)
-        plt.ylim(-2, 2)
+        plt.xlim(-4, 4)
+        plt.ylim(-4, 4)
 
         plt.title("Codes")
         plt.xlabel("x1")
