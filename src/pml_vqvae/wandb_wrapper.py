@@ -27,7 +27,7 @@ class WANDBWrapper:
                 columns=["Epoch", "Input", "Reconstructions"]
             )
             self.test_example_table = wandb.Table(
-                columns=["Epoch", "Input", "Reconstructions"]
+                columns=["Epoch", "Input", "Reconstructions", "Generations"]
             )
 
     def save_model(self, path: str):
@@ -48,7 +48,7 @@ class WANDBWrapper:
 
             if log_vis:
                 self.test_example_table.add_data(
-                    epoch, self.test_expl["Input"], self.test_expl["Reconstructions"]
+                    epoch, self.test_expl["Input"], self.test_expl["Reconstructions"], self.test_expl["Generations"]
                 )
                 self.train_example_table.add_data(
                     epoch, self.train_expl["Input"], self.train_expl["Reconstructions"]
@@ -64,10 +64,13 @@ class WANDBWrapper:
                 wandb.log({"test_examples": self.test_example_table})
             wandb.finish()
 
-    def construct_examples(self, batch, output, train=True, max_examples=5):
+    def construct_examples(self, batch, output, generation = None, train=True, max_examples=5):
 
         if isinstance(output, tuple):
             output = output[0]
+        
+        if output.shape[1] == 256:
+            output = output.argmax(dim=1, keepdim=True)
 
         num_examples = min(len(batch), max_examples)
 
@@ -81,6 +84,14 @@ class WANDBWrapper:
                 for i in range(num_examples)
             ],
         }
+
+        if generation is not None:
+            payload["Generations"] = [
+                wandb.Image(np.moveaxis(generation[i].cpu().detach().numpy(), 0, -1))
+                for i in range(num_examples)
+            ]
+        
+        print(payload)
 
         if train:
             self.train_expl = payload
