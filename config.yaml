@@ -1,5 +1,5 @@
 experiment:
-  name: "vqvae" # name of the experiment
+  name: "vqvae cifar test local" # name of the experiment
   description: "" # description of the experiment
   seed: 42 # seed for reproducibility
   test_interval: 1  # test the model every test_interval epochs, None to disable

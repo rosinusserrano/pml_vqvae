@@ -26,16 +26,14 @@ class VectorQuantization(autograd.Function):
         batch = batch.permute(0, 2, 3, 1)  # channels on last dim
         batch = batch.view(-1, channels)  # flatten except for channels
 
-        # add singular dimension to compute (arg-)minimum distance using broadcasting
-        batch = batch[-1, None, channels]
-        codebook = codebook[None, -1, embedding_dim]
-
         print("Codebook shape for broadcasting: ", codebook.shape)
         print("Batch shape for broadcasting: ", batch.shape)
 
         # Shape -> (batch_size * height * width)  x codebook_size
         # TODO: use ||x - z||² == ||x||² + ||z||² - 2 * x.T @ z
-        squared_distances = torch.sum((batch - codebook) ** 2, dim=-1)
+        squared_distances = torch.sum(
+            (batch[:, None, :] - codebook[None, :, :]) ** 2, dim=-1
+        )
 
         closest_codes_indexes = torch.argmin(squared_distances, dim=1)
 
@@ -64,6 +62,7 @@ class VQVAEConfig:
     "Config for VQVAE"
     name: str = "VQVAE"
     codebook_size: int = 512
+    commitment_weight: float = 0.25
     downsampling_channels: list[int] = field(default_factory=lambda: [3, 256, 256])
     encoder_residual_channels: list[int] = field(
         default_factory=lambda: [256, 256, 256]
@@ -140,11 +139,16 @@ class VQVAE(PML_model):
 
         return reconstruction
 
-    @staticmethod
-    def loss_fn(model_outputs: torch.Tensor, target: torch.Tensor):
+    def loss_fn(self, model_outputs: torch.Tensor, target: torch.Tensor):
         reconstruction, encoder_out, codes = model_outputs
-        beta = 0.25
-        return F.mse_loss(model_outputs, target) + (codes.det)
+        return (
+            F.mse_loss(reconstruction, target)
+            + ((codes.detach() - encoder_out) ** 2).sum()
+            + (
+                self.config.commitment_weight
+                * ((encoder_out.detach() - codes) ** 2).sum()
+            )
+        )
 
     def backward(self, loss: torch.Tensor):
         loss.backward()
@@ -153,11 +157,16 @@ class VQVAE(PML_model):
     def collect_stats(output, target, loss):
         return {"Loss": loss.item()}
 
+    def name(self):
+        return "VQVAE"
+
     @staticmethod
     def visualize_output(batch, output, target, prefix="", base_dir="."):
-        raise NotImplementedError
+        return None
 
 
 if __name__ == "__main__":
     model_conf = VQVAEConfig()
     model = VQVAE(model_conf)
+    img = torch.randn((1, 3, 32, 32))
+    print([out.shape for out in model(img)])
