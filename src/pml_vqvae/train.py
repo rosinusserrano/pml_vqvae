@@ -9,6 +9,7 @@ from tqdm.auto import tqdm
 from pml_vqvae.stats_keeper import StatsKeeper
 from pml_vqvae.wandb_wrapper import WANDBWrapper
 from pml_vqvae.baseline.pml_model_interface import PML_model
+from pml_vqvae.vqvae.pixel_cnn import GatedPixelCNN, ConditionalPixelCNN
 from pml_vqvae.cli_handler import CLI_handler
 from pml_vqvae.train_config import TrainConfig
 from pml_vqvae.dataset.dataloader import load_data
@@ -24,6 +25,7 @@ def test(
     test_loader: DataLoader,
     stats_keeper: StatsKeeper,
     reconstruct: bool = False,
+    conditional: bool = False
 ):
     """Test a model on a dataset
 
@@ -41,12 +43,13 @@ def test(
     # for dynamic logging
     test_tqdm = tqdm(test_loader)
 
-    for batch, target in test_tqdm:
+    for batch, labels in test_tqdm:
         batch = batch.to(DEVICE)
-        target = target.to(DEVICE)
+        labels = labels.to(DEVICE)
+        targets = labels if not reconstruct else batch
 
-        output = model(batch)
-        loss = model.loss_fn(output, target)
+        output = model(batch) if not conditional else model(batch, labels)
+        model.loss_fn(output, targets)
 
         # collect all stats in Object for later plotting
         dsp = stats_keeper.add_batch_stats(model.batch_stats, len(batch), train=False)
@@ -59,7 +62,7 @@ def test(
 
     model.train()
 
-    return batch, target, output
+    return batch, labels, output
 
 
 def train_epoch(
@@ -68,6 +71,7 @@ def train_epoch(
     optimizer: Optimizer,
     stats_keeper: StatsKeeper,
     reconstruct: bool = False,
+    conditional: bool = False
 ):
     """Train a model on a dataset for one epoch
 
@@ -84,14 +88,15 @@ def train_epoch(
     # for dynamic logging
     train_tqdm = tqdm(train_loader)
 
-    for batch, target in train_tqdm:
+    for batch, labels in train_tqdm:
         batch = batch.to(DEVICE)
-        target = target.to(DEVICE)
+        labels = labels.to(DEVICE)
+        targets = labels if not reconstruct else batch
 
         optimizer.zero_grad()
 
-        output = model(batch)
-        loss = model.loss_fn(output, target)
+        output = model(batch) if not conditional else model(batch, labels)
+        loss = model.loss_fn(output, targets)
         model.backward(loss)
 
         # collect all stats in Object for later plotting
@@ -105,7 +110,7 @@ def train_epoch(
     # create epoch level stats
     stats_keeper.batch_summarize()
 
-    return batch, target, output
+    return batch, labels, output
 
 
 def train(config: TrainConfig):
@@ -173,6 +178,7 @@ def train(config: TrainConfig):
             optimizer,
             stats_keeper,
             reconstruct=config.dataset == "mnist",
+            conditional=isinstance(model, ConditionalPixelCNN)
         )
         wandb_wrapper.construct_examples(batch, output)
 
@@ -184,8 +190,14 @@ def train(config: TrainConfig):
                     test_loader,
                     stats_keeper,
                     reconstruct=config.dataset == "mnist",
+                    conditional=isinstance(model, ConditionalPixelCNN)
                 )
-                wandb_wrapper.construct_examples(batch, output, train=False)
+
+                generation = None
+                if isinstance(model, (GatedPixelCNN, ConditionalPixelCNN)):
+                    generation = model.generate_images()
+
+                wandb_wrapper.construct_examples(batch, output, generation=generation, train=False)
 
         log_vis = True
         if not config.vis_train_interval or i % config.vis_train_interval != 0:

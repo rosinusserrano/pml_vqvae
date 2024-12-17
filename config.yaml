@@ -1,5 +1,5 @@
 experiment:
-  name: "pixelcnn on mnist" # name of the experiment
+  name: "conditional pixel cnn on mnist" # name of the experiment
   description: "" # description of the experiment
   seed: 42 # seed for reproducibility
   test_interval: 1  # test the model every test_interval epochs, None to disable
@@ -14,9 +14,9 @@ data:
 
 train:
   batch_size: 128
-  epochs: 3
-  learning_rate: 0.0002
+  epochs: 5
+  learning_rate: 0.001
 
 model:
-  model_name: "pixelcnn" # either autoencoder or vae
+  model_name: "cpixelcnn" # either autoencoder or vae
   
