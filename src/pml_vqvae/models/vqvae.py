@@ -1,6 +1,7 @@
 """Implementation of VQVAE"""
 
 from dataclasses import dataclass, field
+from itertools import pairwise
 
 import torch
 from torch import nn
@@ -8,7 +9,7 @@ import torch.nn.functional as F
 from torch import autograd
 
 from pml_vqvae.models.baseline.pml_model_interface import PML_model
-from pml_vqvae.nnutils import downsample, upsample, zip_channels_list, ResidualBlock
+from pml_vqvae.nnutils import downsample, upsample, ResidualBlock
 
 
 class VectorQuantization(autograd.Function):
@@ -38,10 +39,12 @@ class VectorQuantization(autograd.Function):
         output = output.reshape(batch_size, height, width, channels)
         output = output.permute(0, 3, 1, 2)
 
-        return output
+        closest_codes_indexes = closest_codes_indexes.reshape(batch_size, height, width)
+
+        return output, closest_codes_indexes
 
     @staticmethod
-    def backward(ctx, grad_output):
+    def backward(ctx, grad_output, grad_indices):
         code_indexes, codebook = ctx.saved_tensors
 
         grad_encoder = grad_output
@@ -90,11 +93,11 @@ class VQVAE(PML_model):
         self.encoder = nn.Sequential(
             *[
                 downsample(inc, outc)
-                for inc, outc in zip_channels_list(config.downsampling_channels)
+                for inc, outc in pairwise(config.downsampling_channels)
             ],
             *[
                 ResidualBlock(inc, outc)
-                for inc, outc in zip_channels_list(config.encoder_residual_channels)
+                for inc, outc in pairwise(config.encoder_residual_channels)
             ],
             nn.Conv2d(  # compression
                 in_channels=config.encoder_residual_channels[-1],
@@ -127,11 +130,11 @@ class VQVAE(PML_model):
             nn.BatchNorm2d(config.decoder_residual_channels[0]),
             *[
                 ResidualBlock(inc, outc)
-                for inc, outc in zip_channels_list(config.decoder_residual_channels)
+                for inc, outc in pairwise(config.decoder_residual_channels)
             ],
             *[
                 upsample(inc, outc)
-                for inc, outc in zip_channels_list(config.upsampling_channels[:-1])
+                for inc, outc in pairwise(config.upsampling_channels[:-1])
             ],
             upsample(
                 config.upsampling_channels[-2],
@@ -142,13 +145,13 @@ class VQVAE(PML_model):
 
     def forward(self, tensor: torch.Tensor):
         encoder_out = self.encoder(tensor)
-        codes = VectorQuantization.apply(encoder_out, self.codebook)
+        codes, indexes = VectorQuantization.apply(encoder_out, self.codebook)
         reconstruction = self.decoder(codes)
 
-        return reconstruction, encoder_out, codes
+        return reconstruction, encoder_out, codes, indexes
 
     def loss_fn(self, model_outputs: torch.Tensor, target: torch.Tensor):
-        reconstruction, encoder_out, codes = model_outputs
+        reconstruction, encoder_out, codes, indexes = model_outputs
 
         reconstruction = F.mse_loss(reconstruction, target)
 

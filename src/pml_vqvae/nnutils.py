@@ -33,10 +33,6 @@ def downsample(in_channels: int, out_channels: int, activation: nn.Module = nn.R
     )
 
 
-def zip_channels_list(l: list[int]):
-    return zip(l[:-1], l[1:])
-
-
 class PrintModule(nn.Module):
     """Simply prints the shape of the input.
 
