@@ -24,37 +24,42 @@ class VectorQuantization(autograd.Function):
             raise ValueError("codebook embedding dimension doesnt equal" "channel dim!")
 
         batch = batch.permute(0, 2, 3, 1)  # channels on last dim
-        batch = batch.view(-1, channels)  # flatten except for channels
-
-        print("Codebook shape for broadcasting: ", codebook.shape)
-        print("Batch shape for broadcasting: ", batch.shape)
+        batch = batch.reshape(-1, channels)  # flatten except for channels
 
         # Shape -> (batch_size * height * width)  x codebook_size
-        # TODO: use ||x - z||² == ||x||² + ||z||² - 2 * x.T @ z
-        squared_distances = torch.sum(
-            (batch[:, None, :] - codebook[None, :, :]) ** 2, dim=-1
-        )
+        squared_distances = torch.cdist(batch, codebook)
 
         closest_codes_indexes = torch.argmin(squared_distances, dim=1)
 
         # Save indexes in order to match gradients to corresponding codes
-        ctx.save_for_backward(closest_codes_indexes)
+        ctx.save_for_backward(closest_codes_indexes, codebook)
 
         output = codebook[closest_codes_indexes]
-        output = output.view(batch_size, height, width, channels)
+        output = output.reshape(batch_size, height, width, channels)
         output = output.permute(0, 3, 1, 2)
 
         return output
 
     @staticmethod
     def backward(ctx, grad_output):
-        # code_indexes, = ctx.saved_tensors
+        code_indexes, codebook = ctx.saved_tensors
 
-        # n_channels = grad_output.shape[1]
+        grad_encoder = grad_output
 
-        # grad_output = grad_output.permute(0, 2, 3, 1)
-        # grad_output = grad_output.view(-1, n_channels)
-        return grad_output, None
+        n_channels = grad_output.shape[1]
+
+        grad_output = grad_output.permute(0, 2, 3, 1)
+        grad_output = grad_output.reshape(-1, n_channels)
+
+        grad_codes = torch.zeros_like(codebook)
+        grad_codes = torch.index_add(
+            input=grad_codes,
+            dim=0,
+            index=code_indexes,
+            source=grad_output,
+        )
+
+        return grad_encoder, grad_codes
 
 
 @dataclass
@@ -62,12 +67,12 @@ class VQVAEConfig:
     "Config for VQVAE"
     name: str = "VQVAE"
     codebook_size: int = 512
-    commitment_weight: float = 0.25
+    commitment_weight: float = 2
     downsampling_channels: list[int] = field(default_factory=lambda: [3, 256, 256])
     encoder_residual_channels: list[int] = field(
         default_factory=lambda: [256, 256, 256]
     )
-    compression_channels: int = 16
+    compression_channels: int = 256
     decoder_residual_channels: list[int] = field(
         default_factory=lambda: [256, 256, 256]
     )
@@ -102,7 +107,13 @@ class VQVAE(PML_model):
         )
 
         self.codebook = nn.Parameter(
-            torch.randn((config.codebook_size, config.compression_channels))
+            torch.zeros(
+                (config.codebook_size, config.compression_channels)
+            ).data.uniform_(
+                -1 / self.config.codebook_size,
+                1 / self.config.codebook_size,
+            ),
+            requires_grad=True,
         )
 
         self.decoder = nn.Sequential(
@@ -134,28 +145,33 @@ class VQVAE(PML_model):
         codes = VectorQuantization.apply(encoder_out, self.codebook)
         reconstruction = self.decoder(codes)
 
-        if self.training:
-            return reconstruction, encoder_out, codes
-
-        return reconstruction
+        return reconstruction, encoder_out, codes
 
     def loss_fn(self, model_outputs: torch.Tensor, target: torch.Tensor):
         reconstruction, encoder_out, codes = model_outputs
-        return (
-            F.mse_loss(reconstruction, target)
-            + ((codes.detach() - encoder_out) ** 2).sum()
-            + (
-                self.config.commitment_weight
-                * ((encoder_out.detach() - codes) ** 2).sum()
-            )
-        )
+
+        reconstruction = F.mse_loss(reconstruction, target)
+
+        encoder_commitment = F.mse_loss(codes.detach(), encoder_out)
+        encoder_commitment *= self.config.commitment_weight
+
+        codes_commitment = F.mse_loss(codes, encoder_out.detach())
+
+        loss = reconstruction + encoder_commitment + codes_commitment
+
+        return loss, {
+            "Loss": loss.item(),
+            "Reconstruction": reconstruction.item(),
+            "Commitment (encoder)": encoder_commitment.item(),
+            "Commitment (codes)": codes_commitment.item(),
+        }
 
     def backward(self, loss: torch.Tensor):
-        loss.backward()
+        loss[0].backward()
 
     @staticmethod
     def collect_stats(output, target, loss):
-        return {"Loss": loss.item()}
+        return loss[1]
 
     def name(self):
         return "VQVAE"
