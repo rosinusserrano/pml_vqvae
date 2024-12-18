@@ -1,5 +1,5 @@
 experiment:
-  name: "vqvae cifar test local" # name of the experiment
+  name: "vqvae imagenet test" # name of the experiment
   description: "" # description of the experiment
   seed: 42 # seed for reproducibility
   test_interval: 1  # test the model every test_interval epochs, None to disable
@@ -13,9 +13,9 @@ data:
   class_idx: null # list of class indices to use, empty list to use all classes
 
 train:
-  batch_size: 64
+  batch_size: 256
   epochs: 10
-  learning_rate: 0.0002
+  learning_rate: 0.00025
 
 model:
   model_name: "vqvae" # either autoencoder or vae
