@@ -75,7 +75,7 @@ class StatsKeeper:
             self.example_cnt += batch_size
 
         return f"[{'train' if train else 'test'}] " + " | ".join(
-            [f"{k}: {v:.2f}" for k, v in stats.items()]
+            [f"{k}: {v:.4f}" for k, v in stats.items() if isinstance(v, (int, float))]
         )
 
     def batch_summarize(self, train: bool = True):
