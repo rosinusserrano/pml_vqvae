@@ -371,7 +371,7 @@ if __name__ == "__main__":
         num_workers=2,
     )
 
-    model.training(loader, epochs=10, learning_rate=1e-3)
+    model.train_model(loader, epochs=10, learning_rate=1e-3)
 
     imgs = model.sample(
         torch.tensor([0, 1, 2, 3, 4, 5, 6, 7, 8, 9] * 2, dtype=torch.int).to(DEVICE)
