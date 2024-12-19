@@ -36,7 +36,7 @@ class VQVAE(PML_model):
 
         # codebook of shape (num_codes, latent_chan)
         self.codebase = torch.nn.Parameter(
-            torch.FloatTensor(num_codes, latent_chan).uniform_(-1, 1),
+            torch.FloatTensor(num_codes, latent_chan).uniform_(-0.5, 0.5),
             requires_grad=True,
         )
 
@@ -47,7 +47,6 @@ class VQVAE(PML_model):
                 kernel_size=4,
                 stride=2,
                 padding=1,
-                padding_mode="reflect",
             ),
             torch.nn.ReLU(),
             torch.nn.BatchNorm2d(hidden_chan),
@@ -57,7 +56,6 @@ class VQVAE(PML_model):
                 kernel_size=4,
                 stride=2,
                 padding=1,
-                padding_mode="reflect",
             ),
             torch.nn.ReLU(),
             torch.nn.BatchNorm2d(hidden_chan),
@@ -109,7 +107,7 @@ class VQVAE(PML_model):
                 stride=2,
                 padding=1,
             ),
-            torch.nn.Sigmoid(),
+            torch.nn.Tanh(),
         )
 
         self.decoder_stack = torch.nn.Sequential(
@@ -134,18 +132,18 @@ class VQVAE(PML_model):
         codes = torch.argmin(distances, dim=1)
 
         # reshape the codes to (B, H, W)
-        self.codes = codes.reshape(b, h, w)
+        self.discrete_latent = codes.reshape(b, h, w)
 
         # get code from codebase
-        maped_codes = self.codebase[self.codes]
+        maped_codes = self.codebase[self.discrete_latent]
 
-        return codes, maped_codes
+        return maped_codes
 
     def forward(self, x: torch.Tensor):
         self.latent = self.encoder_stack(x)
 
-        # aka codes, discrete_latent: (B, H, W)
-        self.discrete_latent, q_latent = self.quantize(self.latent.detach())
+        # (B, H, W)
+        q_latent = self.quantize(self.latent.detach())
 
         # reshape to (B, C, H, W)
         q_latent = q_latent.permute(0, 3, 1, 2)
@@ -160,7 +158,7 @@ class VQVAE(PML_model):
 
     def loss_fn(self, model_outputs, target):
 
-        e = self.codebase[self.discrete_latent].reshape(self.latent.shape)
+        e = self.codebase[self.discrete_latent].permute(0, 3, 1, 2)
 
         reconstruction_loss = torch.nn.functional.mse_loss(model_outputs, target)
         embed_loss = torch.nn.functional.mse_loss(self.latent.detach(), e)

@@ -71,6 +71,8 @@ class WANDBWrapper:
 
         num_examples = min(len(batch), max_examples)
 
+        batch = (batch + 1) / 2
+
         payload = {
             "Input": [
                 wandb.Image(np.moveaxis(batch[i].cpu().detach().numpy(), 0, -1))
