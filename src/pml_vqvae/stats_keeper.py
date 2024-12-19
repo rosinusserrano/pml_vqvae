@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import torch
-from pml_vqvae.models.baseline.pml_model_interface import PML_model
+from pml_vqvae.models.pml_model_interface import PML_model
 
 
 class StatsKeeper:

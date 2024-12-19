@@ -1,6 +1,6 @@
 import torch
 import os
-from pml_vqvae.baseline.pml_model_interface import PML_model
+from pml_vqvae.models.pml_model_interface import PML_model
 from pml_vqvae.visuals import show
 from torchvision.transforms import v2
 import torchvision

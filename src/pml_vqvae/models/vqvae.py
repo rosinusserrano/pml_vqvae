@@ -8,7 +8,7 @@ from torch import nn
 import torch.nn.functional as F
 from torch import autograd
 
-from pml_vqvae.models.baseline.pml_model_interface import PML_model
+from pml_vqvae.models.pml_model_interface import PML_model
 from pml_vqvae.nnutils import downsample, upsample, ResidualBlock
 
 
