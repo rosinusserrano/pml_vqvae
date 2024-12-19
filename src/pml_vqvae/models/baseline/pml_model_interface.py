@@ -1,3 +1,5 @@
+"""Abstract class defining functions used for all models across this project"""
+
 import torch
 
 

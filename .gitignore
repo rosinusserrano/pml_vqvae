@@ -211,3 +211,5 @@ pml.sif
 wandb/
 *.pdf
 !task_pdfs/
+data
+test.ipynb
