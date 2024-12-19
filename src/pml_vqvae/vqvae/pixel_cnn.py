@@ -306,7 +306,7 @@ class PixelCNN(PML_model):
             outfile=os.path.join(base_dir, f"{prefix}_reconstruction.png"),
         )
 
-    def training(
+    def train_model(
         self,
         loader: torch.utils.data.DataLoader,
         epochs: int = 10,
