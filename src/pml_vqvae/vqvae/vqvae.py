@@ -14,7 +14,7 @@ class VQVAE(PML_model):
     """
 
     def __init__(
-        self, hidden_chan: int = 128, latent_chan: int = 128, num_codes: int = 512
+        self, hidden_chan: int = 256, latent_chan: int = 256, num_codes: int = 512
     ):
         """
         VQ-VAE model
@@ -26,7 +26,7 @@ class VQVAE(PML_model):
         self.hidden_chan = hidden_chan
         self.latent_chan = latent_chan  # D in the paper
         self.num_codes = num_codes  # K in the paper
-        self.beta = 0.25
+        self.beta = 2
         super().__init__()
 
         self.latent = None
@@ -171,11 +171,11 @@ class VQVAE(PML_model):
             "Reconstruction Loss": reconstruction_loss.detach().cpu().item(),
             "Embed Loss": embed_loss.detach().cpu().item(),
             "Commit Loss": commit_loss.detach().cpu().item(),
-            "Code Coverage": torch.bincount(
-                self.discrete_latent, minlength=self.num_codes
-            )
-            .cpu()
-            .numpy(),
+            # "Code Coverage": torch.bincount(
+            #     self.discrete_latent, minlength=self.num_codes
+            # )
+            # .cpu()
+            # .numpy(),
         }
 
         return loss
