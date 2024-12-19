@@ -97,16 +97,15 @@ class BaselineAutoencoder(PML_model):
 
         return reconstruction
 
-    @staticmethod
-    def loss_fn(model_outputs, target):
-        return torch.nn.functional.mse_loss(model_outputs, target)
+    def loss_fn(self, model_outputs, target):
+        loss = torch.nn.functional.mse_loss(model_outputs, target)
+
+        self.batch_stats = {"Loss": loss.item()}
+
+        return loss
 
     def backward(self, loss: torch.Tensor):
         return loss.backward()
-
-    @staticmethod
-    def collect_stats(output, target, loss):
-        return {"Loss": loss.item()}
 
     @staticmethod
     def visualize_output(batch, output, target, prefix: str = "", base_dir: str = "."):
