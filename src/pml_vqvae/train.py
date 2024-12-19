@@ -36,12 +36,12 @@ def test(model: PML_model, test_loader: DataLoader, stats_keeper: StatsKeeper):
     # for dynamic logging
     test_tqdm = tqdm(test_loader)
 
-    for batch, target in test_tqdm:
+    for batch, labels in test_tqdm:
         batch = batch.to(DEVICE)
-        target = target.to(DEVICE)
+        labels = labels.to(DEVICE)
 
         output = model(batch)
-        loss = model.loss_fn(output, target)
+        loss = model.loss_fn(output, batch)
 
         # collect all stats in Object for later plotting
         dsp = stats_keeper.add_batch_stats(model.batch_stats, len(batch), train=False)
@@ -54,7 +54,7 @@ def test(model: PML_model, test_loader: DataLoader, stats_keeper: StatsKeeper):
 
     model.train()
 
-    return batch, target, output
+    return batch, batch, output
 
 
 def train_epoch(
@@ -78,14 +78,14 @@ def train_epoch(
     # for dynamic logging
     train_tqdm = tqdm(train_loader)
 
-    for batch, target in train_tqdm:
+    for batch, labels in train_tqdm:
         batch = batch.to(DEVICE)
-        target = target.to(DEVICE)
+        labels = labels.to(DEVICE)
 
         optimizer.zero_grad()
 
         output = model(batch)
-        loss = model.loss_fn(output, target)
+        loss = model.loss_fn(output, batch)
         model.backward(loss)
 
         # collect all stats in Object for later plotting
@@ -99,7 +99,7 @@ def train_epoch(
     # create epoch level stats
     stats_keeper.batch_summarize()
 
-    return batch, target, output
+    return batch, batch, output
 
 
 def train(config: TrainConfig):
