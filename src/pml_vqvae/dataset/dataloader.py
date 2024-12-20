@@ -1,4 +1,5 @@
 import torchvision
+from torchvision.transforms import v2
 import torch
 
 from pml_vqvae.dataset.cifar10 import CifarDataset
@@ -9,7 +10,6 @@ DATASET_NAMES = ["imagenet", "cifar"]
 
 def load_data(
     dataset: str,
-    transformation: torchvision.transforms = None,
     n_train: int = None,
     n_test: int = None,
     num_workers: int = 1,
@@ -22,7 +22,6 @@ def load_data(
 
     Args:
         dataset (str): Name of the dataset
-        transformation (torchvision.transforms, optional): Transformation to apply to the data. Defaults to None.
         n_train (int, optional): Number of training samples to load. Defaults to None.
         n_test (int, optional): Number of test samples to load. Defaults to None.
         num_workers (int, optional): Number of workers to use for data loading. Defaults to 1.
@@ -58,10 +57,31 @@ def load_data(
             assert n_test % 1000 == 0, "n_test must be a multiple of 1000"
             n_test = n_test // 1000
 
+        train_transforms = v2.Compose(
+            [
+                v2.RandomResizedCrop(size=(128, 128), antialias=True, scale=(0.1, 1.0)),
+                v2.RandomHorizontalFlip(p=0.5),
+                v2.ToDtype(torch.float32, scale=True),
+                v2.Normalize(mean=[0, 0, 0], std=[255.0, 255.0, 255.0]),
+                v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+            ]
+        )
+
+        test_transforms = v2.Compose(
+            [
+                v2.RandomResizedCrop(size=(128, 128), antialias=True, scale=(1.0, 1.0)),
+                v2.ToDtype(torch.float32, scale=True),
+                v2.Normalize(mean=[0, 0, 0], std=[255.0, 255.0, 255.0]),  # -> [0, 1]
+                v2.Normalize(
+                    mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+                ),  # [-1, 1]
+            ]
+        )
+
         train_set = ImageNetDataset(
             split="train",
             samples_per_class=n_train,
-            transform=transformation,
+            transform=train_transforms,
             seed=seed,
             class_idx=class_idx,
         )
@@ -69,7 +89,7 @@ def load_data(
         test_set = ImageNetDataset(
             split="val",
             samples_per_class=n_test,
-            transform=transformation,
+            transform=test_transforms,
             seed=seed,
             class_idx=class_idx,
         )
@@ -83,10 +103,31 @@ def load_data(
             assert n_test % 10 == 0, "n_test must be a multiple of 10"
             n_test = n_test // 10
 
+        train_transforms = v2.Compose(
+            [
+                v2.RandomResizedCrop(size=(32, 32), antialias=True, scale=(0.5, 1.0)),
+                v2.RandomHorizontalFlip(p=0.5),
+                v2.ToDtype(torch.float32, scale=True),
+                v2.Normalize(
+                    mean=[125.0, 125.0, 125.0], std=[255.0, 255.0, 255.0]
+                ),  # -> [-1, 1]
+            ]
+        )
+
+        test_transforms = v2.Compose(
+            [
+                v2.RandomResizedCrop(size=(32, 32), antialias=True, scale=(1.0, 1.0)),
+                v2.ToDtype(torch.float32, scale=True),
+                v2.Normalize(
+                    mean=[125.0, 125.0, 125.0], std=[255.0, 255.0, 255.0]
+                ),  # -> [-1, 1]
+            ]
+        )
+
         train_set = CifarDataset(
             split="train",
             samples_per_class=n_train,
-            transform=transformation,
+            transform=train_transforms,
             seed=seed,
             class_idx=class_idx,
         )
@@ -94,7 +135,7 @@ def load_data(
         test_set = CifarDataset(
             split="test",
             samples_per_class=n_test,
-            transform=transformation,
+            transform=test_transforms,
             seed=seed,
             class_idx=class_idx,
         )
