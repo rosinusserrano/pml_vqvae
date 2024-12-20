@@ -107,13 +107,5 @@ class BaselineAutoencoder(PML_model):
     def backward(self, loss: torch.Tensor):
         return loss.backward()
 
-    @staticmethod
-    def visualize_output(batch, output, target, prefix: str = "", base_dir: str = "."):
-        show(batch, outfile=os.path.join(base_dir, f"{prefix}_original.png"))
-        show(
-            output,
-            outfile=os.path.join(base_dir, f"{prefix}_reconstruction.png"),
-        )
-
     def name(self):
         return "BaselineAutoencoder"

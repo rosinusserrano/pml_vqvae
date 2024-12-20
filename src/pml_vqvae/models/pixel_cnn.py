@@ -298,47 +298,41 @@ class PixelCNN(PML_model):
 
         return imgs.cpu()
 
-    @staticmethod
-    def visualize_output(batch, output, prefix: str = "", base_dir: str = "."):
-        show(batch, outfile=os.path.join(base_dir, f"{prefix}_original.png"))
-        show(
-            output,
-            outfile=os.path.join(base_dir, f"{prefix}_reconstruction.png"),
-        )
+    def visualize_output(self, output: torch.Tensor):
+        return torch.argmax(output, dim=1, keepdim=True)
 
-    def train_model(
-        self,
-        loader: torch.utils.data.DataLoader,
-        epochs: int = 10,
-        learning_rate: float = 1e-3,
-    ):
-        optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+    # def train_model(
+    #     self,
+    #     loader: torch.utils.data.DataLoader,
+    #     epochs: int = 10,
+    #     learning_rate: float = 1e-3,
+    # ):
+    #     optimizer = torch.optim.Adam(self.parameters(), lr=learning_rate)
 
-        for epoch in range(epochs):
-            batch_losses = []
-            for batch, labels in loader:
+    #     for epoch in range(epochs):
+    #         batch_losses = []
+    #         for batch, labels in loader:
 
-                optimizer.zero_grad()
+    #             optimizer.zero_grad()
 
-                batch = batch.to(DEVICE)
-                labels = labels.to(DEVICE)
+    #             batch = batch.to(DEVICE)
+    #             labels = labels.to(DEVICE)
 
-                output = model(batch, labels)
+    #             output = self.forward(batch, labels)
 
-                loss = model.loss_fn(output, batch)
+    #             loss = self.loss_fn(output, batch)
 
-                model.backward(loss)
-                optimizer.step()
+    #             self.backward(loss)
+    #             optimizer.step()
 
-                with torch.no_grad():
-                    batch_losses.append(loss.item())
+    #             with torch.no_grad():
+    #                 batch_losses.append(loss.item())
 
-            with torch.no_grad():
-                probs = F.softmax(output, dim=1).cpu()
-                output_img = torch.argmax(probs, dim=1, keepdim=True)
-                model.visualize_output(batch.cpu(), output_img, prefix=f"train_{epoch}")
-                epoch_loss = sum(batch_losses) / len(batch_losses)
-                print(f"Epoch {epoch}, Loss: {epoch_loss}")
+    #         with torch.no_grad():
+    #             output_img = self.visualize_output(output)
+    #             show(output_img, outfile=f"pixelcnn_out_{epoch}.png")
+    #             epoch_loss = sum(batch_losses) / len(batch_losses)
+    #             print(f"Epoch {epoch}, Loss: {epoch_loss}")
 
     def name(self):
         return "PixelCNN"

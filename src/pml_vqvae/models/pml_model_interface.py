@@ -25,16 +25,5 @@ class PML_model(torch.nn.Module):
             "just a wrapper function for the backward method as it will get more complicated for the vq-vae."
         )
 
-    @staticmethod
-    def collect_stats(output, target, loss) -> dict[str, float]:
-        raise NotImplementedError(
-            """This function should output a dict where each key should map to a float"""
-        )
-
-    @staticmethod
-    def visualize_output(
-        batch, output, target, prefix: str = "", base_dir: str = "."
-    ) -> None:
-        raise NotImplementedError(
-            """This function should visualize the model output and save it to a file"""
-        )
+    def visualize_output(self, output) -> torch.Tensor:
+        return output

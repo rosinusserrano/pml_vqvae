@@ -162,13 +162,14 @@ def train(config: TrainConfig):
     for i in range(config.epochs):
         # train on all datat for one epoch
         batch, _, output = train_epoch(model, train_loader, optimizer, stats_keeper)
-        wandb_wrapper.construct_examples(batch, output)
+        wandb_wrapper.construct_examples(batch, model.visualize_output(output))
 
         # test
         if config.test_interval and i % config.test_interval == 0:
             with torch.no_grad():
-                batch, _, output = test(model, test_loader, stats_keeper)
-                wandb_wrapper.construct_examples(batch, output, train=False)
+                wandb_wrapper.construct_examples(
+                    batch, model.visualize_output(output), train=False
+                )
 
         log_vis = True
         if not config.vis_train_interval or i % config.vis_train_interval != 0:

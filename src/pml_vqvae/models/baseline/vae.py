@@ -145,13 +145,8 @@ class BaselineVariationalAutoencoder(PML_model):
     def backward(self, loss):
         loss.backward()
 
-    @staticmethod
-    def visualize_output(batch, output, target, prefix: str = "", base_dir: str = "."):
-        show(batch, outfile=os.path.join(base_dir, f"{prefix}_original.png"))
-        show(
-            output[0],
-            outfile=os.path.join(base_dir, f"{prefix}_reconstruction.png"),
-        )
+    def visualize_output(self, output):
+        return output[0]
 
     def name(self):
         return "BaselineVariationalAutoencoder"

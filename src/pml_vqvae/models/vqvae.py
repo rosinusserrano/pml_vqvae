@@ -179,13 +179,5 @@ class VQVAE(PML_model):
     def name(self):
         return "VQVAE"
 
-    @staticmethod
-    def visualize_output(batch, output, target, prefix="", base_dir="."):
-        return None
-
-
-if __name__ == "__main__":
-    model_conf = VQVAEConfig()
-    model = VQVAE(model_conf)
-    img = torch.randn((1, 3, 32, 32))
-    print([out.shape for out in model(img)])
+    def visualize_output(self, output):
+        return output[0]
