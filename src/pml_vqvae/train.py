@@ -31,6 +31,8 @@ def test(model: PML_model, test_loader: DataLoader, stats_keeper: StatsKeeper):
         Tuple[torch.Tensor, torch.Tensor, torch.Tensor]: The last batch, target and output
     """
 
+    losses = []
+
     model.eval()
 
     # for dynamic logging
@@ -42,6 +44,7 @@ def test(model: PML_model, test_loader: DataLoader, stats_keeper: StatsKeeper):
 
         output = model(batch)
         loss = model.loss_fn(output, batch)
+        losses.append(loss.item())
 
         # collect all stats in Object for later plotting
         dsp = stats_keeper.add_batch_stats(model.batch_stats, len(batch), train=False)
@@ -54,7 +57,9 @@ def test(model: PML_model, test_loader: DataLoader, stats_keeper: StatsKeeper):
 
     model.train()
 
-    return batch, batch, output
+    avg_loss = sum(losses) / len(losses)
+
+    return batch, output, avg_loss
 
 
 def train_epoch(
@@ -99,28 +104,30 @@ def train_epoch(
     # create epoch level stats
     stats_keeper.batch_summarize()
 
-    return batch, batch, output
+    return batch, output, loss.item()
 
 
 def train(config: TrainConfig):
     """Train a model on a dataset for a number of epochs
 
     Args:
-        config (dict): Configuration dictionary
+        train_config (TrainConfig): Training configuration
 
     Returns:
-        np.array: The losses over epochs (either a list of multiple losses or a list of floats)
+        float: Some value that quantizes the generalization error, the lower the better.
     """
 
     model = config.get_model()
 
-    print(f"Training {model.name()} on {config.dataset} for {config.epochs} epochs")
+    print(
+        f"Training {config.model_name} on "
+        f"{config.dataset} for {config.epochs} epochs"
+    )
 
     print("Loading dataset...")
 
     train_loader, test_loader = load_data(
         config.dataset,
-        transformation=transforms,
         n_train=config.n_train,
         n_test=config.n_test,
         seed=config.seed,
@@ -137,15 +144,22 @@ def train(config: TrainConfig):
 
     stats_keeper = StatsKeeper()
 
+    last_average_test_loss = None
+
     print("Training model...")
     for i in range(config.epochs):
         # train on all datat for one epoch
-        batch, _, output = train_epoch(model, train_loader, optimizer, stats_keeper)
+        batch, output, _ = train_epoch(model, train_loader, optimizer, stats_keeper)
         wandb_wrapper.construct_examples(batch, model.visualize_output(output))
 
         # test
-        if config.test_interval and i % config.test_interval == 0:
+        if (
+            config.test_interval and i % config.test_interval == 0
+        ) or i == config.epochs - 1:
             with torch.no_grad():
+                batch, output, last_average_test_loss = test(
+                    model, test_loader, stats_keeper
+                )
                 wandb_wrapper.construct_examples(
                     batch, model.visualize_output(output), train=False
                 )
@@ -167,16 +181,22 @@ def train(config: TrainConfig):
     wandb_wrapper.save_model(model_dir)
     wandb_wrapper.finish()
 
+    return last_average_test_loss
 
-cli_handler = CLI_handler()
-args = cli_handler.parse_args()
 
-with open(DEFAULT_CONFIG, "r", encoding="utf-8") as file:
-    config = TrainConfig.from_dict(yaml.safe_load(file))
+# Ich habe die CLI functionality auskommentiert um es mir einfache zu machen den
+# stuff für die Hyperparameteroptimisierung zu integrieren, sorry für
+# unsaubere Arbeit.
+if __name__ == "__main__":
+    # cli_handler = CLI_handler()
+    # args = cli_handler.parse_args()
 
-# Overwrite config when cli arguments are provided
-config = cli_handler.adjust_config(config, args)
+    with open(DEFAULT_CONFIG, "r", encoding="utf-8") as file:
+        config = TrainConfig.from_dict(yaml.safe_load(file))
 
-print(f"Starting training with the following onconfiguration:\n\n{config}\n")
+    # # Overwrite config when cli arguments are provided
+    # config = cli_handler.adjust_config(config, args)
 
-train(config)
+    print(f"Starting training with the following onconfiguration:\n\n{config}\n")
+
+    train(config)
