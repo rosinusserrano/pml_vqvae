@@ -266,8 +266,6 @@ class PixelCNN(PML_model):
         )
 
     def forward(self, x: torch.Tensor, class_idx: torch.Tensor):
-        x = x * 2 - 1
-
         # get the embedding for the specific class
         cond_embedding = self.embedding(class_idx)  # (1,10)
 
@@ -282,7 +280,9 @@ class PixelCNN(PML_model):
         return out
 
     def loss_fn(self, model_outputs, target):
-        loss = F.cross_entropy(model_outputs, torch.squeeze(target * 255).long())
+        loss = F.cross_entropy(
+            model_outputs, torch.squeeze(((target / 2) + 0.5) * 255).long()
+        )
         self.batch_stats = {"Loss": loss.item()}
         return loss
 

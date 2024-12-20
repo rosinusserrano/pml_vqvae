@@ -1,11 +1,13 @@
 import torchvision
 from torchvision.transforms import v2
+from torchvision.datasets import MNIST
 import torch
+from torch.utils.data import random_split
 
 from pml_vqvae.dataset.cifar10 import CifarDataset
 from pml_vqvae.dataset.imagenet import ImageNetDataset
 
-DATASET_NAMES = ["imagenet", "cifar"]
+DATASET_NAMES = ["imagenet", "cifar", "mnist"]
 
 
 def load_data(
@@ -139,6 +141,33 @@ def load_data(
             seed=seed,
             class_idx=class_idx,
         )
+
+    elif dataset == "mnist":
+        transforms = v2.Compose(
+            [
+                v2.ToImage(),
+                v2.ToDtype(torch.float32, scale=True),
+                v2.Normalize(mean=[0.5], std=[0.5]),
+            ]
+        )
+
+        train_set = MNIST(
+            root="/home/space/datasets",
+            train=True,
+            transform=transforms,
+        )
+
+        test_set = MNIST(
+            root="/home/space/datasets",
+            train=False,
+            transform=transforms,
+        )
+
+        if n_train is not None:
+            train_set, _ = random_split(train_set, [n_train, 60000 - n_train])
+
+        if n_test is not None:
+            test_set, _ = random_split(test_set, [n_test, 10000 - n_test])
 
     train_loader = torch.utils.data.DataLoader(
         train_set, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers

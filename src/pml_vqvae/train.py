@@ -19,7 +19,12 @@ DEFAULT_CONFIG = "config.yaml"
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 
-def test(model: PML_model, test_loader: DataLoader, stats_keeper: StatsKeeper):
+def test(
+    model: PML_model,
+    test_loader: DataLoader,
+    stats_keeper: StatsKeeper,
+    label_conditioning: bool,
+):
     """Test a model on a dataset
 
     Args:
@@ -42,7 +47,7 @@ def test(model: PML_model, test_loader: DataLoader, stats_keeper: StatsKeeper):
         batch = batch.to(DEVICE)
         labels = labels.to(DEVICE)
 
-        output = model(batch)
+        output = model(batch, labels) if label_conditioning else model(batch)
         loss = model.loss_fn(output, batch)
         losses.append(loss.item())
 
@@ -67,6 +72,7 @@ def train_epoch(
     train_loader: DataLoader,
     optimizer: Optimizer,
     stats_keeper: StatsKeeper,
+    label_conditioning: bool,
 ):
     """Train a model on a dataset for one epoch
 
@@ -89,7 +95,7 @@ def train_epoch(
 
         optimizer.zero_grad()
 
-        output = model(batch)
+        output = model(batch, labels) if label_conditioning else model(batch)
         loss = model.loss_fn(output, batch)
         model.backward(loss)
 
@@ -149,7 +155,14 @@ def train(config: TrainConfig):
     print("Training model...")
     for i in range(config.epochs):
         # train on all datat for one epoch
-        batch, output, _ = train_epoch(model, train_loader, optimizer, stats_keeper)
+        batch, output, _ = train_epoch(
+            model,
+            train_loader,
+            optimizer,
+            stats_keeper,
+            config.label_conditioning,
+        )
+        print(f"Batch images are in range [{batch.min()}, {batch.max()}]")
         wandb_wrapper.construct_examples(batch, model.visualize_output(output))
 
         # test
@@ -158,7 +171,10 @@ def train(config: TrainConfig):
         ) or i == config.epochs - 1:
             with torch.no_grad():
                 batch, output, last_average_test_loss = test(
-                    model, test_loader, stats_keeper
+                    model,
+                    test_loader,
+                    stats_keeper,
+                    config.label_conditioning,
                 )
                 wandb_wrapper.construct_examples(
                     batch, model.visualize_output(output), train=False

@@ -9,30 +9,31 @@ wandb_log: True # log the experiment to wandb
 #dataset config
 n_train: 1000 # number of training samples
 n_test: 1000 # number of test samples
-dataset: "imagenet" # either cifar or imagenet
+dataset: "mnist" # either cifar or imagenet
 class_idx: null # list of class indices to use, empty list to use all classes
 
 # train config
 batch_size: 256
 epochs: 3
 learning_rate: 0.00025
+label_conditioning: True
 
 # model config
-model_name: "vqvae" # either autoencoder or vae
+model_name: "pixelcnn" # either autoencoder or vae
 
 # PixelCNN
-# model_config:
-#   hidden_chan: 256
-#   num_codes: 256
-#   num_classes: 10
-#   input_shape: !!python/tuple [28, 28]  # for mnist
+model_config:
+  hidden_chan: 256
+  num_codes: 256
+  num_classes: 10
+  input_shape: [28, 28]  # for mnist
 
 # VQVAE
-model_config:
-  codebook_size: 512
-  commitment_weight: 1.0
-  hidden_dimension: 256
-  embedding_dimension: 256
+# model_config:
+#   codebook_size: 512
+#   commitment_weight: 1.0
+#   hidden_dimension: 256
+#   embedding_dimension: 256
 
 # VAE
 # model_config:
