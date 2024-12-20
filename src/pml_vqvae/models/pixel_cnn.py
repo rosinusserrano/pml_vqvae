@@ -1,4 +1,5 @@
 import torch
+from dataclasses import dataclass, field
 import os
 from pml_vqvae.models.pml_model_interface import PML_model
 from pml_vqvae.visuals import show
@@ -198,65 +199,70 @@ class CondGatedMaskedConv2d(torch.nn.Module):
         return F.elu(v_stack_out), F.elu(h_stack_out)
 
 
+@dataclass
+class PixelCNNConfig:
+    """Config for PixelCNN."""
+
+    name: str = "PixelCNN"
+    hidden_chan: int = 128
+    num_codes: int = 512  # will be the output size
+    num_classes: int = 10  # number of classes in the dataset
+    input_shape: tuple = (32, 32)  # latent shape of vqvae
+    dilations: list[int] = field(default_factory=lambda: [1, 2, 1, 4, 1, 2, 1, 2, 1])
+    # dilations for the masked convolutions, it also defines the number of layers
+
+
 class PixelCNN(PML_model):
     def __init__(
         self,
-        hidden_chan: int = 128,
-        num_codes: int = 512,  # will be the output size
-        num_classes: int = 10,  # number of classes in the dataset
-        input_shape: tuple = (32, 32),  # latent shape of vqvae
-        dilations: list = [
-            1,
-            2,
-            1,
-            4,
-            1,
-            2,
-            1,
-            2,
-            1,
-        ],  # dilations for the masked convolutions, it also defines the number of layers
+        config: PixelCNNConfig,  # dilations for the masked convolutions, it also defines the number of layers
     ):
         super().__init__()
-        self.input_shape = input_shape
+        self.config = config
+        self.input_shape = config.input_shape
 
         # class conditional embedding
-        self.embedding = torch.nn.Embedding(num_classes, num_classes, max_norm=1.0)
+        self.embedding = torch.nn.Embedding(
+            config.num_classes, config.num_classes, max_norm=1.0
+        )
 
         self.v_stack = VerticalStack(
             dilation=1,
-            num_classes=num_classes,
-            latent_shape=input_shape,
+            num_classes=config.num_classes,
+            latent_shape=config.input_shape,
             mask_type="A",  # don't use the center pixel only for very first layer
             in_channels=1,
-            out_channels=hidden_chan,
+            out_channels=config.hidden_chan,
             kernel_size=3,
         )
         self.h_stack = HorizontalStack(
             dilation=1,
-            num_classes=num_classes,
-            latent_shape=input_shape,
+            num_classes=config.num_classes,
+            latent_shape=config.input_shape,
             mask_type="A",  # don't use the center pixel only for very first layer
             in_channels=1,
-            out_channels=hidden_chan,
+            out_channels=config.hidden_chan,
             kernel_size=3,
         )
 
         self.layers = torch.nn.ModuleList(
             [
                 CondGatedMaskedConv2d(
-                    num_classes=num_classes,
-                    latent_shape=input_shape,
-                    channels=hidden_chan,
+                    num_classes=config.num_classes,
+                    latent_shape=config.input_shape,
+                    channels=config.hidden_chan,
                     kernel_size=3,
                     dilation=dil,
                 )
-                for dil in dilations
+                for dil in config.dilations
             ]
         )
 
         self.conv_out = torch.nn.Conv2d(
-            in_channels=hidden_chan, out_channels=num_codes, kernel_size=1, padding=0
+            in_channels=config.hidden_chan,
+            out_channels=config.num_codes,
+            kernel_size=1,
+            padding=0,
         )
 
     def forward(self, x: torch.Tensor, class_idx: torch.Tensor):
@@ -276,7 +282,9 @@ class PixelCNN(PML_model):
         return out
 
     def loss_fn(self, model_outputs, target):
-        return F.cross_entropy(model_outputs, torch.squeeze(target * 255).long())
+        loss = F.cross_entropy(model_outputs, torch.squeeze(target * 255).long())
+        self.batch_stats = {"Loss": loss.item()}
+        return loss
 
     def backward(self, loss: torch.Tensor):
         return loss.backward()
@@ -339,9 +347,10 @@ class PixelCNN(PML_model):
 
 
 if __name__ == "__main__":
-    model = PixelCNN(
+    config = PixelCNNConfig(
         input_shape=(28, 28), num_codes=256, hidden_chan=256, num_classes=10
     )
+    model = PixelCNN(config)
 
     model.to(DEVICE)
 
