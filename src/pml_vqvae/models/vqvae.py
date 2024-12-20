@@ -68,11 +68,11 @@ class VectorQuantization(autograd.Function):
 @dataclass
 class VQVAEConfig:
     "Config for VQVAE"
-    name: str = "VQVAE"
     codebook_size: int
     commitment_weight: float
     hidden_dimension: int
     embedding_dimension: int
+    name: str = "VQVAE"
 
 
 class VQVAE(PML_model):

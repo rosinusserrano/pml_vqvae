@@ -14,28 +14,28 @@ AVAIL_MODELS = ["vae", "autoencoder", "vqvae"]
 class TrainConfig:
     """Configuration class for the training process"""
 
-    # experiment
+    # required
     experiment_name: str
+    dataset: str
+    model_name: str
+    batch_size: int
+    epochs: int
+    learning_rate: float
+
+    # experiment optionals
     description: str | None = None
     output_dir: str | None = None
     test_interval: int | None = None
     vis_train_interval: int | None = None
     wandb_log: bool = True
 
-    # data
-    dataset: str
+    # data optionals
     n_train: int | None = None
     n_test: int | None = None
     seed: int | None = None
     class_idx: int | None = None
 
-    # train
-    batch_size: int
-    epochs: int
-    learning_rate: float
-
-    # model
-    model_name: str
+    # model optionals (some model require a config, others don't)
     model_config: dict | None = None
 
     def to_dict(self):
@@ -54,53 +54,42 @@ class TrainConfig:
             config (dict): Configuration dictionary
 
         Returns:
-            Config: Configuration object
+            TrainConfig: Configuration object
         """
 
-        conf = cls()
-        for _, params in config.items():
-            for key, value in params.items():
-                if not hasattr(conf, key):
-                    print(
-                        f"Warning: {key} is not a valid parameter as part of the configuration. It will be ignored."
-                    )
-                setattr(conf, key, value)
+        instance = cls(**config)
+        instance.make_directories()
+        instance.integrity_check()
 
-                if key == "name":
-                    outdir = f"artifacts/{value}_output"
-                    setattr(conf, "output_dir", outdir)
+        return instance
 
-                    os.makedirs(f"{outdir}/models/", exist_ok=True)
-                    os.makedirs(f"{outdir}/visuals/", exist_ok=True)
-                    os.makedirs(f"{outdir}/plots/", exist_ok=True)
+    def make_directories(self):
+        outdir = f"artifacts/{self.experiment_name}"
 
-        conf.integrity_check()
+        if os.path.exists(outdir):  # if dir exists, create new with "_n" suffix
+            artifacts_dir = os.listdir("artifacts")
+            dirs_with_same_name = [
+                d for d in artifacts_dir if self.experiment_name in d
+            ]
+            n = len(dirs_with_same_name)
+            outdir = f"{outdir}_{n}"
 
-        return conf
+        self.output_dir = outdir
+        os.makedirs(f"{outdir}/models/", exist_ok=True)
+        os.makedirs(f"{outdir}/visuals/", exist_ok=True)
+        os.makedirs(f"{outdir}/plots/", exist_ok=True)
 
     def integrity_check(self):
         """Check if the configuration is complete"""
-        for key, value in self.__dict__.items():
-            if value is None:
-                if key not in [
-                    "description",
-                    "test_interval",
-                    "vis_train_interval",
-                    "n_train",
-                    "n_test",
-                    "class_idx",
-                ]:
-                    raise ValueError(f"Parameter {key} is not set in the configuration")
+        if self.dataset not in AVAIL_DATASETS:
+            raise ValueError(
+                f"Dataset {self.dataset} is not available. Choose from {AVAIL_DATASETS}"
+            )
 
-            if key == "dataset" and value not in AVAIL_DATASETS:
-                raise ValueError(
-                    f"Dataset {value} is not available. Choose from {AVAIL_DATASETS}"
-                )
-
-            if key == "model_name" and value not in AVAIL_MODELS:
-                raise ValueError(
-                    f"Model {value} is not available. Choose from {AVAIL_MODELS}"
-                )
+        if self.model_name not in AVAIL_MODELS:
+            raise ValueError(
+                f"Model {self.model_name} is not available. Choose from {AVAIL_MODELS}"
+            )
 
     def __str__(self):
         """Return a string representation of the configuration"""

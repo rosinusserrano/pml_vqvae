@@ -203,8 +203,8 @@ class CondGatedMaskedConv2d(torch.nn.Module):
 class PixelCNNConfig:
     """Config for PixelCNN."""
 
-    name: str = "PixelCNN"
     hidden_chan: int = 128
+    name: str = "PixelCNN"
     num_codes: int = 512  # will be the output size
     num_classes: int = 10  # number of classes in the dataset
     input_shape: tuple = (32, 32)  # latent shape of vqvae
