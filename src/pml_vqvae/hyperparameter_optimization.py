@@ -99,7 +99,7 @@ def main():
             {
                 "name": "optimizer",
                 "type": "choice",
-                "values": ["adam", "sgd", "rmsprop"],
+                "values": ["adam", "stochastic_gd", "adagrad"],
                 "is_ordered": False,
                 "sort_values": False,
             },
@@ -112,7 +112,7 @@ def main():
             {
                 "name": "batch_size",
                 "type": "choice",
-                "values": [32, 64, 128, 256, 512, 1024],
+                "values": [32, 64, 128, 256, 512, 1024, 2048],
                 "sort_values": True,
                 "is_ordered": True,
             },
