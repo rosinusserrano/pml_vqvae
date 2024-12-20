@@ -2,7 +2,7 @@
 
 from torch.utils.data import DataLoader
 import torch
-from torch.optim import Adam, Optimizer
+from torch.optim import Adam, RMSprop, SGD, Optimizer
 from torchvision.transforms import v2
 import yaml
 from tqdm.auto import tqdm
@@ -148,8 +148,27 @@ def train(config: TrainConfig):
         class_idx=config.class_idx,
         batch_size=config.batch_size,
     )
-
-    optimizer = Adam(model.parameters(), lr=config.learning_rate)
+    if config.optimizer == "adam":
+        optimizer = Adam(
+            model.parameters(),
+            lr=config.learning_rate,
+            weight_decay=config.weight_decay,
+        )
+    elif config.optimizer == "rmsprop":
+        optimizer = RMSprop(
+            model.parameters(),
+            lr=config.learning_rate,
+            weight_decay=config.weight_decay,
+            momentum=config.momentum,
+        )
+    elif config.optimizer == "sgd":
+        optimizer = SGD(
+            model.parameters(),
+            lr=config.learning_rate,
+            weight_decay=config.weight_decay,
+        )
+    else:
+        raise ValueError(f"Unknown optimizer: {config.optimizer}")
 
     model.to(DEVICE)
 
@@ -179,6 +198,7 @@ def train(config: TrainConfig):
 
         model_dir = stats_keeper.save_model(model, config.output_dir, epoch=i)
         wandb_wrapper.save_model(model_dir)
+        print(epoch_stats)
 
     # save final model
     print("Saving model...")

@@ -33,9 +33,15 @@ class TrainConfig:
         self.batch_size = None
         self.epochs = None
         self.learning_rate = None
+        self.optimizer = None
+        self.momentum = None
+        self.weight_decay = None
 
         # model
         self.model_name = None
+        self.hidden_dimensions = None
+        self.codebook_size = None
+        self.beta_discrete_code_commitment = None
 
     def to_dict(self):
         """Convert the configuration to a dictionary

@@ -6,12 +6,37 @@ from ax.service.ax_client import AxClient, ObjectiveProperties
 from ax.service.utils.report_utils import exp_to_df
 import submitit
 from time import sleep
+import random
+from pml_vqvae.train_config import TrainConfig
+import pml_vqvae.train
 
 warnings.simplefilter(action="ignore", category=FutureWarning)
 
 
 def test(parameters):
-    sleep(10)
+    config_dict = {
+        "model_name": "vqvae",
+        "name": f"hyper_vqvae_{random.randint(1999999, 1000000)}",
+        "seed": 42,
+        "test_interval": None,
+        "vis_train_interval": None,
+        "wandb_log": True,
+        "n_train": 500,
+        "n_test": 100,
+        "dataset": "imagenet",
+        "epochs": 10,
+        "class_idx": [],
+        "hidden_dimensions": parameters["hidden_dimensions"],
+        "codebook_size": parameters["codebook_size"],
+        "beta_discrete_code_commitment": parameters["beta_discrete_code_commitment"],
+        "optimizer": parameters["optimizer"],
+        "learning_rate": parameters["learning_rate"],
+        "momentum": parameters["momentum"],
+        "weight_decay": parameters["weight_decay"],
+        "batch_size": parameters["batch_size"],
+    }
+    config = TrainConfig.from_dict(config_dict)
+    pml_vqvae.train.train(config)
     return parameters["learning_rate"] / parameters["beta_discrete_code_commitment"]
 
 
@@ -74,7 +99,7 @@ def main():
             {
                 "name": "optimizer",
                 "type": "choice",
-                "values": ["adam", "stochastic_gd", "adagrad"],
+                "values": ["adam", "sgd", "rmsprop"],
                 "is_ordered": False,
                 "sort_values": False,
             },
@@ -87,9 +112,22 @@ def main():
             {
                 "name": "batch_size",
                 "type": "choice",
-                "values": [32, 64, 128, 256, 512, 1024, 2048],
+                "values": [32, 64, 128, 256, 512, 1024],
                 "sort_values": True,
                 "is_ordered": True,
+            },
+            {
+                "name": "momentum",
+                "type": "choice",
+                "values": [0, 0.9],
+                "sort_values": True,
+                "is_ordered": True,
+            },
+            {
+                "name": "weight_decay",
+                "type": "range",
+                "bounds": [1e-6, 1e-2],
+                "log_scale": True,
             },
         ],
         objectives={"mse": ObjectiveProperties(minimize=True)},
@@ -98,7 +136,7 @@ def main():
     slurm_queue_client = SlurmJobQueueClient()
 
     total_budget = 16
-    num_parallel_jobs = 3
+    num_parallel_jobs = 4
     jobs = []
     submitted_jobs = 0
 
