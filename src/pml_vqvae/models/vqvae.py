@@ -69,17 +69,10 @@ class VectorQuantization(autograd.Function):
 class VQVAEConfig:
     "Config for VQVAE"
     name: str = "VQVAE"
-    codebook_size: int = 512
-    commitment_weight: float = 2
-    downsampling_channels: list[int] = field(default_factory=lambda: [3, 256, 256])
-    encoder_residual_channels: list[int] = field(
-        default_factory=lambda: [256, 256, 256]
-    )
-    compression_channels: int = 256
-    decoder_residual_channels: list[int] = field(
-        default_factory=lambda: [256, 256, 256]
-    )
-    upsampling_channels: list[int] = field(default_factory=lambda: [256, 256, 3])
+    codebook_size: int
+    commitment_weight: float
+    hidden_dimension: int
+    embedding_dimension: int
 
 
 class VQVAE(PML_model):
@@ -91,27 +84,15 @@ class VQVAE(PML_model):
         self.config = config
 
         self.encoder = nn.Sequential(
-            *[
-                downsample(inc, outc)
-                for inc, outc in pairwise(config.downsampling_channels)
-            ],
-            *[
-                ResidualBlock(inc, outc)
-                for inc, outc in pairwise(config.encoder_residual_channels)
-            ],
-            nn.Conv2d(  # compression
-                in_channels=config.encoder_residual_channels[-1],
-                out_channels=config.compression_channels,
-                kernel_size=1,
-                stride=1,
-            ),
-            nn.ReLU(),
-            nn.BatchNorm2d(config.compression_channels)
+            downsample(3, config.hidden_dimension),
+            downsample(config.hidden_dimension, config.hidden_dimension),
+            ResidualBlock(config.hidden_dimension, config.hidden_dimension),
+            ResidualBlock(config.hidden_dimension, config.embedding_dimension),
         )
 
         self.codebook = nn.Parameter(
             torch.zeros(
-                (config.codebook_size, config.compression_channels)
+                (config.codebook_size, config.embedding_dimension)
             ).data.uniform_(
                 -1 / self.config.codebook_size,
                 1 / self.config.codebook_size,
@@ -120,27 +101,10 @@ class VQVAE(PML_model):
         )
 
         self.decoder = nn.Sequential(
-            nn.Conv2d(  # decompression
-                in_channels=config.compression_channels,
-                out_channels=config.decoder_residual_channels[0],
-                kernel_size=1,
-                stride=1,
-            ),
-            nn.ReLU(),
-            nn.BatchNorm2d(config.decoder_residual_channels[0]),
-            *[
-                ResidualBlock(inc, outc)
-                for inc, outc in pairwise(config.decoder_residual_channels)
-            ],
-            *[
-                upsample(inc, outc)
-                for inc, outc in pairwise(config.upsampling_channels[:-1])
-            ],
-            upsample(
-                config.upsampling_channels[-2],
-                config.upsampling_channels[-1],
-                activation=nn.Tanh(),
-            )
+            ResidualBlock(config.embedding_dimension, config.hidden_dimension),
+            ResidualBlock(config.hidden_dimension, config.hidden_dimension),
+            upsample(config.hidden_dimension, config.hidden_dimension),
+            upsample(config.hidden_dimension, 3, activation=nn.Tanh()),
         )
 
     def forward(self, tensor: torch.Tensor):
@@ -151,7 +115,7 @@ class VQVAE(PML_model):
         return reconstruction, encoder_out, codes, indexes
 
     def loss_fn(self, model_outputs: torch.Tensor, target: torch.Tensor):
-        reconstruction, encoder_out, codes, indexes = model_outputs
+        reconstruction, encoder_out, codes, _ = model_outputs
 
         reconstruction = F.mse_loss(reconstruction, target)
 
@@ -162,19 +126,17 @@ class VQVAE(PML_model):
 
         loss = reconstruction + encoder_commitment + codes_commitment
 
-        return loss, {
+        self.batch_stats = {
             "Loss": loss.item(),
             "Reconstruction": reconstruction.item(),
             "Commitment (encoder)": encoder_commitment.item(),
             "Commitment (codes)": codes_commitment.item(),
         }
 
-    def backward(self, loss: torch.Tensor):
-        loss[0].backward()
+        return loss
 
-    @staticmethod
-    def collect_stats(output, target, loss):
-        return loss[1]
+    def backward(self, loss: torch.Tensor):
+        loss.backward()
 
     def name(self):
         return "VQVAE"
