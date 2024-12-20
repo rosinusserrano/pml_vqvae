@@ -1,5 +1,5 @@
 experiment:
-  name: "vqvae imagenet test" # name of the experiment
+  experiment_name: "vqvae imagenet test" # name of the experiment
   description: "" # description of the experiment
   seed: 42 # seed for reproducibility
   test_interval: 1  # test the model every test_interval epochs, None to disable
@@ -19,4 +19,8 @@ train:
 
 model:
   model_name: "vqvae" # either autoencoder or vae
-  
+  model_config:
+    codebook_size: 512
+    commitment_weight: 1.0
+    hidden_dimension: 256
+    embedding_dimension: 256

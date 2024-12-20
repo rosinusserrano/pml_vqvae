@@ -1,41 +1,42 @@
 import os
+from dataclasses import dataclass, asdict
 
 from pml_vqvae.models.baseline.autoencoder import BaselineAutoencoder
 from pml_vqvae.models.baseline.vae import BaselineVariationalAutoencoder
 from pml_vqvae.models.vqvae import VQVAE, VQVAEConfig
+from pml_vqvae.models.pixel_cnn import PixelCNN, PixelCNNConfig
 
 AVAIL_DATASETS = ["cifar", "imagenet"]
 AVAIL_MODELS = ["vae", "autoencoder", "vqvae"]
 
 
+@dataclass
 class TrainConfig:
     """Configuration class for the training process"""
 
-    def __init__(self):
-        """Initialize the a default configuration class"""
+    # experiment
+    experiment_name: str
+    description: str | None = None
+    output_dir: str | None = None
+    test_interval: int | None = None
+    vis_train_interval: int | None = None
+    wandb_log: bool = True
 
-        # experiment
-        self.name = None
-        self.description = None
-        self.output_dir = None
-        self.test_interval = None
-        self.vis_train_interval = None
-        self.wandb_log = None
+    # data
+    dataset: str
+    n_train: int | None = None
+    n_test: int | None = None
+    seed: int | None = None
+    class_idx: int | None = None
 
-        # data
-        self.dataset = None
-        self.n_train = None
-        self.n_test = None
-        self.seed = None
-        self.class_idx = None
+    # train
+    batch_size: int
+    epochs: int
+    learning_rate: float
 
-        # train
-        self.batch_size = None
-        self.epochs = None
-        self.learning_rate = None
-
-        # model
-        self.model_name = None
+    # model
+    model_name: str
+    model_config: dict | None = None
 
     def to_dict(self):
         """Convert the configuration to a dictionary
@@ -43,7 +44,7 @@ class TrainConfig:
         Returns:
             dict: Configuration dictionary
         """
-        return self.__dict__
+        return asdict(self)
 
     @classmethod
     def from_dict(cls, config: dict):
@@ -109,10 +110,20 @@ class TrainConfig:
         """Return the model based on the model name"""
         if self.model_name == "vae":
             return BaselineVariationalAutoencoder()
-        elif self.model_name == "autoencoder":
+
+        if self.model_name == "autoencoder":
             return BaselineAutoencoder()
-        elif self.model_name == "vqvae":
-            config = VQVAEConfig()
+
+        if self.model_name == "vqvae":
+            if self.model_config is None:
+                raise ValueError("VQ-VAE needs model config!")
+            config = VQVAEConfig(**self.model_config)
             return VQVAE(config)
+
+        if self.model_name == "pixelcnn":
+            if self.model_config is None:
+                raise ValueError("PixelCNN needs model config!")
+            config = PixelCNNConfig(**self.model_config)
+            return PixelCNN(config)
 
         raise ValueError(f"Model {self.model_name} is not available.")
