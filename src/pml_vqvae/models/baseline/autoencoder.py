@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import math
 
 from PIL import Image
-from pml_vqvae.baseline.pml_model_interface import PML_model
+from pml_vqvae.models.pml_model_interface import PML_model
 from pml_vqvae.visuals import show
 from pml_vqvae.nnutils import ResidualBlock
 

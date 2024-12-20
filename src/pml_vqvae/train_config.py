@@ -1,8 +1,8 @@
 import os
 
-from pml_vqvae.baseline.autoencoder import BaselineAutoencoder
-from pml_vqvae.baseline.vae import BaselineVariationalAutoencoder
-from pml_vqvae.vqvae.vqvae import VQVAE
+from pml_vqvae.models.baseline.autoencoder import BaselineAutoencoder
+from pml_vqvae.models.baseline.vae import BaselineVariationalAutoencoder
+from pml_vqvae.models.vqvae import VQVAE, VQVAEConfig
 
 AVAIL_DATASETS = ["cifar", "imagenet"]
 AVAIL_MODELS = ["vae", "autoencoder", "vqvae"]
@@ -118,6 +118,7 @@ class TrainConfig:
         elif self.model_name == "autoencoder":
             return BaselineAutoencoder()
         elif self.model_name == "vqvae":
-            return VQVAE()
+            config = VQVAEConfig()
+            return VQVAE(config)
 
         raise ValueError(f"Model {self.model_name} is not available.")
