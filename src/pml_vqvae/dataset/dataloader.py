@@ -64,8 +64,8 @@ def load_data(
                 v2.RandomResizedCrop(size=(128, 128), antialias=True, scale=(0.1, 1.0)),
                 v2.RandomHorizontalFlip(p=0.5),
                 v2.ToDtype(torch.float32, scale=True),
-                v2.Normalize(mean=[0, 0, 0], std=[255.0, 255.0, 255.0]),
-                v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+                v2.Normalize(mean=[125, 125, 125], std=[125, 125, 125]),
+                # v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
             ]
         )
 
@@ -73,10 +73,10 @@ def load_data(
             [
                 v2.RandomResizedCrop(size=(128, 128), antialias=True, scale=(1.0, 1.0)),
                 v2.ToDtype(torch.float32, scale=True),
-                v2.Normalize(mean=[0, 0, 0], std=[255.0, 255.0, 255.0]),  # -> [0, 1]
-                v2.Normalize(
-                    mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
-                ),  # [-1, 1]
+                v2.Normalize(mean=[125, 125, 125], std=[125, 125, 125]),  # -> [0, 1]
+                # v2.Normalize(
+                #     mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+                # ),  # [-1, 1]
             ]
         )
 
@@ -111,7 +111,7 @@ def load_data(
                 v2.RandomHorizontalFlip(p=0.5),
                 v2.ToDtype(torch.float32, scale=True),
                 v2.Normalize(
-                    mean=[125.0, 125.0, 125.0], std=[255.0, 255.0, 255.0]
+                    mean=[125.0, 125.0, 125.0], std=[125, 125, 125]
                 ),  # -> [-1, 1]
             ]
         )
@@ -121,7 +121,7 @@ def load_data(
                 v2.RandomResizedCrop(size=(32, 32), antialias=True, scale=(1.0, 1.0)),
                 v2.ToDtype(torch.float32, scale=True),
                 v2.Normalize(
-                    mean=[125.0, 125.0, 125.0], std=[255.0, 255.0, 255.0]
+                    mean=[125.0, 125.0, 125.0], std=[125, 125, 125]
                 ),  # -> [-1, 1]
             ]
         )

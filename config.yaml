@@ -4,29 +4,29 @@ description: "" # description of the experiment
 seed: 42 # seed for reproducibility
 test_interval: 1  # test the model every test_interval epochs, None to disable
 vis_train_interval: 1 # plot the training loss every plot_train_interval epochs, None to disable
-wandb_log: True # log the experiment to wandb
+wandb_log: False # log the experiment to wandb
 
 #dataset config
 n_train: 1000 # number of training samples
 n_test: 1000 # number of test samples
-dataset: "mnist" # either cifar or imagenet
+dataset: "imagenet" # either cifar or imagenet
 class_idx: null # list of class indices to use, empty list to use all classes
 
 # train config
 batch_size: 256
-epochs: 3
+epochs: 1
 learning_rate: 0.00025
-label_conditioning: True
+label_conditioning: False
 
 # model config
-model_name: "pixelcnn" # either autoencoder or vae
+model_name: "vae" # either autoencoder or vae
 
 # PixelCNN
-model_config:
-  hidden_chan: 256
-  num_codes: 256
-  num_classes: 10
-  input_shape: [28, 28]  # for mnist
+# model_config:
+#   hidden_chan: 256
+#   num_codes: 256
+#   num_classes: 10
+#   input_shape: [28, 28]  # for mnist
 
 # VQVAE
 # model_config:
@@ -36,7 +36,7 @@ model_config:
 #   embedding_dimension: 256
 
 # VAE
-# model_config:
-#   kld_weight: 0.00025
-#   latent_dimension: 2
-#   hidden_dimension: 128
+model_config:
+  kld_weight: 0.00025
+  latent_dimension: 2
+  hidden_dimension: 128
