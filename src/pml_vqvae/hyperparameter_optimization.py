@@ -7,6 +7,7 @@ from ax.service.utils.report_utils import exp_to_df
 import submitit
 from time import sleep
 import random
+
 from pml_vqvae.train_config import TrainConfig
 import pml_vqvae.train
 
@@ -119,7 +120,7 @@ def main():
             {
                 "name": "momentum",
                 "type": "choice",
-                "values": [0, 0.9],
+                "values": [0.0, 0.9],
                 "sort_values": True,
                 "is_ordered": True,
             },
@@ -135,29 +136,29 @@ def main():
 
     slurm_queue_client = SlurmJobQueueClient()
 
-    total_budget = 16
+    total_budget = 50
     num_parallel_jobs = 4
-    jobs = []
+    active_jobs = []
     submitted_jobs = 0
 
-    while submitted_jobs < total_budget or jobs:
-        for job, trial_index in jobs[:]:
+    while submitted_jobs < total_budget or active_jobs:
+        for job, trial_index in active_jobs[:]:
             if job.done():
                 result = job.result()
                 ax_client.complete_trial(trial_index=trial_index, raw_data=result)
-                jobs.remove((job, trial_index))
-        while submitted_jobs < total_budget and len(jobs) < num_parallel_jobs:
+                active_jobs.remove((job, trial_index))
+        while submitted_jobs < total_budget and len(active_jobs) < num_parallel_jobs:
             parameters_next, trial_index_next = ax_client.get_next_trial()
 
             job = slurm_queue_client.submit_training_job(parameters_next)
             print(f"Submitted as {job.job_id}")
             submitted_jobs += 1
-            jobs.append((job, trial_index_next))
+            active_jobs.append((job, trial_index_next))
             sleep(1)
 
         print(exp_to_df(ax_client.experiment))
 
-        sleep(10)
+        sleep(1000)
     ax_client.save_to_json_file()
 
 
