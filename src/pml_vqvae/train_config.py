@@ -2,7 +2,7 @@ import os
 from dataclasses import dataclass, asdict
 
 from pml_vqvae.models.baseline.autoencoder import BaselineAutoencoder
-from pml_vqvae.models.baseline.vae import BaselineVariationalAutoencoder
+from pml_vqvae.models.baseline.vae import BaselineVAE, BaselineVAEConfig
 from pml_vqvae.models.vqvae import VQVAE, VQVAEConfig
 from pml_vqvae.models.pixel_cnn import PixelCNN, PixelCNNConfig
 
@@ -98,7 +98,10 @@ class TrainConfig:
     def get_model(self):
         """Return the model based on the model name"""
         if self.model_name == "vae":
-            return BaselineVariationalAutoencoder()
+            if self.model_config is None:
+                raise ValueError("VAE needs config!")
+            config = BaselineVAEConfig(**self.model_config)
+            return BaselineVAE(config)
 
         if self.model_name == "autoencoder":
             return BaselineAutoencoder()

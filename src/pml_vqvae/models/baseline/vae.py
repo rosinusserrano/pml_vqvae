@@ -4,6 +4,7 @@ very simple
 """
 
 from __future__ import annotations
+from dataclasses import dataclass
 
 import os
 
@@ -19,12 +20,23 @@ from pml_vqvae.nnutils import ResidualBlock
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 
-class BaselineVariationalAutoencoder(PML_model):
-    def __init__(self):
+@dataclass
+class BaselineVAEConfig:
+    kld_weight: float  # for starter experiments we've used 0.00025
+    hidden_dimension: int
+    latent_dimension: int
+
+    name: str = "VAE"
+
+
+class BaselineVAE(PML_model):
+    def __init__(self, config: BaselineVAEConfig):
         super().__init__()
 
-        hidden_dim = 128
-        latent_dim = 2
+        self.config = config
+
+        hidden_dim = config.hidden_dimension
+        latent_dim = config.latent_dimension
 
         self.encoder = nn.Sequential(
             # Downsampling
@@ -132,12 +144,13 @@ class BaselineVariationalAutoencoder(PML_model):
             dim=0,
         )
 
-        loss = reconstruction_loss + 0.00025 * kld_loss
+        loss = reconstruction_loss + self.config.kld_weight * kld_loss
 
         self.batch_stats = {
-            "Loss": loss[0].detach().cpu().item(),
-            "Reconstruction loss": loss[1].item(),
-            "KL divergence loss": loss[2].item(),
+            "Loss": loss.detach().cpu().item(),
+            "Reconstruction loss": reconstruction_loss.item(),
+            "KL divergence loss": kld_loss.item(),
+            "KL divergence loss (weighted)": self.config.kld_weight * kld_loss.item(),
         }
 
         return loss
