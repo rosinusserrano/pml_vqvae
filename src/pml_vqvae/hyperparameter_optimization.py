@@ -14,37 +14,113 @@ import pml_vqvae.train
 warnings.simplefilter(action="ignore", category=FutureWarning)
 
 
+VQVAE_HYPERPARAMETER_SEARCH_SPACE = [
+    {
+        "name": "hidden_dimension",
+        "type": "choice",
+        "values": [16, 32, 64, 128, 256, 512],
+        "sort_values": True,
+        "is_ordered": True,
+    },
+    {
+        "name": "codebook_size",
+        "type": "choice",
+        "values": [64, 128, 256, 512, 1024, 2048],
+        "sort_values": True,
+        "is_ordered": True,
+    },
+    {
+        "name": "commitment_weight",
+        "type": "range",
+        "bounds": [0.01, 10.0],
+    },
+]
+
+PIXELCNN_HYPERPARAMETER_SEARCH_SPACE = [
+    {
+        "name": "hidden_chan",
+        "type": "choice",
+        "values": [16, 32, 64, 128, 256, 512],
+        "sort_values": True,
+        "is_ordered": True,
+    },
+    {
+        "name": "dilations",
+        "type": "choice",
+        "values": [
+            [1, 2, 1, 4, 1, 2, 1],
+            [1, 2, 1, 4, 1, 2, 1, 2, 1],
+            [1, 2, 1, 3, 1, 4, 1, 3, 1, 2, 1],
+            [1, 1, 2, 2, 3, 3, 4, 4],
+        ],
+        "sort_values": False,
+        "is_ordered": False,
+    },
+]
+
+
+TRAINING_HYPERPARAMETER_SEARCH_SPACE = [
+    {
+        "name": "optimizer",
+        "type": "choice",
+        "values": ["adam", "sgd", "rmsprop", "adamax"],
+        "is_ordered": False,
+        "sort_values": False,
+    },
+    {
+        "name": "learning_rate",
+        "type": "range",
+        "bounds": [1e-6, 0.1],
+        "log_scale": True,
+    },
+    {
+        "name": "batch_size",
+        "type": "choice",
+        "values": [32, 64, 128, 256, 512],
+        "sort_values": True,
+        "is_ordered": True,
+    },
+    {
+        "name": "momentum",
+        "type": "choice",
+        "values": [0.0, 0.9],
+        "sort_values": True,
+        "is_ordered": True,
+    },
+    {
+        "name": "weight_decay",
+        "type": "range",
+        "bounds": [1e-6, 1e-2],
+        "log_scale": True,
+    },
+]
+
+
 def test(parameters):
-    config_dict = {
-        "model_name": "vqvae",
-        "name": f"hyper_vqvae_{random.randint(1999999, 1000000)}",
-        "seed": 42,
-        "test_interval": None,
-        "vis_train_interval": None,
-        "wandb_log": True,
-        "n_train": 500,
-        "n_test": 100,
-        "dataset": "imagenet",
-        "epochs": 10,
-        "class_idx": [],
-        "hidden_dimensions": parameters["hidden_dimensions"],
-        "codebook_size": parameters["codebook_size"],
-        "beta_discrete_code_commitment": parameters["beta_discrete_code_commitment"],
-        "optimizer": parameters["optimizer"],
-        "learning_rate": parameters["learning_rate"],
-        "momentum": parameters["momentum"],
-        "weight_decay": parameters["weight_decay"],
-        "batch_size": parameters["batch_size"],
-    }
-    config = TrainConfig.from_dict(config_dict)
-    pml_vqvae.train.train(config)
-    return parameters["learning_rate"] / parameters["beta_discrete_code_commitment"]
+    train_config = {}
+    model_config = {}
+
+    for k, v in parameters.items():
+        if k in dir(TrainConfig):
+            train_config[k] = v
+        else:
+            model_config[k] = v
+
+    train_config["model_config"] = model_config
+
+    train_config = TrainConfig.from_dict(train_config)
+    # last_average_test_loss = pml_vqvae.train.train(train_config)
+
+    print(train_config)
+    last_average_test_loss = 2
+
+    return last_average_test_loss
 
 
 class SlurmJobQueueClient:
     def __init__(self):
         log_folder = "log_run/%j"
-        running_dir = "/home/pml11/github_pml/"
+        running_dir = "/home/pml10/pml_vqvae/"
         self.training_executor = submitit.AutoExecutor(
             folder=log_folder,
             cluster="slurm",
@@ -52,7 +128,7 @@ class SlurmJobQueueClient:
             "/home/space/datasets:/home/space/datasets pml.sif python",
         )
         self.training_executor.update_parameters(
-            slurm_partition="cpu-2h",
+            slurm_partition="gpu-test",
             # slurm_gpus_per_node=1,
             slurm_cpus_per_task=1,
             slurm_job_name="hyper_param_opt",
@@ -77,60 +153,8 @@ def main():
     ax_client = AxClient()
     ax_client.create_experiment(
         name="hyper_param_optimization",
-        parameters=[
-            {
-                "name": "hidden_dimensions",
-                "type": "choice",
-                "values": [16, 32, 64, 128, 256, 512],
-                "sort_values": True,
-                "is_ordered": True,
-            },
-            {
-                "name": "codebook_size",
-                "type": "choice",
-                "values": [64, 128, 256, 512, 1024, 2048],
-                "sort_values": True,
-                "is_ordered": True,
-            },
-            {
-                "name": "beta_discrete_code_commitment",
-                "type": "range",
-                "bounds": [0.01, 2.0],
-            },
-            {
-                "name": "optimizer",
-                "type": "choice",
-                "values": ["adam", "stochastic_gd", "adagrad"],
-                "is_ordered": False,
-                "sort_values": False,
-            },
-            {
-                "name": "learning_rate",
-                "type": "range",
-                "bounds": [1e-6, 0.1],
-                "log_scale": True,
-            },
-            {
-                "name": "batch_size",
-                "type": "choice",
-                "values": [32, 64, 128, 256, 512, 1024, 2048],
-                "sort_values": True,
-                "is_ordered": True,
-            },
-            {
-                "name": "momentum",
-                "type": "choice",
-                "values": [0.0, 0.9],
-                "sort_values": True,
-                "is_ordered": True,
-            },
-            {
-                "name": "weight_decay",
-                "type": "range",
-                "bounds": [1e-6, 1e-2],
-                "log_scale": True,
-            },
-        ],
+        parameters=TRAINING_HYPERPARAMETER_SEARCH_SPACE
+        + VQVAE_HYPERPARAMETER_SEARCH_SPACE,
         objectives={"mse": ObjectiveProperties(minimize=True)},
     )
 
@@ -158,7 +182,7 @@ def main():
 
         print(exp_to_df(ax_client.experiment))
 
-        sleep(1000)
+        sleep(60)
     ax_client.save_to_json_file()
 
 

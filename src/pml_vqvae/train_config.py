@@ -1,6 +1,9 @@
 import os
 from dataclasses import dataclass, asdict
 
+from torch import nn
+from torch.optim import RMSprop, SGD, AdamW, Adamax
+
 from pml_vqvae.models.baseline.autoencoder import BaselineAutoencoder
 from pml_vqvae.models.baseline.vae import BaselineVAE, BaselineVAEConfig
 from pml_vqvae.models.vqvae import VQVAE, VQVAEConfig
@@ -31,6 +34,9 @@ class TrainConfig:
 
     # training optionals
     label_conditioning: bool = False
+    optimizer: str = "adam"
+    weight_decay: float = 0
+    momentum: float = 0
 
     # data optionals
     n_train: int | None = None
@@ -122,3 +128,33 @@ class TrainConfig:
             return PixelCNN(config)
 
         raise ValueError(f"Model {self.model_name} is not available.")
+
+    def get_optimizer(self, model: nn.Module):
+        """Return the optimizer object."""
+        if self.optimizer == "adam":
+            return AdamW(
+                model.parameters(),
+                lr=self.learning_rate,
+                weight_decay=self.weight_decay,
+            )
+        if self.optimizer == "rmsprop":
+            return RMSprop(
+                model.parameters(),
+                lr=self.learning_rate,
+                weight_decay=self.weight_decay,
+                momentum=self.momentum,
+            )
+        if self.optimizer == "sgd":
+            return SGD(
+                model.parameters(),
+                lr=self.learning_rate,
+                weight_decay=self.weight_decay,
+            )
+        if self.optimizer == "adamax":
+            return Adamax(
+                model.parameters(),
+                lr=self.learning_rate,
+                weight_decay=self.weight_decay,
+            )
+        else:
+            raise ValueError(f"Unknown optimizer: {self.optimizer}")
