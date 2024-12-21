@@ -1,14 +1,15 @@
 import torch
 from pml_vqvae.dataset.dataloader import load_data
 from pml_vqvae.dataset.latent import LatentDataset
-from pml_vqvae.vqvae.vqvae import VQVAE
+from pml_vqvae.models.vqvae import VQVAE
 from pml_vqvae.cli_handler import CLI_handler
 import argparse
 from torchvision.transforms import v2
 
 
 def generate_latent_dataset(
-    data_loader: torch.utils.data.DataLoader, vqvae: VQVAE
+    data_loader: torch.utils.data.DataLoader,
+    vqvae: VQVAE,
 ) -> LatentDataset:
     vqvae.eval()
 
