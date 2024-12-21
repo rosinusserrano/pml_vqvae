@@ -109,6 +109,7 @@ def test(parameters):
     train_config["model_config"] = model_config
 
     train_config = TrainConfig.from_dict(train_config)
+
     # last_average_test_loss = pml_vqvae.train.train(train_config)
 
     print(train_config)
@@ -140,13 +141,10 @@ class SlurmJobQueueClient:
     def submit_training_job(self, parameters):
         try:
             job = self.training_executor.submit(test, parameters)
-        except:
+        except Exception as e:
+            print("ERROR", e, "END")
             return False
         return job
-
-
-def evaluate(parameters):
-    return parameters["beta_discrete_code_commitment"] * parameters["learning_rate"]
 
 
 def main():
@@ -161,7 +159,7 @@ def main():
     slurm_queue_client = SlurmJobQueueClient()
 
     total_budget = 50
-    num_parallel_jobs = 4
+    num_parallel_jobs = 2
     active_jobs = []
     submitted_jobs = 0
 

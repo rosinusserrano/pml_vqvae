@@ -213,3 +213,4 @@ wandb/
 !task_pdfs/
 data
 test.ipynb
+log_run
