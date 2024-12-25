@@ -66,7 +66,12 @@ class TrainConfig:
             TrainConfig: Configuration object
         """
 
-        instance = cls(**config)
+        try:
+            instance = cls(**config)
+        except TypeError as err:
+            print(config)
+            raise TypeError(err)
+
         instance.make_directories()
         instance.integrity_check()
 

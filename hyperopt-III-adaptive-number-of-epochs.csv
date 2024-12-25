@@ -1,0 +1,3 @@
+,trial_index,arm_name,trial_status,generation_method,optimizer,learning_rate,batch_size,momentum,weight_decay,hidden_dimension,embedding_dimension,codebook_size,commitment_weight
+0,0,0_0,RUNNING,Sobol,adam,0.0015692441295553977,128,0.4242419467270374,0.003121459933096992,32,128,1024,8.345571427941323
+1,1,1_0,RUNNING,Sobol,adamax,2.4131818324335206e-06,256,0.6103063640780747,6.30420519014728e-06,128,64,256,3.5263702319934964
