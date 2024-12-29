@@ -15,38 +15,38 @@ import pml_vqvae.train
 warnings.simplefilter(action="ignore", category=FutureWarning)
 
 
-EXPERIMENT_NAME = "hyperopt-III-adaptive-number-of-epochs"
+EXPERIMENT_NAME = "hyperopt-V-more-gpu-less-data"
 
 
-def get_adaptive_number_of_epochs(
-    lr: float,
-    bs: int,
-    n: int,
-    total_length: float = 1,
-    max_epochs: int = 20,
-):
-    """Return the number of epochs that result in a unified total length.
+# def get_adaptive_number_of_epochs(
+#     lr: float,
+#     bs: int,
+#     n: int,
+#     total_length: float = 1,
+#     max_epochs: int = 20,
+# ):
+#     """Return the number of epochs that result in a unified total length.
 
-    Reason for this is that when running the hyperoptimization with a fixed
-    number of epochs we will probably favor high learning rates or small batch
-    sizes, simply because they will result in either larger optimization steps
-    or a higher number of iterations per epoch respectively. Therefore I
-    implemented this "adaptive" procedure which should result in a number of
-    epochs that hopefully will result in outcomes that can be better compared
-    to each other. This is obviously not perfect, as it doesnt account for
-    different behaviour of gradients when changing batch size, but is at least
-    a start.
+#     Reason for this is that when running the hyperoptimization with a fixed
+#     number of epochs we will probably favor high learning rates or small batch
+#     sizes, simply because they will result in either larger optimization steps
+#     or a higher number of iterations per epoch respectively. Therefore I
+#     implemented this "adaptive" procedure which should result in a number of
+#     epochs that hopefully will result in outcomes that can be better compared
+#     to each other. This is obviously not perfect, as it doesnt account for
+#     different behaviour of gradients when changing batch size, but is at least
+#     a start.
 
-    We compute the total path length of the optimization as follows:
+#     We compute the total path length of the optimization as follows:
 
-    total_length = learning_rate * (dataset_size / batch_size) * n_epochs
+#     total_length = learning_rate * (dataset_size / batch_size) * n_epochs
 
-    From which results the adaptive number of epochs:
+#     From which results the adaptive number of epochs:
 
-    adaptive_n_epochs = total_length / (learning_rate * (dataset_size / batch_size))
-    """
+#     adaptive_n_epochs = total_length / (learning_rate * (dataset_size / batch_size))
+#     """
 
-    return min(max_epochs, max(1, int(total_length / (lr * (n / bs)))))
+#     return min(max_epochs, max(1, int(total_length / (lr * (n / bs)))))
 
 
 FIXED_HYPERPARAMS = {
@@ -57,6 +57,8 @@ FIXED_HYPERPARAMS = {
     "n_train": 25000,
     "test_interval": 1,
     "vis_train_interval": 1,
+    "epochs": 10,
+    "optimizer": "adam",
 }
 
 
@@ -64,21 +66,21 @@ VQVAE_HYPERPARAMETER_SEARCH_SPACE = [
     {
         "name": "hidden_dimension",
         "type": "choice",
-        "values": [16, 32, 64, 128, 256],
+        "values": [64, 256, 512],
         "sort_values": True,
         "is_ordered": True,
     },
     {
         "name": "embedding_dimension",
         "type": "choice",
-        "values": [16, 32, 64, 128, 256, 512],
+        "values": [64, 256, 512],
         "sort_values": True,
         "is_ordered": True,
     },
     {
         "name": "codebook_size",
         "type": "choice",
-        "values": [64, 256, 512, 1024],
+        "values": [64, 512, 1024],
         "sort_values": True,
         "is_ordered": True,
     },
@@ -114,13 +116,6 @@ PIXELCNN_HYPERPARAMETER_SEARCH_SPACE = [
 
 TRAINING_HYPERPARAMETER_SEARCH_SPACE = [
     {
-        "name": "optimizer",
-        "type": "choice",
-        "values": ["adam", "adamax"],
-        "is_ordered": False,
-        "sort_values": False,
-    },
-    {
         "name": "learning_rate",
         "type": "range",
         "bounds": [1e-6, 1e-1],
@@ -129,7 +124,7 @@ TRAINING_HYPERPARAMETER_SEARCH_SPACE = [
     {
         "name": "batch_size",
         "type": "choice",
-        "values": [32, 64, 128, 256, 512],
+        "values": [64, 128, 256],
         "sort_values": True,
         "is_ordered": True,
     },
@@ -161,13 +156,13 @@ def test(parameters):
 
     train_config = train_config | FIXED_HYPERPARAMS
 
-    train_config["epochs"] = get_adaptive_number_of_epochs(
-        lr=train_config["learning_rate"],
-        n=train_config["n_train"],
-        bs=train_config["batch_size"],
-        total_length=1,
-        max_epochs=20,
-    )
+    # train_config["epochs"] = get_adaptive_number_of_epochs(
+    #     lr=train_config["learning_rate"],
+    #     n=train_config["n_train"],
+    #     bs=train_config["batch_size"],
+    #     total_length=1,
+    #     max_epochs=20,
+    # )
 
     train_config = TrainConfig.from_dict(train_config)
 
@@ -188,7 +183,7 @@ class SlurmJobQueueClient:
             "/home/space/datasets:/home/space/datasets pml.sif python",
         )
         self.training_executor.update_parameters(
-            slurm_partition="gpu-teaching-5h",
+            slurm_partition="gpu-teaching-2d",
             slurm_gpus_per_node=1,
             slurm_cpus_per_task=1,
             timeout_min=300,
@@ -218,7 +213,7 @@ def main():
 
     slurm_queue_client = SlurmJobQueueClient()
 
-    total_budget = 100
+    total_budget = 30
     num_parallel_jobs = 2
     active_jobs = []
     submitted_jobs = 0
