@@ -1,7 +1,8 @@
 import torch
+import yaml
 from pml_vqvae.dataset.dataloader import load_data
 from pml_vqvae.dataset.latent import LatentDataset
-from pml_vqvae.models.vqvae import VQVAE
+from pml_vqvae.models.vqvae import VQVAE, VQVAEConfig
 from pml_vqvae.cli_handler import CLI_handler
 import argparse
 from torchvision.transforms import v2
@@ -46,7 +47,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--n_samples",
-        "-ns",
+        "--ns",
         help="Number of samples to use",
         type=int,
     )
@@ -60,7 +61,16 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     try:
-        vqvae = VQVAE.load_from_checkpoint(args.model_path, weights_only=True)
+        config_file = f"{args['model_path']}/config.yaml"
+        model_file = f"{args['model_path']}/model.pth"
+
+        with open(config_file, "r", encoding="utf-8") as f:
+            config_dict = yaml.safe_load(f)
+        model_config = VQVAEConfig(**config_dict["model_config"])
+
+        vqvae = VQVAE(model_config)
+        vqvae.load_state_dict(torch.load(model_file, weights_only=True))
+
     except Exception as e:
         print(f"Could not load model from {args.model_path}")
         print(e)
@@ -73,20 +83,17 @@ if __name__ == "__main__":
     transforms = (
         v2.Compose(
             [
-                v2.RandomResizedCrop(size=(128, 128), antialias=True, scale=(0.1, 1.0)),
-                v2.RandomHorizontalFlip(p=0.5),
+                v2.RandomResizedCrop(size=(128, 128), antialias=True, scale=(1.0, 1.0)),
                 v2.ToDtype(torch.float32, scale=True),
-                v2.Normalize(mean=[0, 0, 0], std=[255.0, 255.0, 255.0]),
-                v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+                v2.Normalize(mean=[125, 125, 125], std=[125, 125, 125]),
             ]
         )
         if dataset == "imagenet"
         else v2.Compose(
             [
-                v2.RandomResizedCrop(size=(32, 32), antialias=True, scale=(0.5, 1.0)),
-                v2.RandomHorizontalFlip(p=0.5),
+                v2.RandomResizedCrop(size=(32, 32), antialias=True, scale=(1.0, 1.0)),
                 v2.ToDtype(torch.float32, scale=True),
-                v2.Normalize(mean=[0, 0, 0], std=[255.0, 255.0, 255.0]),
+                v2.Normalize(mean=[125, 125, 125], std=[125, 125, 125]),
             ]
         )
     )
@@ -101,6 +108,6 @@ if __name__ == "__main__":
         batch_size=64,
     )
 
-    latent_dataset = generate_latent_dataset(train_loader, vqvae)
+    train_latent_dataset = generate_latent_dataset(train_loader, vqvae)
 
-    latent_dataset.save(f"{dataset}_latents_{n_samples}.npy")
+    train_latent_dataset.save(f"{dataset}_latents_{n_samples}.npy")
