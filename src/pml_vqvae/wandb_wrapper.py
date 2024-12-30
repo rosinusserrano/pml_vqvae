@@ -19,7 +19,10 @@ class WANDBWrapper:
         if self.log:
             wandb.login(key=os.environ["WANDB_API_KEY"])  # your api key
             wandb.init(
-                project="pml_vqvae", name=self.config.name, config=self.config.to_dict()
+                entity="pml-team",
+                project="pml-vqvae",
+                name=self.config.experiment_name,
+                config=self.config.to_dict(),
             )  # DON'T change the project name
             wandb.watch(model, log_freq=1)  # logs the gradients, too
 

@@ -1,0 +1,135 @@
+Image generation forms an unsupervised learning task and therefore does not require labeled data.
+The same applies for image compression.
+Thus, any kind of image data can potentially be used for training and testing.
+
+In the case of conditional image generation, labels can be of importance though, as they might be used as a guiding
+parameter in generation.
+For instance, class labels or specific styles  can be used as an input to guide the generation towards a specific class or style.
+In a later phase of this project we will use the class labels to guide the PixelCNN to generate instances of one specific class.
+
+Generally speaking the image generation and reconstruction performance of a model is highly dependent on the quality
+and diversity of the training data.
+
+\subsection{Feature Extraction}\label{subsec:feature-extraction}
+In \ac{ml}, a set of features is ``good'' if it allows the model to achieve a certain task
+efficiently.
+For traditional, non-deep models, that means that features should aim to be informative, meaning that
+they should have some predictive value towards the final goal.
+In simple regression settings, this is the case if the feature correlates with the true value.
+Furthermore, it is helpful for features to be independent form each other, as dependent features could overemphasize
+their importance due to the higher frequency~\cite{featengineer}.
+
+The reasons outlined above stem from the high sensitivity of traditional \ac{ml} models to small perturbations in data, which necessitates extensive feature engineering. However, in modern deep learning frameworks, this sensitivity has significantly diminished~\cite{lecun2015deep}, and we expect this trend to apply to all of our models as well.
+
+However, normalization remains essential because features with larger scales tend to have a greater influence on gradients and
+the final output compared to those with smaller scales.
+Furthermore, normalized and standardized features generally lead to better convergence behaviour~\cite{mueller}.
+
+As \ac{vq} works directly on pixel values, further feature extraction methods are not necessary.
+Image pixels are numerical values with a spatial correlation that \ac{vq} leverage.
+Since \ac{vq} follows the Encoder-Decoder structure, learning a compressed representation of the input image in latent
+space, the model itself can be seen as a feature extraction method.
+
+\subsection{Overview}\label{subsec:dataset-overview}
+In the paper, the \ac{vq} is trained on three image datasets: \textit{ImageNet}, \textit{CIFAR-10}
+, and video frames from \textit{DeepMind Lab}.
+As stated in Section~\ref{sec:introduction}, we will focus our training on the ImageNet and CIFAR-10
+datasets for now.
+
+Both are among the most common image datasets used in \ac{ml}.
+While they were originally designed for image classification and detection tasks, their utility extends beyond
+these applications; by discarding the labels, they can also be leveraged for image generation tasks.
+
+\subsection{ImageNet}\label{subsec:imagenet}
+
+\begin{wrapfigure}{r}{0.4\textwidth}
+    \centering
+    \includegraphics[width=0.4\textwidth]{../../sample_images/imnet_dimension}
+    \caption{Eight diversity dimensions of the ImageNet dataset~\cite{imagenet_breakdown}}
+    \label{fig:imnet_dimensions}
+\end{wrapfigure}
+
+The full ImageNet dataset consists of 14\,197\,122 hand-labeled photographs collected from flickr and other search
+engines, distributed over 21\,841 \textit{synonym sets} from the
+\textit{WordNet} hierarchy, pursuing to cover most nouns in the English language as described by~\cite{wordnet}.
+
+When talking about ImageNet, many authors refer to the \ac{ilsvrc} dataset.
+It is a subset of the full dataset, containing 1\,281\,167 unique labeled training images and 100\,000 labeled test
+images distributed over 1000 classes, with an additional 50\,000 unlabeled validation images for benchmarking
+purposes, which we will not consider.
+
+Three key computer vision tasks are benchmarked by the \ac{ilsvrc} dataset: object classification, object
+localization and object detection.
+They address three fundamental computer vision questions: \textit{What is in the image?}, \textit{Where is it?} and
+\textit{How many are there?}.
+For \ac{ilsvrc}, each image is annotated with a class id and bounding boxes of objects.
+The collected images neither contain missing values nor duplicates and every image belongs to exactly one class.
+
+All information on ImageNet and ILSVRC described up until this point is taken from~\cite{imagenet_breakdown}, which
+evaluates the history of \ac{ilsvrc} in its first five years.
+Hereinafter, we will refer to this subset as ImageNet if not stated otherwise.
+
+The dataset aims to replicate the distribution of natural photographs, specifically including a diverse range of
+examples across the eight dimensions illustrated in Figure~\ref{fig:imnet_dimensions}.
+Thereby, models trained on it can generalize along these.
+
+\subsubsection{Class Balance}
+To not introduce bias, the dataset should be sufficiently balanced between the classes.
+
+In the ImageNet dataset, the classes contain between 732 and 1300 examples, with most of them at exactly 1300.
+
+Based on this, we assess the class distribution in the ImageNet dataset as sufficiently balanced.
+Most classes contain an equal amount of samples, and the classes with fewer examples are still represented by a
+reasonable number of images.
+All of them contain more than half the maximum number of samples.
+Moreover, the three outlier classes with the lowest sample numbers are classes referring to specific dog
+breeds with 732, 738 and 754 samples, respectively.
+The general class of dogs is therefore still well represented.
+
+\subsubsection{Image Shapes}
+Upon examining, we found that the images have highly irregular resolutions.
+The width and height ranges from 8-9331px and 20-6530px, respectively, with a mean resolution of 471.7x404.7 pixels.
+Figure~\ref{fig:bigboy} depicts the resolution ranges for each class.
+
+As to be seen in Figure~\ref{fig:optimum_resolution}, some images have a very irregular ratio, which imposes a challenge
+for resizing.
+Very small images do not contain enough information, which when upscaled, result in a blurry image, shown on the right in Figure~\ref{fig:optimum_resolution}).
+
+\subsubsection{Data Cleaning and Preprocessing}
+In order to train the \ac{vq} on the ImageNet dataset, we will do the following preprocessing steps.
+
+\begin{itemize}
+    \item \textbf{Data Cleaning}
+    Based on our knowledge from examining the image shapes, we removed images with a resolution below 32px on any axis,
+    which were 41 in total
+    \item \textbf{Image Resizing}
+    For training and testing, we resize all images to 128x128 pixels, similar to the paper.
+    We use a composition of random cropping to extract a square image and resizing it to 128x128 pixels with
+    the \texttt{v2.RandomResizedCrop} function from the TorchVision package.
+    We set \texttt{scale=(0.1, 1.0)} and \texttt{ratio=1} to crop a square image with a sufficient area in
+    relation to the original image, and enable anti-alias to reduce artifacts.
+    \item \textbf{MinMax Normalizing and Standardization}
+    Due to the observations on normalization and standardization described in Subsection
+    ~\ref{subsec:feature-extraction}, we scale each channel from integers in $\{0,\dots,255\}$ to floats on
+    $[0,1]$.
+    We also standardize the images with the mean $\mu = (0.485, 0.456, 0.406)$ and standard deviation
+    $\sigma = (0.229, 0.224, 0.225)$ of ImageNet for the three color channels, respectively.
+\end{itemize}
+
+Example images from ImageNet dataset after preprocessing are depicted in figure~\ref{fig:cifar_imagenet_normalized}.
+
+\subsection{CIFAR-10}\label{subsec:cifar-10}
+CIFAR-10~\cite{cifar10} is another popular image classification dataset.
+CIFAR-10 consists of 60\,000 32x32 pixel images, which are distributed over 10 classes.
+The dataset is split into 50\,000 training images and 10\,000 test images.
+The classes are mutually exclusive, so each image belongs to exactly one class.
+The classes are: \textit{airplane, automobile, bird, cat, deer, dog, frog, horse, ship, truck}
+
+The train set contains exactly 5\,000 images per class, while the test set contains 1\,000 images per class.
+No image belongs to more than one class and there are no missing values or duplicates in the dataset.
+
+\subsubsection{Preprocessing}
+As the images in the CIFAR-10 dataset are already 32x32 pixels, we do not need to resize them.
+Hence, we will only apply MinMax Normalizing and potentially Standardizing, same as for the ImageNet data.
+
+Example images from the CIFAR-10 dataset are shown in figure~\ref{fig:cifar_imagenet_normalized}.
