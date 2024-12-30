@@ -1,7 +1,7 @@
 import torch
 import yaml
 from pml_vqvae.dataset.dataloader import load_data
-from pml_vqvae.dataset.latent import LatentDataset
+from pml_vqvae.dataset.latent import LatentDatasetGenerator
 from pml_vqvae.models.vqvae import VQVAE, VQVAEConfig
 from pml_vqvae.cli_handler import CLI_handler
 import argparse
@@ -11,10 +11,10 @@ from torchvision.transforms import v2
 def generate_latent_dataset(
     data_loader: torch.utils.data.DataLoader,
     vqvae: VQVAE,
-) -> LatentDataset:
+) -> LatentDatasetGenerator:
     vqvae.eval()
 
-    latent_dataset = LatentDataset()
+    latent_dataset = LatentDatasetGenerator()
 
     for batch, labels in data_loader:
 
@@ -80,34 +80,17 @@ if __name__ == "__main__":
     n_samples = args.n_samples
     seed = args.seed
 
-    transforms = (
-        v2.Compose(
-            [
-                v2.RandomResizedCrop(size=(128, 128), antialias=True, scale=(1.0, 1.0)),
-                v2.ToDtype(torch.float32, scale=True),
-                v2.Normalize(mean=[125, 125, 125], std=[125, 125, 125]),
-            ]
-        )
-        if dataset == "imagenet"
-        else v2.Compose(
-            [
-                v2.RandomResizedCrop(size=(32, 32), antialias=True, scale=(1.0, 1.0)),
-                v2.ToDtype(torch.float32, scale=True),
-                v2.Normalize(mean=[125, 125, 125], std=[125, 125, 125]),
-            ]
-        )
-    )
-
-    train_loader, _ = load_data(
+    train_loader, test_loader = load_data(
         dataset,
-        transformation=transforms,
         n_train=n_samples,
         n_test=None,
         seed=seed,
         class_idx=None,
-        batch_size=64,
+        batch_size=128,
     )
 
     train_latent_dataset = generate_latent_dataset(train_loader, vqvae)
+    train_latent_dataset.save(f"{dataset}_latents_{n_samples}/train", "train")
 
-    train_latent_dataset.save(f"{dataset}_latents_{n_samples}.npy")
+    test_latent_dataset = generate_latent_dataset(test_loader, vqvae)
+    test_latent_dataset.save(f"{dataset}_latents_{n_samples}/test", "test")
