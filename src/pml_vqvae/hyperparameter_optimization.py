@@ -15,7 +15,7 @@ import pml_vqvae.train
 warnings.simplefilter(action="ignore", category=FutureWarning)
 
 
-EXPERIMENT_NAME = "hyperopt-V-more-gpu-less-data"
+EXPERIMENT_NAME = "hyperopt-VI-train5k-test1k-robust"
 
 
 # def get_adaptive_number_of_epochs(
@@ -53,11 +53,11 @@ FIXED_HYPERPARAMS = {
     "dataset": "imagenet",
     "experiment_name": EXPERIMENT_NAME,
     "model_name": "vqvae",
-    "n_test": 5000,
-    "n_train": 25000,
+    "n_test": 1000,
+    "n_train": 5000,
     "test_interval": 1,
     "vis_train_interval": 1,
-    "epochs": 10,
+    "epochs": 15,
     "optimizer": "adam",
 }
 
@@ -66,21 +66,21 @@ VQVAE_HYPERPARAMETER_SEARCH_SPACE = [
     {
         "name": "hidden_dimension",
         "type": "choice",
-        "values": [64, 256, 512],
+        "values": [64, 128, 256, 512],
         "sort_values": True,
         "is_ordered": True,
     },
     {
         "name": "embedding_dimension",
         "type": "choice",
-        "values": [64, 256, 512],
+        "values": [64, 128, 256, 512],
         "sort_values": True,
         "is_ordered": True,
     },
     {
         "name": "codebook_size",
         "type": "choice",
-        "values": [64, 512, 1024],
+        "values": [64, 128, 256, 512, 1024],
         "sort_values": True,
         "is_ordered": True,
     },
@@ -88,6 +88,7 @@ VQVAE_HYPERPARAMETER_SEARCH_SPACE = [
         "name": "commitment_weight",
         "type": "range",
         "bounds": [0.01, 10.0],
+        "log_scale": True,
     },
 ]
 
@@ -183,7 +184,7 @@ class SlurmJobQueueClient:
             "/home/space/datasets:/home/space/datasets pml.sif python",
         )
         self.training_executor.update_parameters(
-            slurm_partition="gpu-teaching-2d",
+            slurm_partition="gpu-teaching-5h",
             slurm_gpus_per_node=1,
             slurm_cpus_per_task=1,
             timeout_min=300,
@@ -213,7 +214,7 @@ def main():
 
     slurm_queue_client = SlurmJobQueueClient()
 
-    total_budget = 30
+    total_budget = 50
     num_parallel_jobs = 2
     active_jobs = []
     submitted_jobs = 0
@@ -221,9 +222,15 @@ def main():
     while submitted_jobs < total_budget or active_jobs:
         for job, trial_index in active_jobs[:]:
             if job.done():
-                result = job.result()
+                try:
+                    result = job.result()
+                except:
+                    ax_client.abandon_trial(trial_index=trial_index)
+                    active_jobs.remove((job, trial_index))
+                    continue
                 ax_client.complete_trial(trial_index=trial_index, raw_data=result)
                 active_jobs.remove((job, trial_index))
+
         while submitted_jobs < total_budget and len(active_jobs) < num_parallel_jobs:
             parameters_next, trial_index_next = ax_client.get_next_trial()
 
