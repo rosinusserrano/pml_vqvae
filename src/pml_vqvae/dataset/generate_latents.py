@@ -1,11 +1,15 @@
 import torch
 import yaml
+from tqdm.auto import tqdm
 from pml_vqvae.dataset.dataloader import load_data
 from pml_vqvae.dataset.latent import LatentDatasetGenerator
 from pml_vqvae.models.vqvae import VQVAE, VQVAEConfig
 from pml_vqvae.cli_handler import CLI_handler
 import argparse
 from torchvision.transforms import v2
+
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+print(f"On device: {DEVICE}")
 
 
 def generate_latent_dataset(
@@ -16,29 +20,24 @@ def generate_latent_dataset(
 
     latent_dataset = LatentDatasetGenerator()
 
-    for batch, labels in data_loader:
+    vqvae.to(DEVICE)
 
-        # run model o batch
-        vqvae.vqvae(batch)
-
-        # get batch latents
-        b_latent = vqvae.discrete_latent.reshape(-1, 32, 32)
-
-        # add latents to dataset
-        latent_dataset.add_latent(b_latent.cpu().numpy(), labels.cpu().numpy())
+    for batch, labels in tqdm(data_loader):
+        code_indices = vqvae.encode(batch.to(DEVICE))
+        latent_dataset.add_latent(code_indices.cpu().numpy(), labels.cpu().numpy())
 
     return latent_dataset
 
 
 if __name__ == "__main__":
-    cli_handler = CLI_handler()
-    args = cli_handler.parse_args()
+    # cli_handler = CLI_handler()
+    # args = cli_handler.parse_args()
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--model_path",
         "-m",
-        help="Path to the vqvae model pth-file",
+        help="Path to a directory containing config.yaml and model.pth",
     )
     parser.add_argument(
         "--dataset",
@@ -61,13 +60,15 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     try:
-        config_file = f"{args['model_path']}/config.yaml"
-        model_file = f"{args['model_path']}/model.pth"
+        config_file = f"{args.model_path}/config.yaml"
+        model_file = f"{args.model_path}/model.pth"
 
+        print("Reading config file")
         with open(config_file, "r", encoding="utf-8") as f:
             config_dict = yaml.safe_load(f)
-        model_config = VQVAEConfig(**config_dict["model_config"])
 
+        print("Loading model")
+        model_config = VQVAEConfig(**config_dict["model_config"]["value"])
         vqvae = VQVAE(model_config)
         vqvae.load_state_dict(torch.load(model_file, weights_only=True))
 
@@ -80,6 +81,7 @@ if __name__ == "__main__":
     n_samples = args.n_samples
     seed = args.seed
 
+    print("Loading data")
     train_loader, test_loader = load_data(
         dataset,
         n_train=n_samples,
@@ -89,8 +91,10 @@ if __name__ == "__main__":
         batch_size=128,
     )
 
+    print("Generating train set")
     train_latent_dataset = generate_latent_dataset(train_loader, vqvae)
     train_latent_dataset.save(f"{dataset}_latents_{n_samples}/train", "train")
 
+    print("Generating test set")
     test_latent_dataset = generate_latent_dataset(test_loader, vqvae)
     test_latent_dataset.save(f"{dataset}_latents_{n_samples}/test", "test")

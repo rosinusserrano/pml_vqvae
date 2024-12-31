@@ -114,6 +114,28 @@ class VQVAE(PML_model):
 
         return reconstruction, encoder_out, codes, indexes
 
+    def encode(self, tensor: torch.Tensor):
+        encoder_out = self.encoder(tensor)
+        _, indexes = VectorQuantization.apply(encoder_out, self.codebook)
+
+        return indexes
+
+    def decode(self, indexes: torch.Tensor):
+        indexes = indexes.squeeze()
+        bs, h, w = indexes.shape
+        indexes = indexes.flatten()
+
+        codes = self.codebook[indexes]
+
+        print(codes.shape)
+
+        codes = codes.reshape(bs, h, w, -1)
+        codes = codes.permute(0, 3, 1, 2)
+
+        print(codes.shape)
+
+        return self.decoder(codes)
+
     def loss_fn(self, model_outputs: torch.Tensor, target: torch.Tensor):
         reconstruction, encoder_out, codes, _ = model_outputs
 
