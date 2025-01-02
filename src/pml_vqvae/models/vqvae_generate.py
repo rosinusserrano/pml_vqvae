@@ -59,7 +59,7 @@ def generate(
             torch.tensor([class_idx] * sample_per_class, dtype=torch.int).to(DEVICE)
         )
         print("decode ...")
-        generated = vqvae.decode(latents).to("cpu")
+        generated = vqvae.decode(latents.to(DEVICE)).to("cpu")
 
         generated = (generated + 1) / 2
 
