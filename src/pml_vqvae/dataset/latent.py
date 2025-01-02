@@ -6,7 +6,7 @@ import os
 
 
 class LatentDatasetGenerator:
-    def __init__(self, max_per_file: int = 1000):
+    def __init__(self, max_per_file: int = 1):
         self.latents = np.empty((0, 32, 32))
         self.labels = np.array([])
         self.max_per_file = max_per_file
@@ -38,13 +38,18 @@ class LatentDatasetGenerator:
 
 
 class LatentDataset(Dataset):
-    def __init__(self, rootdir: str, data_per_file: int = 1000):
+    def __init__(self, rootdir: str, data_per_file: int = 1):
         self.rootdir = rootdir
         self.data_per_file = data_per_file
         self.file_names = os.listdir(self.rootdir)
 
+        self.len = 0
+        for f in self.file_names:
+            with np.load(f"{self.rootdir}/{f}") as npzfile:
+                self.len += npzfile["labels"].shape[0]
+
     def __len__(self):
-        return len(self.file_names)
+        return self.len
 
     def __getitem__(self, index: int):
         with np.load(

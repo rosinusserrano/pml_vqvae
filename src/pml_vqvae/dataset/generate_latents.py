@@ -84,17 +84,21 @@ if __name__ == "__main__":
     print("Loading data")
     train_loader, test_loader = load_data(
         dataset,
-        n_train=n_samples,
+        n_train=None,
         n_test=None,
         seed=seed,
-        class_idx=None,
-        batch_size=128,
+        class_idx=list(range(30)),
+        batch_size=256,
     )
 
     print("Generating train set")
     train_latent_dataset = generate_latent_dataset(train_loader, vqvae)
-    train_latent_dataset.save(f"{dataset}_latents_{n_samples}/train", "train")
+    train_latent_dataset.save(
+        f"artifacts/30_classes_{dataset}_latents_{n_samples}/train", "train"
+    )
 
     print("Generating test set")
     test_latent_dataset = generate_latent_dataset(test_loader, vqvae)
-    test_latent_dataset.save(f"{dataset}_latents_{n_samples}/test", "test")
+    test_latent_dataset.save(
+        f"artifacts/30_classes_{dataset}_latents_{n_samples}/test", "test"
+    )
