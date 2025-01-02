@@ -1,3 +1,4 @@
+from random import random
 import torch
 from dataclasses import dataclass, field
 import os
@@ -279,10 +280,9 @@ class PixelCNN(PML_model):
 
         return out
 
-    def loss_fn(self, model_outputs, target):
-        loss = F.cross_entropy(
-            model_outputs, torch.squeeze(((target / 2) + 0.5) * 255).long()
-        )
+    def loss_fn(self, model_outputs, target: torch.Tensor):
+        target = torch.squeeze(target).long()
+        loss = F.cross_entropy(model_outputs, target)
         self.batch_stats = {"Loss": loss.item()}
         return loss
 
@@ -290,7 +290,10 @@ class PixelCNN(PML_model):
         return loss.backward()
 
     @torch.no_grad()
-    def sample(self, class_idx_list: torch.Tensor):
+    def sample(
+        self,
+        class_idx_list: torch.Tensor,
+    ):
 
         shape = (len(class_idx_list), 1, *self.input_shape)
 
@@ -300,9 +303,13 @@ class PixelCNN(PML_model):
         # Generation loop
         for h in range(self.input_shape[0]):
             for w in range(self.input_shape[1]):
-                probs = F.softmax(self.forward(imgs, class_idx_list), dim=1)[:, :, h, w]
+                print(h, w)
+                preds = self.forward(imgs, class_idx_list)
+
+                probs = F.softmax(preds, dim=1)[:, :, h, w]
                 tmp = torch.multinomial(probs, num_samples=1)
-                imgs[:, :, h, w] = tmp / 255.0
+
+                imgs[:, :, h, w] = tmp
 
         return imgs.cpu()
 

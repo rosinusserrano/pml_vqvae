@@ -1,13 +1,13 @@
 import torchvision
 from torchvision.transforms import v2
+import getpass
 from torchvision.datasets import MNIST
+from pml_vqvae.dataset.latent import LatentDataset
 import torch
 from torch.utils.data import random_split
 
 from pml_vqvae.dataset.cifar10 import CifarDataset
 from pml_vqvae.dataset.imagenet import ImageNetDataset
-
-DATASET_NAMES = ["imagenet", "cifar", "mnist"]
 
 
 def load_data(
@@ -42,13 +42,6 @@ def load_data(
 
     if seed:
         torch.manual_seed(seed)
-
-    # if unknown dataset name
-    if dataset not in DATASET_NAMES:
-        print(
-            f"The specified dataset is not supported. You can choose from {', '.join(DATASET_NAMES)}"
-        )
-        return None
 
     if dataset == "imagenet":
         # if n_train or n_test is specified, make sure it is a multiple of 1000 as there are 1000 classes
@@ -168,6 +161,18 @@ def load_data(
 
         if n_test is not None:
             test_set, _ = random_split(test_set, [n_test, 10000 - n_test])
+
+    elif dataset == "latent":
+        print("Getting latent dataset")
+        train_set = LatentDataset(
+            f"/home/{getpass.getuser()}/pml_vqvae/artifacts/30_classes_imagenet_latents_30000/train",
+            data_per_file=1,
+        )
+
+        test_set = LatentDataset(
+            f"/home/{getpass.getuser()}/pml_vqvae/artifacts/30_classes_imagenet_latents_30000/test",
+            data_per_file=1,
+        )
 
     train_loader = torch.utils.data.DataLoader(
         train_set, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers

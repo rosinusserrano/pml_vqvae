@@ -25,7 +25,7 @@ def show(x: torch.Tensor, outfile: str = None, imgs_per_row: int = 8):
     """
     assert len(x.shape) == 4, "Input should be batch with dimensions BS x C x H x W"
 
-    image_grid = make_grid(x, nrow=imgs_per_row, padding=0, pad_value=1)
+    image_grid = make_grid(x, nrow=imgs_per_row, padding=1, pad_value=1, normalize=True)
 
     # PyTorch uses the format C x H x W for images while
     # matplotlib uses H x W x C. Thus, we have to transpose

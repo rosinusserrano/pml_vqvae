@@ -9,7 +9,7 @@ from pml_vqvae.models.baseline.vae import BaselineVAE, BaselineVAEConfig
 from pml_vqvae.models.vqvae import VQVAE, VQVAEConfig
 from pml_vqvae.models.pixel_cnn import PixelCNN, PixelCNNConfig
 
-AVAIL_DATASETS = ["cifar", "imagenet", "mnist"]
+AVAIL_DATASETS = ["cifar", "imagenet", "mnist", "latent"]
 AVAIL_MODELS = ["vae", "autoencoder", "vqvae", "pixelcnn"]
 
 
