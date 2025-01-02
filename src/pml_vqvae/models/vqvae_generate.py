@@ -89,7 +89,7 @@ if __name__ == "__main__":
     generate(
         vqvae_path,
         pixelcnn_path,
-        sample_per_class=100,
+        sample_per_class=50,
         classes=None,
         out_folder="artifacts",
         save_as_png=False,
