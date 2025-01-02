@@ -22,7 +22,7 @@ class VectorQuantization(autograd.Function):
         codebook_size, embedding_dim = codebook.shape
 
         if embedding_dim != channels:
-            raise ValueError("codebook embedding dimension doesnt equal" "channel dim!")
+            raise ValueError("codebook embedding dimension doesnt equal channel dim!")
 
         batch = batch.permute(0, 2, 3, 1)  # channels on last dim
         batch = batch.reshape(-1, channels)  # flatten except for channels
@@ -106,6 +106,11 @@ class VQVAE(PML_model):
             upsample(config.hidden_dimension, config.hidden_dimension),
             upsample(config.hidden_dimension, 3, activation=nn.Tanh()),
         )
+
+    def decode(self, latents):
+        l = self.codebook[latents.squeeze().to(torch.int64)]
+        l = l.permute(0, 3, 1, 2)
+        return self.decoder(l)
 
     def forward(self, tensor: torch.Tensor):
         encoder_out = self.encoder(tensor)

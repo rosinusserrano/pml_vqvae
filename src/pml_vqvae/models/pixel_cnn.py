@@ -302,7 +302,7 @@ class PixelCNN(PML_model):
             for w in range(self.input_shape[1]):
                 probs = F.softmax(self.forward(imgs, class_idx_list), dim=1)[:, :, h, w]
                 tmp = torch.multinomial(probs, num_samples=1)
-                imgs[:, :, h, w] = tmp / 255.0
+                imgs[:, :, h, w] = tmp
 
         return imgs.cpu()
 
