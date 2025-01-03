@@ -18,37 +18,6 @@ warnings.simplefilter(action="ignore", category=FutureWarning)
 EXPERIMENT_NAME = "hyperopt-VI-train5k-test1k-robust"
 
 
-# def get_adaptive_number_of_epochs(
-#     lr: float,
-#     bs: int,
-#     n: int,
-#     total_length: float = 1,
-#     max_epochs: int = 20,
-# ):
-#     """Return the number of epochs that result in a unified total length.
-
-#     Reason for this is that when running the hyperoptimization with a fixed
-#     number of epochs we will probably favor high learning rates or small batch
-#     sizes, simply because they will result in either larger optimization steps
-#     or a higher number of iterations per epoch respectively. Therefore I
-#     implemented this "adaptive" procedure which should result in a number of
-#     epochs that hopefully will result in outcomes that can be better compared
-#     to each other. This is obviously not perfect, as it doesnt account for
-#     different behaviour of gradients when changing batch size, but is at least
-#     a start.
-
-#     We compute the total path length of the optimization as follows:
-
-#     total_length = learning_rate * (dataset_size / batch_size) * n_epochs
-
-#     From which results the adaptive number of epochs:
-
-#     adaptive_n_epochs = total_length / (learning_rate * (dataset_size / batch_size))
-#     """
-
-#     return min(max_epochs, max(1, int(total_length / (lr * (n / bs)))))
-
-
 FIXED_HYPERPARAMS = {
     "dataset": "imagenet",
     "experiment_name": EXPERIMENT_NAME,
