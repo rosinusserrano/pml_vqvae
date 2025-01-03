@@ -3,7 +3,6 @@
 import torch
 
 
-# Just an interface to make sure all models have some methods
 class PML_model(torch.nn.Module):
 
     def __init__(self, *args, **kwargs):

@@ -9,4 +9,4 @@ tqdm
 wandb
 ax-platform
 submitit
-
+scikit-image
