@@ -127,12 +127,8 @@ class VQVAE(PML_model):
 
         codes = self.codebook[indexes]
 
-        print(codes.shape)
-
         codes = codes.reshape(bs, h, w, -1)
         codes = codes.permute(0, 3, 1, 2)
-
-        print(codes.shape)
 
         return self.decoder(codes)
 

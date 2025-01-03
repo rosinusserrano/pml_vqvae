@@ -303,7 +303,6 @@ class PixelCNN(PML_model):
         # Generation loop
         for h in range(self.input_shape[0]):
             for w in range(self.input_shape[1]):
-                print(h, w)
                 preds = self.forward(imgs, class_idx_list)
 
                 probs = F.softmax(preds, dim=1)[:, :, h, w]
