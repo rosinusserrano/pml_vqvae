@@ -2,13 +2,13 @@
 
 from torch.utils.data import DataLoader
 import torch
-from torch.optim import Adam, Optimizer
+from torch.optim import Optimizer
 from torchvision.transforms import v2
 import yaml
 from tqdm.auto import tqdm
 from pml_vqvae.stats_keeper import StatsKeeper
 from pml_vqvae.wandb_wrapper import WANDBWrapper
-from pml_vqvae.baseline.pml_model_interface import PML_model
+from pml_vqvae.models.pml_model_interface import PML_model
 from pml_vqvae.cli_handler import CLI_handler
 from pml_vqvae.train_config import TrainConfig
 from pml_vqvae.dataset.dataloader import load_data
@@ -19,7 +19,12 @@ DEFAULT_CONFIG = "config.yaml"
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 
-def test(model: PML_model, test_loader: DataLoader, stats_keeper: StatsKeeper):
+def test(
+    model: PML_model,
+    test_loader: DataLoader,
+    stats_keeper: StatsKeeper,
+    label_conditioning: bool,
+):
     """Test a model on a dataset
 
     Args:
@@ -31,23 +36,23 @@ def test(model: PML_model, test_loader: DataLoader, stats_keeper: StatsKeeper):
         Tuple[torch.Tensor, torch.Tensor, torch.Tensor]: The last batch, target and output
     """
 
+    losses = []
+
     model.eval()
 
     # for dynamic logging
     test_tqdm = tqdm(test_loader)
 
-    for batch, target in test_tqdm:
+    for batch, labels in test_tqdm:
         batch = batch.to(DEVICE)
-        target = target.to(DEVICE)
+        labels = labels.to(DEVICE)
 
-        output = model(batch)
-        loss = model.loss_fn(output, target)
-
-        # collect model specific stats
-        stats = model.collect_stats(output, target, loss)
+        output = model(batch, labels) if label_conditioning else model(batch)
+        loss = model.loss_fn(output, batch)
+        losses.append(loss.item())
 
         # collect all stats in Object for later plotting
-        dsp = stats_keeper.add_batch_stats(stats, len(batch), train=False)
+        dsp = stats_keeper.add_batch_stats(model.batch_stats, len(batch), train=False)
 
         # make a nice progress bar
         test_tqdm.set_description(dsp)
@@ -57,7 +62,9 @@ def test(model: PML_model, test_loader: DataLoader, stats_keeper: StatsKeeper):
 
     model.train()
 
-    return batch, target, output
+    avg_loss = sum(losses) / len(losses)
+
+    return batch, output, avg_loss
 
 
 def train_epoch(
@@ -65,6 +72,7 @@ def train_epoch(
     train_loader: DataLoader,
     optimizer: Optimizer,
     stats_keeper: StatsKeeper,
+    label_conditioning: bool,
 ):
     """Train a model on a dataset for one epoch
 
@@ -81,21 +89,18 @@ def train_epoch(
     # for dynamic logging
     train_tqdm = tqdm(train_loader)
 
-    for batch, target in train_tqdm:
+    for batch, labels in train_tqdm:
         batch = batch.to(DEVICE)
-        target = target.to(DEVICE)
+        labels = labels.to(DEVICE)
 
         optimizer.zero_grad()
 
-        output = model(batch)
-        loss = model.loss_fn(output, target)
+        output = model(batch, labels) if label_conditioning else model(batch)
+        loss = model.loss_fn(output, batch)
         model.backward(loss)
 
-        # collect model specific stats
-        stats = model.collect_stats(output, target, loss)
-
         # collect all stats in Object for later plotting
-        dsp = stats_keeper.add_batch_stats(stats, len(batch))
+        dsp = stats_keeper.add_batch_stats(model.batch_stats, len(batch))
 
         # make a nice progress bar
         train_tqdm.set_description(dsp)
@@ -105,49 +110,30 @@ def train_epoch(
     # create epoch level stats
     stats_keeper.batch_summarize()
 
-    return batch, target, output
+    return batch, output, loss.item()
 
 
 def train(config: TrainConfig):
     """Train a model on a dataset for a number of epochs
 
     Args:
-        config (dict): Configuration dictionary
+        train_config (TrainConfig): Training configuration
 
     Returns:
-        np.array: The losses over epochs (either a list of multiple losses or a list of floats)
+        float: Some value that quantizes the generalization error, the lower the better.
     """
 
     model = config.get_model()
 
-    print(f"Training {model.name()} on {config.dataset} for {config.epochs} epochs")
+    print(
+        f"Training {config.model_name} on "
+        f"{config.dataset} for {config.epochs} epochs"
+    )
 
     print("Loading dataset...")
 
-    transforms = (
-        v2.Compose(
-            [
-                v2.RandomResizedCrop(size=(128, 128), antialias=True, scale=(0.1, 1.0)),
-                v2.RandomHorizontalFlip(p=0.5),
-                v2.ToDtype(torch.float32, scale=True),
-                v2.Normalize(mean=[0, 0, 0], std=[255.0, 255.0, 255.0]),
-                v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-            ]
-        )
-        if config.dataset == "imagenet"
-        else v2.Compose(
-            [
-                v2.RandomResizedCrop(size=(32, 32), antialias=True, scale=(0.5, 1.0)),
-                v2.RandomHorizontalFlip(p=0.5),
-                v2.ToDtype(torch.float32, scale=True),
-                v2.Normalize(mean=[0, 0, 0], std=[255.0, 255.0, 255.0]),
-            ]
-        )
-    )
-
     train_loader, test_loader = load_data(
         config.dataset,
-        transformation=transforms,
         n_train=config.n_train,
         n_test=config.n_test,
         seed=config.seed,
@@ -155,7 +141,7 @@ def train(config: TrainConfig):
         batch_size=config.batch_size,
     )
 
-    optimizer = Adam(model.parameters(), lr=config.learning_rate)
+    optimizer = config.get_optimizer(model)
 
     model.to(DEVICE)
 
@@ -164,17 +150,35 @@ def train(config: TrainConfig):
 
     stats_keeper = StatsKeeper()
 
+    last_average_test_loss = None
+
     print("Training model...")
     for i in range(config.epochs):
         # train on all datat for one epoch
-        batch, _, output = train_epoch(model, train_loader, optimizer, stats_keeper)
-        wandb_wrapper.construct_examples(batch, output)
+        batch, output, _ = train_epoch(
+            model,
+            train_loader,
+            optimizer,
+            stats_keeper,
+            config.label_conditioning,
+        )
+        print(f"Batch images are in range [{batch.min()}, {batch.max()}]")
+        wandb_wrapper.construct_examples(batch, model.visualize_output(output))
 
         # test
-        if config.test_interval and i % config.test_interval == 0:
+        if (
+            config.test_interval and i % config.test_interval == 0
+        ) or i == config.epochs - 1:
             with torch.no_grad():
-                batch, _, output = test(model, test_loader, stats_keeper)
-                wandb_wrapper.construct_examples(batch, output, train=False)
+                batch, output, last_average_test_loss = test(
+                    model,
+                    test_loader,
+                    stats_keeper,
+                    config.label_conditioning,
+                )
+                wandb_wrapper.construct_examples(
+                    batch, model.visualize_output(output), train=False
+                )
 
         log_vis = True
         if not config.vis_train_interval or i % config.vis_train_interval != 0:
@@ -185,6 +189,7 @@ def train(config: TrainConfig):
 
         model_dir = stats_keeper.save_model(model, config.output_dir, epoch=i)
         wandb_wrapper.save_model(model_dir)
+        print(epoch_stats)
 
     # save final model
     print("Saving model...")
@@ -193,16 +198,22 @@ def train(config: TrainConfig):
     wandb_wrapper.save_model(model_dir)
     wandb_wrapper.finish()
 
+    return last_average_test_loss
 
-cli_handler = CLI_handler()
-args = cli_handler.parse_args()
 
-with open(DEFAULT_CONFIG, "r", encoding="utf-8") as file:
-    config = TrainConfig.from_dict(yaml.safe_load(file))
+# Ich habe die CLI functionality auskommentiert um es mir einfache zu machen den
+# stuff für die Hyperparameteroptimisierung zu integrieren, sorry für
+# unsaubere Arbeit.
+if __name__ == "__main__":
+    # cli_handler = CLI_handler()
+    # args = cli_handler.parse_args()
 
-# Overwrite config when cli arguments are provided
-config = cli_handler.adjust_config(config, args)
+    with open(DEFAULT_CONFIG, "r", encoding="utf-8") as file:
+        config = TrainConfig.from_dict(yaml.safe_load(file))
 
-print(f"Starting training with the following onconfiguration:\n\n{config}\n")
+    # # Overwrite config when cli arguments are provided
+    # config = cli_handler.adjust_config(config, args)
 
-train(config)
+    print(f"Starting training with the following onconfiguration:\n\n{config}\n")
+
+    train(config)

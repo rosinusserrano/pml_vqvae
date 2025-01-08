@@ -153,7 +153,7 @@ class ImageNetDataset(Dataset):
         if self.transform:
             image = self.transform(image)
 
-        return image, image
+        return image, self.imagenet.targets[idx]
 
     def export_class_dist(self, outfile="./imagenet_dist"):
         """Export the class distribution of the dataset as a histogram.

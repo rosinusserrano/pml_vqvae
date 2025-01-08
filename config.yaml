@@ -1,22 +1,42 @@
-experiment:
-  name: "autoencoder imagenet" # name of the experiment
-  description: "" # description of the experiment
-  seed: 42 # seed for reproducibility
-  test_interval: 1  # test the model every test_interval epochs, None to disable
-  vis_train_interval: 1 # plot the training loss every plot_train_interval epochs, None to disable
-  wandb_log: False # log the experiment to wandb
+# experiment config
+experiment_name: "[after hyperopt refactor] VQVAE" # name of the experiment
+description: "" # description of the experiment
+seed: 42 # seed for reproducibility
+test_interval: 1  # test the model every test_interval epochs, None to disable
+vis_train_interval: 1 # plot the training loss every plot_train_interval epochs, None to disable
+wandb_log: False # log the experiment to wandb
 
-data:
-  n_train: 100000 # number of training samples
-  n_test: 10000 # number of test samples
-  dataset: "imagenet" # either cifar or imagenet
-  class_idx: null # list of class indices to use, empty list to use all classes
+#dataset config
+n_train: 1000 # number of training samples
+n_test: 1000 # number of test samples
+dataset: "imagenet" # either cifar or imagenet
+class_idx: null # list of class indices to use, empty list to use all classes
 
-train:
-  batch_size: 128
-  epochs: 10
-  learning_rate: 0.0002
+# train config
+batch_size: 256
+epochs: 1
+learning_rate: 0.00025
+label_conditioning: False
 
-model:
-  model_name: "autoencoder" # either autoencoder or vae
-  
+# model config
+model_name: "vae" # either autoencoder or vae
+
+# PixelCNN
+# model_config:
+#   hidden_chan: 256
+#   num_codes: 256
+#   num_classes: 10
+#   input_shape: [28, 28]  # for mnist
+
+# VQVAE
+# model_config:
+#   codebook_size: 512
+#   commitment_weight: 1.0
+#   hidden_dimension: 256
+#   embedding_dimension: 256
+
+# VAE
+model_config:
+  kld_weight: 0.00025
+  latent_dimension: 2
+  hidden_dimension: 128

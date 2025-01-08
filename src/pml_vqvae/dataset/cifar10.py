@@ -137,7 +137,7 @@ class CifarDataset(Dataset):
         if self.transform:
             image = self.transform(image)
 
-        return image, image
+        return image, self.labels[idx]
 
     def summary(self, outfile="./cifar_summary.json"):
         """Create a summary of the dataset

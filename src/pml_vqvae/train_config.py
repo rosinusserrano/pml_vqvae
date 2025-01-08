@@ -1,40 +1,51 @@
 import os
+from dataclasses import dataclass, asdict
 
-from pml_vqvae.baseline.autoencoder import BaselineAutoencoder
-from pml_vqvae.baseline.vae import BaselineVariationalAutoencoder
+from torch import nn
+from torch.optim import RMSprop, SGD, AdamW, Adamax
 
-AVAIL_DATASETS = ["cifar", "imagenet"]
-AVAIL_MODELS = ["vae", "autoencoder"]
+from pml_vqvae.models.baseline.autoencoder import BaselineAutoencoder
+from pml_vqvae.models.baseline.vae import BaselineVAE, BaselineVAEConfig
+from pml_vqvae.models.vqvae import VQVAE, VQVAEConfig
+from pml_vqvae.models.pixel_cnn import PixelCNN, PixelCNNConfig
+
+AVAIL_DATASETS = ["cifar", "imagenet", "mnist", "latent"]
+AVAIL_MODELS = ["vae", "autoencoder", "vqvae", "pixelcnn"]
 
 
+@dataclass
 class TrainConfig:
     """Configuration class for the training process"""
 
-    def __init__(self):
-        """Initialize the a default configuration class"""
+    # required
+    experiment_name: str
+    dataset: str
+    model_name: str
+    batch_size: int
+    epochs: int
+    learning_rate: float
 
-        # experiment
-        self.name = None
-        self.description = None
-        self.output_dir = None
-        self.test_interval = None
-        self.vis_train_interval = None
-        self.wandb_log = None
+    # experiment optionals
+    description: str | None = None
+    output_dir: str | None = None
+    test_interval: int | None = None
+    vis_train_interval: int | None = None
+    wandb_log: bool = True
 
-        # data
-        self.dataset = None
-        self.n_train = None
-        self.n_test = None
-        self.seed = None
-        self.class_idx = None
+    # training optionals
+    label_conditioning: bool = False
+    optimizer: str = "adam"
+    weight_decay: float = 0
+    momentum: float = 0
 
-        # train
-        self.batch_size = None
-        self.epochs = None
-        self.learning_rate = None
+    # data optionals
+    n_train: int | None = None
+    n_test: int | None = None
+    seed: int | None = None
+    class_idx: int | None = None
 
-        # model
-        self.model_name = None
+    # model optionals (some model require a config, others don't)
+    model_config: dict | None = None
 
     def to_dict(self):
         """Convert the configuration to a dictionary
@@ -42,7 +53,7 @@ class TrainConfig:
         Returns:
             dict: Configuration dictionary
         """
-        return self.__dict__
+        return asdict(self)
 
     @classmethod
     def from_dict(cls, config: dict):
@@ -52,53 +63,47 @@ class TrainConfig:
             config (dict): Configuration dictionary
 
         Returns:
-            Config: Configuration object
+            TrainConfig: Configuration object
         """
 
-        conf = cls()
-        for _, params in config.items():
-            for key, value in params.items():
-                if not hasattr(conf, key):
-                    print(
-                        f"Warning: {key} is not a valid parameter as part of the configuration. It will be ignored."
-                    )
-                setattr(conf, key, value)
+        try:
+            instance = cls(**config)
+        except TypeError as err:
+            print(config)
+            raise TypeError(err)
 
-                if key == "name":
-                    outdir = f"artifacts/{value}_output"
-                    setattr(conf, "output_dir", outdir)
+        instance.make_directories()
+        instance.integrity_check()
 
-                    os.makedirs(f"{outdir}/models/", exist_ok=True)
-                    os.makedirs(f"{outdir}/visuals/", exist_ok=True)
-                    os.makedirs(f"{outdir}/plots/", exist_ok=True)
+        return instance
 
-        conf.integrity_check()
+    def make_directories(self):
+        outdir = f"artifacts/{self.experiment_name}"
 
-        return conf
+        if os.path.exists(outdir):  # if dir exists, create new with "_n" suffix
+            artifacts_dir = os.listdir("artifacts")
+            dirs_with_same_name = [
+                d for d in artifacts_dir if self.experiment_name in d
+            ]
+            n = len(dirs_with_same_name)
+            outdir = f"{outdir}_{n}"
+
+        self.output_dir = outdir
+        os.makedirs(f"{outdir}/models/", exist_ok=True)
+        os.makedirs(f"{outdir}/visuals/", exist_ok=True)
+        os.makedirs(f"{outdir}/plots/", exist_ok=True)
 
     def integrity_check(self):
         """Check if the configuration is complete"""
-        for key, value in self.__dict__.items():
-            if value is None:
-                if key not in [
-                    "description",
-                    "test_interval",
-                    "vis_train_interval",
-                    "n_train",
-                    "n_test",
-                    "class_idx",
-                ]:
-                    raise ValueError(f"Parameter {key} is not set in the configuration")
+        if self.dataset not in AVAIL_DATASETS:
+            raise ValueError(
+                f"Dataset {self.dataset} is not available. Choose from {AVAIL_DATASETS}"
+            )
 
-            if key == "dataset" and value not in AVAIL_DATASETS:
-                raise ValueError(
-                    f"Dataset {value} is not available. Choose from {AVAIL_DATASETS}"
-                )
-
-            if key == "model_name" and value not in AVAIL_MODELS:
-                raise ValueError(
-                    f"Model {value} is not available. Choose from {AVAIL_MODELS}"
-                )
+        if self.model_name not in AVAIL_MODELS:
+            raise ValueError(
+                f"Model {self.model_name} is not available. Choose from {AVAIL_MODELS}"
+            )
 
     def __str__(self):
         """Return a string representation of the configuration"""
@@ -107,8 +112,54 @@ class TrainConfig:
     def get_model(self):
         """Return the model based on the model name"""
         if self.model_name == "vae":
-            return BaselineVariationalAutoencoder()
-        elif self.model_name == "autoencoder":
+            if self.model_config is None:
+                raise ValueError("VAE needs config!")
+            config = BaselineVAEConfig(**self.model_config)
+            return BaselineVAE(config)
+
+        if self.model_name == "autoencoder":
             return BaselineAutoencoder()
 
+        if self.model_name == "vqvae":
+            if self.model_config is None:
+                raise ValueError("VQ-VAE needs model config!")
+            config = VQVAEConfig(**self.model_config)
+            return VQVAE(config)
+
+        if self.model_name == "pixelcnn":
+            if self.model_config is None:
+                raise ValueError("PixelCNN needs model config!")
+            config = PixelCNNConfig(**self.model_config)
+            return PixelCNN(config)
+
         raise ValueError(f"Model {self.model_name} is not available.")
+
+    def get_optimizer(self, model: nn.Module):
+        """Return the optimizer object."""
+        if self.optimizer == "adam":
+            return AdamW(
+                model.parameters(),
+                lr=self.learning_rate,
+                weight_decay=self.weight_decay,
+            )
+        if self.optimizer == "rmsprop":
+            return RMSprop(
+                model.parameters(),
+                lr=self.learning_rate,
+                weight_decay=self.weight_decay,
+                momentum=self.momentum,
+            )
+        if self.optimizer == "sgd":
+            return SGD(
+                model.parameters(),
+                lr=self.learning_rate,
+                weight_decay=self.weight_decay,
+            )
+        if self.optimizer == "adamax":
+            return Adamax(
+                model.parameters(),
+                lr=self.learning_rate,
+                weight_decay=self.weight_decay,
+            )
+        else:
+            raise ValueError(f"Unknown optimizer: {self.optimizer}")
