@@ -22,8 +22,8 @@ FIXED_HYPERPARAMS = {
     "dataset": "imagenet",
     "experiment_name": EXPERIMENT_NAME,
     "model_name": "vqvae",
-    "n_test": 1000,
-    "n_train": 5000,
+    "n_test": 5000,
+    "n_train": 100000,
     "test_interval": 1,
     "vis_train_interval": 1,
     "epochs": 15,
@@ -35,7 +35,7 @@ VQVAE_HYPERPARAMETER_SEARCH_SPACE = [
     {
         "name": "hidden_dimension",
         "type": "choice",
-        "values": [64, 128, 256, 512],
+        "values": [64, 128, 256],
         "sort_values": True,
         "is_ordered": True,
     },
@@ -54,10 +54,18 @@ VQVAE_HYPERPARAMETER_SEARCH_SPACE = [
         "is_ordered": True,
     },
     {
+        "name": "codebook_initialization_radius",
+        "type": "choice",
+        "values": [0.01, 0.5, 1, 2],
+        "sort_values": True,
+        "is_ordered": True,
+    },
+    {
         "name": "commitment_weight",
-        "type": "range",
-        "bounds": [0.01, 10.0],
-        "log_scale": True,
+        "type": "choice",
+        "values": [0.0, 0.25, 1, 4, 10],
+        "sort_values": True,
+        "is_ordered": True,
     },
 ]
 
@@ -87,27 +95,24 @@ PIXELCNN_HYPERPARAMETER_SEARCH_SPACE = [
 TRAINING_HYPERPARAMETER_SEARCH_SPACE = [
     {
         "name": "learning_rate",
-        "type": "range",
-        "bounds": [1e-6, 1e-1],
-        "log_scale": True,
-    },
-    {
-        "name": "batch_size",
         "type": "choice",
-        "values": [64, 128, 256],
+        "values": [1e-4, 1e-3],
         "sort_values": True,
         "is_ordered": True,
     },
     {
-        "name": "momentum",
-        "type": "range",
-        "bounds": [0.0, 0.999],
+        "name": "batch_size",
+        "type": "choice",
+        "values": [32, 64, 128],
+        "sort_values": True,
+        "is_ordered": True,
     },
     {
         "name": "weight_decay",
-        "type": "range",
-        "bounds": [1e-6, 1e-1],
-        "log_scale": True,
+        "type": "choice",
+        "values": [1e-4, 1e-3, 1e-2, 1e-1],
+        "sort_values": True,
+        "is_ordered": True,
     },
 ]
 
@@ -126,13 +131,7 @@ def test(parameters):
 
     train_config = train_config | FIXED_HYPERPARAMS
 
-    # train_config["epochs"] = get_adaptive_number_of_epochs(
-    #     lr=train_config["learning_rate"],
-    #     n=train_config["n_train"],
-    #     bs=train_config["batch_size"],
-    #     total_length=1,
-    #     max_epochs=20,
-    # )
+    train_config["epochs"] = 5 * (train_config["batch_size"] // 32)
 
     train_config = TrainConfig.from_dict(train_config)
 
@@ -153,10 +152,10 @@ class SlurmJobQueueClient:
             "/home/space/datasets:/home/space/datasets pml.sif python",
         )
         self.training_executor.update_parameters(
-            slurm_partition="gpu-teaching-5h",
+            slurm_partition="gpu-teaching-2d",
             slurm_gpus_per_node=1,
             slurm_cpus_per_task=1,
-            timeout_min=300,
+            timeout_min=1200,
             slurm_job_name="hyper_param_opt",
             slurm_additional_parameters={
                 "chdir": running_dir,
