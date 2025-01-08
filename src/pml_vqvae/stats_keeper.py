@@ -65,11 +65,20 @@ class StatsKeeper:
         Returns:
             str: A string representation of the stats
         """
+
+        def _add(stats, key, val):
+            if isinstance(val, (float, int)):
+                stats.setdefault(key, []).append(val)
+            elif isinstance(val, set):
+                stats[key] = stats.setdefault(key, val).union(val)
+            else:
+                raise ValueError("Not implemented")
+
         for key, value in stats.items():
             if train:
-                self.train_batch_stats.setdefault(key, []).append(value)
+                _add(self.train_batch_stats, key, value)
             else:
-                self.test_batch_stats.setdefault(key, []).append(value)
+                _add(self.test_batch_stats, key, value)
 
         if train:
             self.example_cnt += batch_size
@@ -85,9 +94,16 @@ class StatsKeeper:
             train (bool, optional): Whether this is a training epoch. Defaults to True.
         """
 
+        def _summarize(v):
+            if isinstance(v, list):
+                return sum(v) / len(v)
+            if isinstance(v, set):
+                return len(v)
+            raise ValueError("only list and set implemented.")
+
         if train:
             train_epoch_stats = {
-                k: sum(v) / len(v) for k, v in self.train_batch_stats.items()
+                k: _summarize(v) for k, v in self.train_batch_stats.items()
             }
 
             for key, value in train_epoch_stats.items():
@@ -96,7 +112,7 @@ class StatsKeeper:
             self.train_batch_stats = {}
         else:
             test_epoch_stats = {
-                k: sum(v) / len(v) for k, v in self.test_batch_stats.items()
+                k: _summarize(v) for k, v in self.test_batch_stats.items()
             }
 
             for key, value in test_epoch_stats.items():

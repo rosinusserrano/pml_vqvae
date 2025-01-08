@@ -72,6 +72,7 @@ class VQVAEConfig:
     commitment_weight: float
     hidden_dimension: int
     embedding_dimension: int
+    codebook_initialization_radius: float
     name: str = "VQVAE"
 
 
@@ -94,8 +95,8 @@ class VQVAE(PML_model):
             torch.zeros(
                 (config.codebook_size, config.embedding_dimension)
             ).data.uniform_(
-                -1 / self.config.codebook_size,
-                1 / self.config.codebook_size,
+                -config.codebook_initialization_radius,
+                config.codebook_initialization_radius,
             ),
             requires_grad=True,
         )
@@ -133,7 +134,7 @@ class VQVAE(PML_model):
         return self.decoder(codes)
 
     def loss_fn(self, model_outputs: torch.Tensor, target: torch.Tensor):
-        reconstruction, encoder_out, codes, _ = model_outputs
+        reconstruction, encoder_out, codes, indexes = model_outputs
 
         reconstruction = F.mse_loss(reconstruction, target)
 
@@ -149,6 +150,7 @@ class VQVAE(PML_model):
             "Reconstruction": reconstruction.item(),
             "Commitment (encoder)": encoder_commitment.item(),
             "Commitment (codes)": codes_commitment.item(),
+            "Code usage": set(indexes.flatten().tolist()),
         }
 
         return loss
