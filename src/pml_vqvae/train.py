@@ -151,7 +151,7 @@ def train(config: TrainConfig):
     stats_keeper = StatsKeeper()
 
     last_average_test_loss = None
-
+    image = None
     print("Training model...")
     for i in range(config.epochs):
         # train on all datat for one epoch
@@ -168,7 +168,15 @@ def train(config: TrainConfig):
         #            latents_file.write(model.forward(batch))
         #        with open(f"/home/pml11/ep{i}_codebook", "w") as codebook_file:
         #            codebook_file.write(model.codebook.detach())
+        if image is None:
+            image = batch[0:1]
         print(model.codebook.detach())
+        with open(f"test{i}.file", "w") as file:
+            file.write("Codebook\n")
+            file.write(str(model.codebook.detach()))
+            file.write("Images\n")
+            file.write(str(image[0]))
+            file.write(str(model.forward(image)[0]))
         # test
         if (
             config.test_interval and i % config.test_interval == 0
