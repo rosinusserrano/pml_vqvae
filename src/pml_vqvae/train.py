@@ -181,7 +181,7 @@ def train(config: TrainConfig):
             codes, indexes = pml_vqvae.models.vqvae.VectorQuantization.apply(
                 model.encoder(image), model.codebook
             )
-            file.write(str(codes))
+            file.write(str(indexes))
         # test
         if (
             config.test_interval and i % config.test_interval == 0
