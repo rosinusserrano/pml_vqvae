@@ -175,7 +175,7 @@ def train(config: TrainConfig):
         with open(f"test{i}.file", "w") as file:
             file.write("Codebook\n")
             file.write(str(model.codebook.detach()))
-            file.write("Images\n")
+            file.write("\nImages\n")
             file.write(str(image[0]) + "\nForward\n")
             file.write(str(model.encoder(image)[0]) + "\nCodes\n")
             codes, indexes = pml_vqvae.models.vqvae.VectorQuantization.apply(
