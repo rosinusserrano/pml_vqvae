@@ -164,10 +164,11 @@ def train(config: TrainConfig):
         )
         print(f"Batch images are in range [{batch.min()}, {batch.max()}]")
         wandb_wrapper.construct_examples(batch, model.visualize_output(output))
-        with open(f"/home/pml11/ep{i}_latents", "w") as latents_file:
-            latents_file.write(model.forward(batch))
-        with open(f"/home/pml11/ep{i}_codebook", "w") as codebook_file:
-            codebook_file.write(model.codebook.detach())
+        #        with open(f"/home/pml11/ep{i}_latents", "w") as latents_file:
+        #            latents_file.write(model.forward(batch))
+        #        with open(f"/home/pml11/ep{i}_codebook", "w") as codebook_file:
+        #            codebook_file.write(model.codebook.detach())
+        print(model.codebook.detach())
         # test
         if (
             config.test_interval and i % config.test_interval == 0

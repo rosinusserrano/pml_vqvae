@@ -101,6 +101,7 @@ class VQVAE(PML_model):
             ),
             requires_grad=True,
         )
+        print(self.codebook.detach())
 
         self.decoder = nn.Sequential(
             ResidualBlock(config.embedding_dimension, config.hidden_dimension),
