@@ -5,9 +5,12 @@ from torchvision.utils import make_grid
 import numpy as np
 import matplotlib.pyplot as plt
 import json
+import matplotlib.patches as mpatches
 
 
-def show(x: torch.Tensor, outfile: str = None, imgs_per_row: int = 8):
+def show(
+    x: torch.Tensor, outfile: str = None, imgs_per_row: int = 8, title: str = None
+):
     """Plot a grid of images.
 
     `x`: A `torch.Tensor` of shape (batch_size x n_channels x
@@ -36,18 +39,22 @@ def show(x: torch.Tensor, outfile: str = None, imgs_per_row: int = 8):
     # Show the images
     plt.imshow(image_grid)
 
+    plt.title(title)
+
     # Remove tick labels and black border
     plt.axis("off")
 
     # If we specified a directory to save the plot save it,
     # otherwise simply show it.
     if outfile is not None:
-        plt.savefig(outfile)
+        plt.savefig(
+            outfile,
+        )
     else:
         plt.show()
 
 
-def violin_plot(data: list, labels: list, title: str):
+def violin_plot(data: list, labels: list, title: str, ylabel: str):
     """Plot a violin plot of the data.
 
     `data`: A list of lists of data points. Each list of data
@@ -69,11 +76,15 @@ def violin_plot(data: list, labels: list, title: str):
         "cyan",
     ]
 
+    patches = [mpatches.Patch(color=colors[i % len(colors)]) for i in range(len(data))]
+    mean = [np.round(np.mean(d), 3) for d in data]
+    l = [f"mean: {m}" for m in mean]
+
     vp = plt.violinplot(
         data,
-        showmeans=False,
-        showmedians=True,
-        showextrema=False,
+        showmeans=True,
+        showmedians=False,
+        showextrema=True,
         positions=range(len(data)),
         # quantiles=[[0.25, 0.5, 0.75], [0.25, 0.5, 0.75]],
     )
@@ -81,11 +92,14 @@ def violin_plot(data: list, labels: list, title: str):
     for i, body in enumerate(vp["bodies"]):
         body.set_facecolor(colors[i % len(colors)])
 
-    plt.xlabel("Data")
+    plt.legend(patches, l)
+
+    # plt.xlabel("Data")
     plt.xticks(range(len(data)), labels)
-    plt.ylabel("Error")
+    plt.ylabel(ylabel)
     plt.title(title)
     plt.savefig(filename)
+    plt.clf()
 
 
 if __name__ == "__main__":
@@ -93,14 +107,31 @@ if __name__ == "__main__":
     # data2 = np.random.normal(2, 1, 100)
 
     json_path = "artifacts/samples/fids.json"
+    json_path_2 = "artifacts/samples/fids_train_test.json"
+    json_path_3 = "artifacts/samples/fids_random.json"
 
     # read json file
     with open(json_path, "r") as f:
-        data = json.load(f)
+        data1 = json.load(f)
 
-    values = list(data.values())
+    with open(json_path_2, "r") as f:
+        data2 = json.load(f)
 
-    violin_plot([values], ["A"], "Title")
+    with open(json_path_3, "r") as f:
+        data3 = json.load(f)
+
+    values1 = list(data1.values())
+    print("mean: ", np.mean(values1))
+    values2 = list(data2.values())
+    print("mean: ", np.mean(values2))
+    values3 = list(data3.values())
+    print("mean: ", np.mean(values3))
+
+    violin_plot(
+        [values1, values2, values3],
+        ["Generations", "Train/Test", "Random"],
+        "FID Scores",
+    )
 
     # from pytorch_fid import fid_score
 

@@ -6,28 +6,25 @@ from torcheval.metrics import FrechetInceptionDistance
 import json
 
 from pml_vqvae.dataset.dataloader import load_data
+from pml_vqvae.visuals import show
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 if __name__ == "__main__":
 
     generated_images_dir = "artifacts/samples/"
-    samples_per_class = 5
+    samples_per_class = 50
 
     transform_1 = transforms.Compose(
         [
-            # transforms.Pad((85, 85, 86, 86)),
             transforms.Resize(299),
             transforms.ToTensor(),
-            # transforms.Normalize(mean=[0.0, 0.0, 0.0], std=[255.0, 255.0, 255.0]),
         ]
     )
 
     transform_2 = transforms.Compose(
         [
-            # transforms.Pad((85, 85, 86, 86)),
-            transforms.CenterCrop(299),
-            transforms.Normalize(mean=[0.0, 0.0, 0.0], std=[255.0, 255.0, 255.0]),
+            transforms.Resize(299),
         ]
     )
 
@@ -47,9 +44,9 @@ if __name__ == "__main__":
         class_idx = os.path.basename(gen_pt).split(".")[0]
         class_idx = int(class_idx)
 
-        _, testloader = load_data(
+        trainloader, testloader = load_data(
             "imagenet",
-            n_train=0,
+            n_train=samples_per_class * 1000,
             n_test=samples_per_class * 1000,
             class_idx=[i],
             batch_size=samples_per_class,
@@ -59,10 +56,23 @@ if __name__ == "__main__":
         t, _ = next(iter(testloader))
         t = (t + 1) / 2
         t = transform_2(t).to(DEVICE)
-        fid.update(t, is_real=True)
+        t = t.clamp(0, 1)
 
-        gen = torch.load(gen_pt).to(DEVICE)
-        fid.update(gen, is_real=False)
+        # show(t.cpu(), "real.png")
+
+        fid.update(t.to(DEVICE), is_real=True)
+
+        # t, _ = next(iter(trainloader))
+        # t = (t + 1) / 2
+        # t = transform_2(t).to(DEVICE)
+        # t = t.clamp(0, 1)
+
+        # t = torch.rand((samples_per_class, 3, 299, 299))
+
+        gen = torch.load(gen_pt, weights_only=True).to(DEVICE)
+
+        # show(gen.cpu(), "fake.png")
+        fid.update(gen.to(DEVICE), is_real=False)
 
         fid_value = fid.compute()
 

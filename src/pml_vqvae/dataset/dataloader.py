@@ -61,7 +61,9 @@ def load_data(
 
         train_transforms = v2.Compose(
             [
-                v2.RandomResizedCrop(size=(128, 128), antialias=True, scale=(0.1, 1.0)),
+                v2.RandomResizedCrop(
+                    size=(128, 128), antialias=True, scale=(0.1, 1.0), ratio=(1.0, 1.0)
+                ),
                 v2.RandomHorizontalFlip(p=0.5),
                 v2.ToDtype(torch.float32, scale=True),
                 v2.Normalize(mean=[125, 125, 125], std=[125, 125, 125]),
@@ -71,7 +73,9 @@ def load_data(
 
         test_transforms = v2.Compose(
             [
-                v2.RandomResizedCrop(size=(128, 128), antialias=True, scale=(1.0, 1.0)),
+                v2.RandomResizedCrop(
+                    size=(128, 128), antialias=True, scale=(0.1, 1.0), ratio=(1.0, 1.0)
+                ),
                 v2.ToDtype(torch.float32, scale=True),
                 v2.Normalize(mean=[125, 125, 125], std=[125, 125, 125]),  # -> [0, 1]
                 # v2.Normalize(
