@@ -171,8 +171,9 @@ def train(config: TrainConfig):
         #            codebook_file.write(model.codebook.detach())
         if image is None:
             image = batch[0:1]
+        torch.set_printoptions(threshold=10_000)
         print(model.codebook.detach())
-        with open(f"test{i}.file", "w") as file:
+        with open(f"test{i}_newest.file", "w") as file:
             file.write("Codebook\n")
             file.write(str(model.codebook.detach()))
             file.write("\nImages\n")
