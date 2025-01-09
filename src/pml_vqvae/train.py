@@ -5,6 +5,7 @@ import torch
 from torch.optim import Optimizer
 from torchvision.transforms import v2
 import yaml
+import pml_vqvae.models.vqvae
 from tqdm.auto import tqdm
 from pml_vqvae.stats_keeper import StatsKeeper
 from pml_vqvae.wandb_wrapper import WANDBWrapper
@@ -175,8 +176,12 @@ def train(config: TrainConfig):
             file.write("Codebook\n")
             file.write(str(model.codebook.detach()))
             file.write("Images\n")
-            file.write(str(image[0]))
-            file.write(str(model.forward(image)[0]))
+            file.write(str(image[0]) + "\nForward\n")
+            file.write(str(model.encoder(image)[0]) + "\nCodes\n")
+            codes, indexes = pml_vqvae.models.vqvae.VectorQuantization.apply(
+                model.encoder(image), model.codebook
+            )
+            file.write(str(codes))
         # test
         if (
             config.test_interval and i % config.test_interval == 0
