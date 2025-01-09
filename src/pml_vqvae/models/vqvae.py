@@ -83,6 +83,7 @@ class VQVAE(PML_model):
         super().__init__()
 
         self.config = config
+        self.config.codebook_initialization_radius = 0.5
 
         self.encoder = nn.Sequential(
             downsample(3, config.hidden_dimension),
