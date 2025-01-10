@@ -248,6 +248,6 @@ if __name__ == "__main__":
     # # Overwrite config when cli arguments are provided
     # config = cli_handler.adjust_config(config, args)
 
-    print(f"Starting training with the following onconfiguration:\n\n{config}\n")
+    print(f"Starting training with the following on configuration:\n\n{config}\n")
 
     train(config)
