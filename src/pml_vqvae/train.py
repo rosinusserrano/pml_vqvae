@@ -119,9 +119,11 @@ def train_epoch(
                     unused_codes[i] += 1
                     if unused_codes[i] == 3:
                         print(batch.size())
-                        model.codebook[i] = model.encode(batch[randint(0, len(batch))])[
-                            randint(0, 32)
-                        ][randint(0, 32)]
+                        x = model.encode(
+                            torch.unsqueeze(batch[randint(0, len(batch))], 0)
+                        )
+                        print(x.size())
+                        model.codebook[i] = x[randint(0, 32)][randint(0, 32)]
                         print(f"Replaced unused code {i}")
     # create epoch level stats
     stats_keeper.batch_summarize()
