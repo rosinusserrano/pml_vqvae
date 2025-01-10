@@ -14,6 +14,9 @@ from pml_vqvae.cli_handler import CLI_handler
 from pml_vqvae.train_config import TrainConfig
 from pml_vqvae.dataset.dataloader import load_data
 
+import torch.nn.functional as F
+import matplotlib.pyplot as plt
+
 # import wandb
 DEFAULT_CONFIG = "config.yaml"
 
@@ -102,6 +105,7 @@ def train_epoch(
 
         # collect all stats in Object for later plotting
         dsp = stats_keeper.add_batch_stats(model.batch_stats, len(batch))
+        print(model.batch_stats)
 
         # make a nice progress bar
         train_tqdm.set_description(dsp)
@@ -174,25 +178,6 @@ def train(config: TrainConfig):
         if image is None:
             image = batch[0:1]
         torch.set_printoptions(threshold=100_000)
-        with open(f"test{i}_newest.file", "w") as file:
-            file.write("Codebook\n")
-            file.write(str(model.codebook.detach()))
-            file.write("\nAVERAGE CODEBOOK VEKTOR LENGTH:\n")
-            file.write(
-                str(torch.mean(torch.linalg.norm(model.codebook.detach(), dim=0)))
-            )
-            file.write("\n\nImage after encode\n")
-            file.write(str(model.encoder(image)[0]))
-            file.write("\nAVERAGE LATENT VEKTOR LENGTH\n")
-            file.write(
-                str(torch.mean(torch.linalg.norm(model.encoder(image)[0][10]), dim=0))
-            )
-            file.write("\n\nCodes\n")
-            codes, indexes = pml_vqvae.models.vqvae.VectorQuantization.apply(
-                model.encoder(image), model.codebook
-            )
-            file.write(str(indexes))
-            file.write(str(codes))
 
         # test
         if (
