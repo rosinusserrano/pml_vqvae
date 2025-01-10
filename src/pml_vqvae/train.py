@@ -120,7 +120,7 @@ def train_epoch(
             for i in range(len(model.codebook.detach())):
                 if i not in model.batch_stats["Code usage"]:
                     unused_codes[i] += 1
-                    if unused_codes[i] == 5:
+                    if unused_codes[i] == 20:
                         unused_codes[i] = 0
                         # print(batch.size())
                         x = model.encoder(
