@@ -129,6 +129,7 @@ def train_epoch(
                         x = torch.permute(x, (0, 2, 3, 1))
                         # print(x.size())
                         model.codebook[i] = x[0][randint(0, 31)][randint(0, 31)]
+                        replaced_codes += 1
                 else:
                     unused_codes[i] = 0
     # create epoch level stats
