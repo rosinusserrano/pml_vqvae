@@ -111,9 +111,11 @@ def train_epoch(
         train_tqdm.set_description(dsp)
 
         optimizer.step()
+        print(model.batch_stats)
+        print(model.batch_stats["Code usage"])
         with torch.no_grad():
             for i in range(len(model.codebook.detach())):
-                if i not in model.batch_stats["Code_usage"]:
+                if i not in model.batch_stats["Code usage"]:
                     unused_codes[i] += 1
                     if unused_codes[i] == 3:
                         model.codebook[i] = batch[randint(0, len(batch))][
