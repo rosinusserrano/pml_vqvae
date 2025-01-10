@@ -154,6 +154,8 @@ def train(config: TrainConfig):
     last_average_test_loss = None
     image = None
     print("Training model...")
+    lowest_test_loss = 9999999999999
+    patience = 3
     for i in range(config.epochs):
         # train on all datat for one epoch
         batch, output, _ = train_epoch(
@@ -171,17 +173,20 @@ def train(config: TrainConfig):
         #            codebook_file.write(model.codebook.detach())
         if image is None:
             image = batch[0:1]
-        torch.set_printoptions(threshold=10_000)
+        torch.set_printoptions(threshold=100_000)
         with open(f"test{i}_newest.file", "w") as file:
             file.write("Codebook\n")
             file.write(str(model.codebook.detach()))
-            file.write("\nImages\n")
-            file.write(str(image[0]) + "\nForward\n")
-            file.write(str(model.encoder(image)[0]) + "\nCodes\n")
+            file.write("\n\nImages\n")
+            file.write(str(image[0]))
+            file.write("\n\nAfter encode\n")
+            file.write(str(model.encoder(image)[0]))
+            file.write("\n\nCodes\n")
             codes, indexes = pml_vqvae.models.vqvae.VectorQuantization.apply(
                 model.encoder(image), model.codebook
             )
             file.write(str(indexes))
+            file.write(str(codes))
 
         # test
         if (
@@ -208,6 +213,19 @@ def train(config: TrainConfig):
         model_dir = stats_keeper.save_model(model, config.output_dir, epoch=i)
         wandb_wrapper.save_model(model_dir)
         print(epoch_stats)
+
+        if last_average_test_loss < lowest_test_loss * 0.98:
+            lowest_test_loss = last_average_test_loss
+            patience = 3
+        else:
+            patience -= 1
+            print(
+                f"Test performance not significantly increased, patience left: {patience}"
+            )
+
+        if patience == 0:
+            print("No improvement. Stopping training...")
+            break
 
     # save final model
     print("Saving model...")
