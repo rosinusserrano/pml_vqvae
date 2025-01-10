@@ -129,10 +129,11 @@ def train_epoch(
                         x = torch.permute(x, (0, 2, 3, 1))
                         # print(x.size())
                         model.codebook[i] = x[0][randint(0, 31)][randint(0, 31)]
-                        print(f"Replaced {replaced_codes} because they were not used")
                 else:
                     unused_codes[i] = 0
     # create epoch level stats
+    print(f"Replaced {replaced_codes} because they were not used")
+
     stats_keeper.batch_summarize()
 
     return batch, output, loss.item()
