@@ -15,7 +15,7 @@ import pml_vqvae.train
 warnings.simplefilter(action="ignore", category=FutureWarning)
 
 
-EXPERIMENT_NAME = "hyperopt-VI-train5k-test1k-robust"
+EXPERIMENT_NAME = "hyperopt-VIII-lesser-train-params"
 
 
 FIXED_HYPERPARAMS = {
@@ -56,14 +56,14 @@ VQVAE_HYPERPARAMETER_SEARCH_SPACE = [
     {
         "name": "codebook_initialization_radius",
         "type": "choice",
-        "values": [0.01, 0.5, 1, 2],
+        "values": [0.01, 0.5, 1.0, 2.0],
         "sort_values": True,
         "is_ordered": True,
     },
     {
         "name": "commitment_weight",
         "type": "choice",
-        "values": [0.0, 0.25, 1, 4, 10],
+        "values": [0.25, 4.0, 7.0, 10.0],
         "sort_values": True,
         "is_ordered": True,
     },
