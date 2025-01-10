@@ -118,6 +118,7 @@ def train_epoch(
                 if i not in model.batch_stats["Code usage"]:
                     unused_codes[i] += 1
                     if unused_codes[i] == 3:
+                        print(batch.size)
                         model.codebook[i] = batch[randint(0, len(batch))][
                             randint(0, 32)
                         ][randint(0, 32)]
