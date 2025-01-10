@@ -1,5 +1,5 @@
 "Python script to train different models"
-
+import numpy as np
 from torch.utils.data import DataLoader
 import torch
 from torch.optim import Optimizer
@@ -15,6 +15,8 @@ from pml_vqvae.dataset.dataloader import load_data
 
 # import wandb
 DEFAULT_CONFIG = "config.yaml"
+PATIENCE = 3
+PERFORMANCE_THRESHOLD_ES = 0.98
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -151,7 +153,8 @@ def train(config: TrainConfig):
     stats_keeper = StatsKeeper()
 
     last_average_test_loss = None
-
+    best_average_test_loss = float("inf")
+    patience = PATIENCE
     print("Training model...")
     for i in range(config.epochs):
         # train on all datat for one epoch
@@ -190,6 +193,19 @@ def train(config: TrainConfig):
         model_dir = stats_keeper.save_model(model, config.output_dir, epoch=i)
         wandb_wrapper.save_model(model_dir)
         print(epoch_stats)
+
+        if last_average_test_loss < best_average_test_loss * PERFORMANCE_THRESHOLD_ES:
+            patience = PATIENCE
+            best_average_test_loss = last_average_test_loss
+        else:
+            patience -= 1
+            print(f"No significant increase in performance. Patience left {patience}")
+
+        if patience == 0:
+            print(
+                f"No significant increase in performance in {PATIENCE} epochs. Stopping training."
+            )
+            break
 
     # save final model
     print("Saving model...")

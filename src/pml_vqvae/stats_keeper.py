@@ -74,6 +74,12 @@ class StatsKeeper:
             else:
                 raise ValueError("Not implemented")
 
+        def _format(val):
+            if isinstance(val, (float, int)):
+                return f"{val:.4f}"
+            if isinstance(val, set):
+                return len(val)
+
         for key, value in stats.items():
             if train:
                 _add(self.train_batch_stats, key, value)
@@ -84,7 +90,7 @@ class StatsKeeper:
             self.example_cnt += batch_size
 
         return f"[{'train' if train else 'test'}] " + " | ".join(
-            [f"{k}: {v:.4f}" for k, v in stats.items() if isinstance(v, (int, float))]
+            [f"{k}: {_format(v)}" for k, v in stats.items()]
         )
 
     def batch_summarize(self, train: bool = True):
