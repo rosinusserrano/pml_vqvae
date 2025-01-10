@@ -172,7 +172,6 @@ def train(config: TrainConfig):
         if image is None:
             image = batch[0:1]
         torch.set_printoptions(threshold=10_000)
-        print(model.codebook.detach())
         with open(f"test{i}_newest.file", "w") as file:
             file.write("Codebook\n")
             file.write(str(model.codebook.detach()))
@@ -183,6 +182,7 @@ def train(config: TrainConfig):
                 model.encoder(image), model.codebook
             )
             file.write(str(indexes))
+
         # test
         if (
             config.test_interval and i % config.test_interval == 0
