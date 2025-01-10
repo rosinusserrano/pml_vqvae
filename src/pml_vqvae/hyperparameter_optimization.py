@@ -15,7 +15,7 @@ import pml_vqvae.train
 warnings.simplefilter(action="ignore", category=FutureWarning)
 
 
-EXPERIMENT_NAME = "hyperopt-VIII-lesser-train-params"
+EXPERIMENT_NAME = "hyperopt-IX-break-if-not-improving"
 
 
 FIXED_HYPERPARAMS = {
@@ -26,7 +26,7 @@ FIXED_HYPERPARAMS = {
     "n_train": 100000,
     "test_interval": 1,
     "vis_train_interval": 1,
-    "epochs": 15,
+    "epochs": 20,
     "optimizer": "adam",
 }
 
@@ -56,14 +56,14 @@ VQVAE_HYPERPARAMETER_SEARCH_SPACE = [
     {
         "name": "codebook_initialization_radius",
         "type": "choice",
-        "values": [0.01, 0.5, 1.0, 2.0],
+        "values": [0.01, 0.5, 1.0, 2.0, 10.0],
         "sort_values": True,
         "is_ordered": True,
     },
     {
         "name": "commitment_weight",
         "type": "choice",
-        "values": [0.25, 4.0, 7.0, 10.0],
+        "values": [2.0, 4.0, 7.0, 10.0],
         "sort_values": True,
         "is_ordered": True,
     },
@@ -131,7 +131,7 @@ def test(parameters):
 
     train_config = train_config | FIXED_HYPERPARAMS
 
-    train_config["epochs"] = 5 * (train_config["batch_size"] // 32)
+    # train_config["epochs"] = 5 * (train_config["batch_size"] // 32)
 
     train_config = TrainConfig.from_dict(train_config)
 
