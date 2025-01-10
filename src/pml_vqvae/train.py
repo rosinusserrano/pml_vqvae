@@ -177,8 +177,16 @@ def train(config: TrainConfig):
         with open(f"test{i}_newest.file", "w") as file:
             file.write("Codebook\n")
             file.write(str(model.codebook.detach()))
+            file.write("\nAVERAGE CODEBOOK VEKTOR LENGTH:\n")
+            file.write(
+                str(torch.mean(torch.linalg.norm(model.codebook.detach(), dim=0)))
+            )
             file.write("\n\nImage after encode\n")
             file.write(str(model.encoder(image)[0]))
+            file.write("\nAVERAGE LATENT VEKTOR LENGTH\n")
+            file.write(
+                str(torch.mean(torch.linalg.norm(model.encoder(image)[0][10]), dim=0))
+            )
             file.write("\n\nCodes\n")
             codes, indexes = pml_vqvae.models.vqvae.VectorQuantization.apply(
                 model.encoder(image), model.codebook
