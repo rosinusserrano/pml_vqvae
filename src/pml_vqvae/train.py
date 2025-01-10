@@ -122,6 +122,7 @@ def train_epoch(
                         x = model.encoder(
                             torch.unsqueeze(batch[randint(0, len(batch))], 0)
                         )
+                        x = torch.permute(x, (0, 2, 3, 1))
                         print(x.size())
                         model.codebook[i] = x[0][randint(0, 32)][randint(0, 32)]
                         print(f"Replaced unused code {i}")
