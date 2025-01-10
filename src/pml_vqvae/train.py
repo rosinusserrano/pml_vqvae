@@ -113,7 +113,7 @@ def train_epoch(
         optimizer.step()
         with torch.no_grad():
             for i in range(len(model.codebook.detach())):
-                if i not in model.batch_stats["code_usage"]:
+                if i not in model.batch_stats["Code_usage"]:
                     unused_codes[i] += 1
                     if unused_codes[i] == 3:
                         model.codebook[i] = batch[randint(0, len(batch))][
