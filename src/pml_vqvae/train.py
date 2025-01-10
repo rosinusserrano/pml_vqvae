@@ -154,7 +154,7 @@ def train(config: TrainConfig):
 
     last_average_test_loss = None
     best_average_test_loss = float("inf")
-    patience = PATIENCE
+    patience = config.convergence_patience
     print("Training model...")
     for i in range(config.epochs):
         # train on all datat for one epoch
@@ -194,8 +194,11 @@ def train(config: TrainConfig):
         wandb_wrapper.save_model(model_dir)
         print(epoch_stats)
 
-        if last_average_test_loss < best_average_test_loss * PERFORMANCE_THRESHOLD_ES:
-            patience = PATIENCE
+        if (
+            last_average_test_loss
+            < best_average_test_loss * config.convergence_performance_threshold
+        ):
+            patience = config.convergence_patience
             best_average_test_loss = last_average_test_loss
         else:
             patience -= 1
