@@ -111,20 +111,20 @@ def train_epoch(
         train_tqdm.set_description(dsp)
 
         optimizer.step()
-        print(model.batch_stats)
-        print(model.batch_stats["Code usage"])
+        # print(model.batch_stats)
+        # print(model.batch_stats["Code usage"])
         with torch.no_grad():
             for i in range(len(model.codebook.detach())):
                 if i not in model.batch_stats["Code usage"]:
                     unused_codes[i] += 1
                     if unused_codes[i] == 3:
-                        print(batch.size())
+                        # print(batch.size())
                         x = model.encoder(
                             torch.unsqueeze(batch[randint(0, len(batch))], 0)
                         )
                         x = torch.permute(x, (0, 2, 3, 1))
-                        print(x.size())
-                        model.codebook[i] = x[0][randint(0, 32)][randint(0, 32)]
+                        # print(x.size())
+                        model.codebook[i] = x[0][randint(0, 31)][randint(0, 31)]
                         print(f"Replaced unused code {i}")
     # create epoch level stats
     stats_keeper.batch_summarize()
