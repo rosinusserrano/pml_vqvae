@@ -1,5 +1,5 @@
 "Python script to train different models"
-
+import numpy as np
 from torch.utils.data import DataLoader
 import torch
 from torch.optim import Optimizer
@@ -13,6 +13,7 @@ from pml_vqvae.models.pml_model_interface import PML_model
 from pml_vqvae.cli_handler import CLI_handler
 from pml_vqvae.train_config import TrainConfig
 from pml_vqvae.dataset.dataloader import load_data
+from random import randint
 
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
@@ -92,7 +93,7 @@ def train_epoch(
 
     # for dynamic logging
     train_tqdm = tqdm(train_loader)
-
+    unused_codes = np.zeros(len(model.codebook.detach()))
     for batch, labels in train_tqdm:
         batch = batch.to(DEVICE)
         labels = labels.to(DEVICE)
@@ -105,13 +106,20 @@ def train_epoch(
 
         # collect all stats in Object for later plotting
         dsp = stats_keeper.add_batch_stats(model.batch_stats, len(batch))
-        print(model.batch_stats)
 
         # make a nice progress bar
         train_tqdm.set_description(dsp)
 
         optimizer.step()
-
+        with torch.no_grad():
+            for i in range(len(model.codebook.detach())):
+                if i not in model.batch_stats["code_usage"]:
+                    unused_codes[i] += 1
+                    if unused_codes[i] == 3:
+                        model.codebook[i] = batch[randint(0, len(batch))][
+                            randint(0, 32)
+                        ][randint(0, 32)]
+                        print(f"Replaced unused code {i}")
     # create epoch level stats
     stats_keeper.batch_summarize()
 
