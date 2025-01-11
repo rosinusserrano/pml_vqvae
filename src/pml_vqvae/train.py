@@ -227,6 +227,8 @@ def train(config: TrainConfig):
         wandb_wrapper.save_model(model_dir)
         print(epoch_stats)
 
+        print(epoch_stats)
+
         if last_average_test_loss < lowest_test_loss * 0.98:
             lowest_test_loss = last_average_test_loss
             patience = 3
