@@ -1,25 +1,28 @@
 # experiment config
-experiment_name: "[after hyperopt refactor] VQVAE" # name of the experiment
+experiment_name: "code enforced vqvae realness" # name of the experiment
 description: "" # description of the experiment
 seed: 42 # seed for reproducibility
 test_interval: 1  # test the model every test_interval epochs, None to disable
 vis_train_interval: 1 # plot the training loss every plot_train_interval epochs, None to disable
-wandb_log: False # log the experiment to wandb
+wandb_log: True # log the experiment to wandb
 
 #dataset config
-n_train: 1000 # number of training samples
-n_test: 1000 # number of test samples
+n_train: 200000 # number of training samples
+n_test: 10000 # number of test samples
 dataset: "imagenet" # either cifar or imagenet
 class_idx: null # list of class indices to use, empty list to use all classes
 
 # train config
-batch_size: 256
-epochs: 1
-learning_rate: 0.00025
+batch_size: 128
+epochs: 30
+learning_rate: 0.0001
 label_conditioning: False
+convergence_patience: 3
+convergence_performance_threshold: 0.999
+convergence_key: Reconstruction
 
 # model config
-model_name: "vae" # either autoencoder or vae
+model_name: "vqvae-ce" # either autoencoder or vae
 
 # PixelCNN
 # model_config:
@@ -29,14 +32,15 @@ model_name: "vae" # either autoencoder or vae
 #   input_shape: [28, 28]  # for mnist
 
 # VQVAE
-# model_config:
-#   codebook_size: 512
-#   commitment_weight: 1.0
-#   hidden_dimension: 256
-#   embedding_dimension: 256
+model_config:
+  codebook_size: 512
+  commitment_weight: 4.0
+  hidden_dimension: 256
+  embedding_dimension: 256
+  codebook_initialization_radius: 0.5
 
 # VAE
-model_config:
-  kld_weight: 0.00025
-  latent_dimension: 2
-  hidden_dimension: 128
+# model_config:
+#   kld_weight: 0.00025
+#   latent_dimension: 2
+#   hidden_dimension: 128
