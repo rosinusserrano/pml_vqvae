@@ -49,14 +49,14 @@ VQVAE_HYPERPARAMETER_SEARCH_SPACE = [
     {
         "name": "codebook_initialization_radius",
         "type": "choice",
-        "values": [0.01, 0.5, 1, 2],
+        "values": [0.01, 0.5, 1.0, 2.0],
         "sort_values": True,
         "is_ordered": True,
     },
     {
         "name": "commitment_weight",
         "type": "choice",
-        "values": [1.5, 2, 4, 10],
+        "values": [1.5, 2.0, 4.0, 10.0],
         "sort_values": True,
         "is_ordered": True,
     },
