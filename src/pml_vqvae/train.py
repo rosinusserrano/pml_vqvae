@@ -230,10 +230,12 @@ def train(config: TrainConfig):
         if last_average_reconstruction < lowest_avg_test_reconstruction * 0.98:
             lowest_avg_test_reconstruction = last_average_reconstruction
             patience = 3
+            print(f"Current best test performance: {lowest_avg_test_reconstruction }")
         else:
             patience -= 1
             print(
-                f"Test performance not significantly increased, patience left: {patience}"
+                f"Test performance (reconstr.: {lowest_avg_test_reconstruction}) not significantly increased, "
+                f"patience left: {patience}"
             )
 
         if patience == 0:
