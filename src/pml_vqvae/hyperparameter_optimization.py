@@ -15,18 +15,18 @@ import pml_vqvae.train
 warnings.simplefilter(action="ignore", category=FutureWarning)
 
 
-EXPERIMENT_NAME = "hyperopt-VI-train5k-test1k-robust"
+EXPERIMENT_NAME = "hyperopt_X_with_replacement"
 
 
 FIXED_HYPERPARAMS = {
     "dataset": "imagenet",
     "experiment_name": EXPERIMENT_NAME,
     "model_name": "vqvae",
-    "n_test": 5000,
-    "n_train": 100000,
+    "n_test": 2000,
+    "n_train": 20000,
     "test_interval": 1,
     "vis_train_interval": 1,
-    "epochs": 15,
+    "epochs": 50,
     "optimizer": "adam",
 }
 
@@ -36,13 +36,6 @@ VQVAE_HYPERPARAMETER_SEARCH_SPACE = [
         "name": "hidden_dimension",
         "type": "choice",
         "values": [64, 128, 256],
-        "sort_values": True,
-        "is_ordered": True,
-    },
-    {
-        "name": "embedding_dimension",
-        "type": "choice",
-        "values": [64, 128, 256, 512],
         "sort_values": True,
         "is_ordered": True,
     },
@@ -63,7 +56,7 @@ VQVAE_HYPERPARAMETER_SEARCH_SPACE = [
     {
         "name": "commitment_weight",
         "type": "choice",
-        "values": [0.0, 0.25, 1, 4, 10],
+        "values": [1.5, 2, 4, 10],
         "sort_values": True,
         "is_ordered": True,
     },
@@ -110,7 +103,7 @@ TRAINING_HYPERPARAMETER_SEARCH_SPACE = [
     {
         "name": "weight_decay",
         "type": "choice",
-        "values": [1e-4, 1e-3, 1e-2, 1e-1],
+        "values": [1e-4, 1e-3, 1e-2],
         "sort_values": True,
         "is_ordered": True,
     },
@@ -131,7 +124,7 @@ def test(parameters):
 
     train_config = train_config | FIXED_HYPERPARAMS
 
-    train_config["epochs"] = 5 * (train_config["batch_size"] // 32)
+    train_config["embedding_dimension"] = train_config["hidden_dimension"]
 
     train_config = TrainConfig.from_dict(train_config)
 
@@ -144,7 +137,7 @@ def test(parameters):
 class SlurmJobQueueClient:
     def __init__(self):
         log_folder = "log_run/%j"
-        running_dir = "/home/pml10/pml_vqvae/"
+        running_dir = "/home/pml11/github_pml/"
         self.training_executor = submitit.AutoExecutor(
             folder=log_folder,
             cluster="slurm",
@@ -152,10 +145,10 @@ class SlurmJobQueueClient:
             "/home/space/datasets:/home/space/datasets pml.sif python",
         )
         self.training_executor.update_parameters(
-            slurm_partition="gpu-teaching-2d",
+            slurm_partition="gpu-teaching-5h",
             slurm_gpus_per_node=1,
             slurm_cpus_per_task=1,
-            timeout_min=1200,
+            timeout_min=300,
             slurm_job_name="hyper_param_opt",
             slurm_additional_parameters={
                 "chdir": running_dir,
