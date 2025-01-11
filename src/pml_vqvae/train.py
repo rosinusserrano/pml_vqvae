@@ -248,7 +248,7 @@ def train(config: TrainConfig):
     wandb_wrapper.save_model(model_dir)
     wandb_wrapper.finish()
 
-    return last_average_test_loss
+    return lowest_avg_test_reconstruction
 
 
 # Ich habe die CLI functionality auskommentiert um es mir einfache zu machen den

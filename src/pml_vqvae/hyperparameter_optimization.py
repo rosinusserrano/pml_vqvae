@@ -123,15 +123,15 @@ def test(parameters):
     train_config["model_config"] = model_config
 
     train_config = train_config | FIXED_HYPERPARAMS
-
-    train_config["embedding_dimension"] = train_config["hidden_dimension"]
+    train_config["model_config"]["embedding_dimension"] = train_config["model_config"][
+        "hidden_dimension"
+    ]
 
     train_config = TrainConfig.from_dict(train_config)
 
-    last_average_test_loss = pml_vqvae.train.train(train_config)
-    # last_average_test_loss = 2
+    best_avg_test_recon = pml_vqvae.train.train(train_config)
 
-    return last_average_test_loss
+    return best_avg_test_recon
 
 
 class SlurmJobQueueClient:
