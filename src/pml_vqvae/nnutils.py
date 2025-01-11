@@ -4,8 +4,13 @@ import torch
 from torch import nn
 
 
-def upsample(in_channels: int, out_channels: int, activation: nn.Module = nn.ReLU()):
-    return nn.Sequential(
+def upsample(
+    in_channels: int,
+    out_channels: int,
+    activation: nn.Module = nn.ReLU(),
+    use_batchnorm: bool = True,
+):
+    module = nn.Sequential(
         nn.ConvTranspose2d(
             in_channels=in_channels,
             out_channels=out_channels,
@@ -14,8 +19,12 @@ def upsample(in_channels: int, out_channels: int, activation: nn.Module = nn.ReL
             padding=1,
         ),
         activation,
-        nn.BatchNorm2d(out_channels),
     )
+
+    if use_batchnorm:
+        module.append(nn.BatchNorm2d(out_channels))
+
+    return module
 
 
 def downsample(in_channels: int, out_channels: int, activation: nn.Module = nn.ReLU()):
