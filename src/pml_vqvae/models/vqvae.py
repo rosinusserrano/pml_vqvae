@@ -12,6 +12,9 @@ from pml_vqvae.models.pml_model_interface import PML_model
 from pml_vqvae.nnutils import downsample, upsample, ResidualBlock
 
 
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+
+
 class VectorQuantization(autograd.Function):
     """Function to perform vector quantization and copy the codebook gradients
     to the encoders output"""
@@ -163,3 +166,74 @@ class VQVAE(PML_model):
 
     def visualize_output(self, output):
         return output[0]
+
+
+class VQVAECodeEnforced(VQVAE):
+    """This variant adds a loss term that draws unused codes towards the mean
+    of the encoder output.
+
+    This loss is scaled for each code individually by the "idle count". The
+    more iterations a given code is left unused, the stronger it is drawn
+    towards the encoders output mean.
+    """
+
+    def __init__(self, config):
+        super().__init__(config)
+
+        self.code_idle_count = torch.zeros(
+            (self.config.codebook_size,),
+            dtype=torch.long,
+        ).to(DEVICE)
+
+    def loss_fn(self, model_outputs, target):
+        reconstruction, encoder_out, codes, indices = model_outputs
+
+        # Reconstructoin loss
+        reconstruction = F.mse_loss(reconstruction, target)
+
+        # Commitment losses
+        encoder_commitment = F.mse_loss(codes.detach(), encoder_out)
+        encoder_commitment *= self.config.commitment_weight
+
+        codes_commitment = F.mse_loss(codes, encoder_out.detach())
+
+        # Code enforcment loss
+        encoder_mean = (
+            encoder_out.detach()
+            .permute(0, 2, 3, 1)
+            .reshape(-1, self.config.embedding_dimension)
+            .mean(dim=0, keepdim=True)
+        )
+        unique_indices = indices.unique()
+        self.code_idle_count += 1
+        self.code_idle_count[unique_indices] = 0
+
+        # Another thing to do would be:
+        #   self.code_idle_count[unique_indices] -= 2
+        # and then use torch.relu(self.code_idle_count) below. This way, a
+        # single iteration of not being used doesn't affect the loss...
+        # Above one could then add something like
+        #   self.code_idle_count = torch.maximum(self.code_idle_count, 50)
+        # which would assure the values not to get so low that they can't be
+        # recuperated
+
+        code_enforcement = torch.mean(
+            (torch.sum((self.codebook - encoder_mean) ** 2, dim=1))
+            * self.code_idle_count
+        )
+
+        loss = reconstruction + encoder_commitment + codes_commitment + code_enforcement
+
+        self.batch_stats = {
+            "Loss": loss.item(),
+            "Reconstruction": reconstruction.item(),
+            "Commitment (encoder)": encoder_commitment.item(),
+            "Commitment (codes)": codes_commitment.item(),
+            "Code usage": set(indices.flatten().tolist()),
+            "Enforcement": code_enforcement.item(),
+        }
+
+        return loss
+
+    def name(self):
+        return "VQVAECodeEnforced"
