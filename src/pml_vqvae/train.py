@@ -180,7 +180,7 @@ def train(config: TrainConfig):
     last_average_test_loss = None
     image = None
     print("Training model...")
-    lowest_test_loss = 9999999999999
+    lowest_avg_test_reconstruction = 9999999999999
     patience = 3
     for i in range(config.epochs):
         # train on all datat for one epoch
@@ -225,12 +225,10 @@ def train(config: TrainConfig):
 
         model_dir = stats_keeper.save_model(model, config.output_dir, epoch=i)
         wandb_wrapper.save_model(model_dir)
-        print(epoch_stats)
 
-        print(epoch_stats)
-
-        if last_average_test_loss < lowest_test_loss * 0.98:
-            lowest_test_loss = last_average_test_loss
+        last_average_reconstruction = epoch_stats[1]["Reconstruction"]
+        if last_average_reconstruction < lowest_avg_test_reconstruction * 0.98:
+            lowest_avg_test_reconstruction = last_average_reconstruction
             patience = 3
         else:
             patience -= 1
