@@ -1,4 +1,5 @@
 from pml_vqvae.train_config import TrainConfig
+from scipy.stats import gaussian_kde
 import yaml
 
 import torch
@@ -33,17 +34,20 @@ def save_2d_tsne(
     tsne = TSNE(random_state=42)
     if encoder_output is not None:
         transformed_data = tsne.fit_transform(np.concat([codebook, encoder_output]))
-        hist = plt.hist2d(
-            transformed_data[len(codebook) :, 0],
-            transformed_data[len(codebook) :, 1],
-            bins=64,
-            cmap="Blues",
-            alpha=0.8,
-        )  # only put the transformed encoder_output into the heatmap, so [len(codebook):, 0]
-        plt.colorbar(hist[3], label="Density")
-        plt.title("Density Plot using hist2d")
-        plt.xlabel("X")
-        plt.ylabel("Y")
+
+        nbins = 16
+        x = transformed_data[len(codebook) :, 0]
+        y = transformed_data[len(codebook) :, 1]
+        print(x.shape)
+        k = gaussian_kde((x, y))
+        xi, yi = np.mgrid[
+            x.min() : x.max() : nbins * 1j, y.min() : y.max() : nbins * 1j
+        ]
+        zi = k(np.vstack([xi.flatten(), yi.flatten()]))
+        plt.pcolormesh(xi, yi, zi.reshape(xi.shape), shading="gouraud", cmap="Blues")
+
+        cbar = plt.colorbar()
+        cbar.set_label("Encoder Output Density")
     else:
         transformed_data = tsne.fit_transform(codebook)
 
@@ -82,13 +86,13 @@ def create_range(codebooks_dict):
 
 def main():
     m0_codebook = (
-        load_model("model_0.pth", "eval_config.yaml").codebook.detach().numpy()
+        load_model("model_0.pth", "eval_config.yaml").codebook.detach().numpy()[0:256]
     )
     m21_codebook = (
-        load_model("model_21.pth", "eval_config.yaml").codebook.detach().numpy()
+        load_model("model_21.pth", "eval_config.yaml").codebook.detach().numpy()[0:256]
     )
     m4_codebook = (
-        load_model("model_4.pth", "eval_config.yaml").codebook.detach().numpy()
+        load_model("model_4.pth", "eval_config.yaml").codebook.detach().numpy()[0:256]
     )
 
     concat_codebooks, range_dict = create_range(
@@ -97,7 +101,7 @@ def main():
     save_2d_tsne(
         concat_codebooks,
         range_dict=range_dict,
-        encoder_output=np.random.randn(10000, 256),
+        encoder_output=2 * np.random.randn(1000, 256),
     )
 
 
