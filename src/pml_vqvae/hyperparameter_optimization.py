@@ -15,18 +15,18 @@ import pml_vqvae.train
 warnings.simplefilter(action="ignore", category=FutureWarning)
 
 
-EXPERIMENT_NAME = "hyperopt_X_with_replacement"
+EXPERIMENT_NAME = "hyperopt-VIII-lesser-train-params"
 
 
 FIXED_HYPERPARAMS = {
     "dataset": "imagenet",
     "experiment_name": EXPERIMENT_NAME,
     "model_name": "vqvae",
-    "n_test": 2000,
-    "n_train": 20000,
+    "n_test": 5000,
+    "n_train": 100000,
     "test_interval": 1,
     "vis_train_interval": 1,
-    "epochs": 50,
+    "epochs": 15,
     "optimizer": "adam",
 }
 
@@ -40,6 +40,13 @@ VQVAE_HYPERPARAMETER_SEARCH_SPACE = [
         "is_ordered": True,
     },
     {
+        "name": "embedding_dimension",
+        "type": "choice",
+        "values": [64, 128, 256, 512],
+        "sort_values": True,
+        "is_ordered": True,
+    },
+    {
         "name": "codebook_size",
         "type": "choice",
         "values": [64, 128, 256, 512, 1024],
@@ -49,14 +56,14 @@ VQVAE_HYPERPARAMETER_SEARCH_SPACE = [
     {
         "name": "codebook_initialization_radius",
         "type": "choice",
-        "values": [0.01, 0.5, 1.0, 2.0],
+        "values": [0.01, 0.5, 1, 2],
         "sort_values": True,
         "is_ordered": True,
     },
     {
         "name": "commitment_weight",
         "type": "choice",
-        "values": [1.5, 2.0, 4.0, 10.0],
+        "values": [0.25, 4.0, 7.0, 10.0],
         "sort_values": True,
         "is_ordered": True,
     },
@@ -103,7 +110,7 @@ TRAINING_HYPERPARAMETER_SEARCH_SPACE = [
     {
         "name": "weight_decay",
         "type": "choice",
-        "values": [1e-4, 1e-3, 1e-2],
+        "values": [1e-4, 1e-3, 1e-2, 1e-1],
         "sort_values": True,
         "is_ordered": True,
     },
@@ -123,9 +130,6 @@ def test(parameters):
     train_config["model_config"] = model_config
 
     train_config = train_config | FIXED_HYPERPARAMS
-    train_config["model_config"]["embedding_dimension"] = train_config["model_config"][
-        "hidden_dimension"
-    ]
 
     train_config = TrainConfig.from_dict(train_config)
 
@@ -137,7 +141,7 @@ def test(parameters):
 class SlurmJobQueueClient:
     def __init__(self):
         log_folder = "log_run/%j"
-        running_dir = "/home/pml11/github_pml/"
+        running_dir = "/home/pml10/pml_vqvae/"
         self.training_executor = submitit.AutoExecutor(
             folder=log_folder,
             cluster="slurm",
@@ -145,10 +149,10 @@ class SlurmJobQueueClient:
             "/home/space/datasets:/home/space/datasets pml.sif python",
         )
         self.training_executor.update_parameters(
-            slurm_partition="gpu-teaching-5h",
+            slurm_partition="gpu-teaching-2d",
             slurm_gpus_per_node=1,
             slurm_cpus_per_task=1,
-            timeout_min=300,
+            timeout_min=1200,
             slurm_job_name="hyper_param_opt",
             slurm_additional_parameters={
                 "chdir": running_dir,

@@ -20,6 +20,8 @@ import matplotlib.pyplot as plt
 
 # import wandb
 DEFAULT_CONFIG = "config.yaml"
+PATIENCE = 3
+PERFORMANCE_THRESHOLD_ES = 0.98
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -113,8 +115,6 @@ def train_epoch(
         train_tqdm.set_description(dsp)
 
         optimizer.step()
-        # print(model.batch_stats)
-        # print(model.batch_stats["Code usage"])
 
         with torch.no_grad():
             for i in range(len(model.codebook.detach())):
@@ -178,10 +178,10 @@ def train(config: TrainConfig):
     stats_keeper = StatsKeeper()
 
     last_average_test_loss = None
+    best_avg_test_reconstruction = float("inf")
+    patience = config.convergence_patience
     image = None
     print("Training model...")
-    lowest_avg_test_reconstruction = 9999999999999
-    patience = 3
     for i in range(config.epochs):
         # train on all datat for one epoch
         batch, output, _ = train_epoch(
@@ -193,10 +193,6 @@ def train(config: TrainConfig):
         )
         print(f"Batch images are in range [{batch.min()}, {batch.max()}]")
         wandb_wrapper.construct_examples(batch, model.visualize_output(output))
-        #        with open(f"/home/pml11/ep{i}_latents", "w") as latents_file:
-        #            latents_file.write(model.forward(batch))
-        #        with open(f"/home/pml11/ep{i}_codebook", "w") as codebook_file:
-        #            codebook_file.write(model.codebook.detach())
         if image is None:
             image = batch[0:1]
         torch.set_printoptions(threshold=100_000)
@@ -225,20 +221,23 @@ def train(config: TrainConfig):
 
         model_dir = stats_keeper.save_model(model, config.output_dir, epoch=i)
         wandb_wrapper.save_model(model_dir)
+        print(epoch_stats)
 
         last_average_reconstruction = epoch_stats[1]["Reconstruction"]
-        if last_average_reconstruction < lowest_avg_test_reconstruction * 0.98:
-            lowest_avg_test_reconstruction = last_average_reconstruction
-            patience = 3
+        if (
+            last_average_test_loss
+            < best_avg_test_reconstruction * config.convergence_performance_threshold
+        ):
+            patience = config.convergence_patience
+            best_avg_test_reconstruction = last_average_reconstruction
         else:
             patience -= 1
-            print(
-                f"Test performance (reconstr.: {lowest_avg_test_reconstruction}) not significantly increased, "
-                f"patience left: {patience}"
-            )
+            print(f"No significant increase in performance. Patience left {patience}")
 
         if patience == 0:
-            print("No improvement. Stopping training...")
+            print(
+                f"No significant increase in performance in {PATIENCE} epochs. Stopping training."
+            )
             break
 
     # save final model
@@ -248,7 +247,7 @@ def train(config: TrainConfig):
     wandb_wrapper.save_model(model_dir)
     wandb_wrapper.finish()
 
-    return lowest_avg_test_reconstruction
+    return best_avg_test_reconstruction
 
 
 # Ich habe die CLI functionality auskommentiert um es mir einfache zu machen den

@@ -37,6 +37,8 @@ class TrainConfig:
     optimizer: str = "adam"
     weight_decay: float = 0
     momentum: float = 0
+    convergence_patience: int = 3
+    convergence_performance_threshold: float = 0.99
 
     # data optionals
     n_train: int | None = None
