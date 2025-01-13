@@ -7,6 +7,7 @@ from pml_vqvae.visuals import show
 from torchvision.transforms import v2
 import torchvision
 from torch.nn import functional as F
+from tqdm import trange
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -301,7 +302,7 @@ class PixelCNN(PML_model):
         imgs = torch.zeros(shape, dtype=torch.float32).to(DEVICE)
 
         # Generation loop
-        for h in range(self.input_shape[0]):
+        for h in trange(self.input_shape[0]):
             for w in range(self.input_shape[1]):
                 preds = self.forward(imgs, class_idx_list)
 
