@@ -9,6 +9,9 @@ import numpy as np
 codebook_np = np.random.random((128, 256))
 
 
+# Example list of 2D data points
+
+
 def load_model(model_path, config_path):
     with open(config_path, "r", encoding="utf-8") as file:
         config = TrainConfig.from_dict(yaml.safe_load(file))
@@ -24,27 +27,43 @@ def save_2d_tsne(
     filename: str = "eval_2d_sne.svg",
     title: str = "t-SNE Visualization of Codebook Embeddings",
     range_dict: dict = None,
+    encoder_output: np.array = None,
 ):
+    plt.figure(figsize=(8, 6))
     tsne = TSNE(random_state=42)
-    codebook_2d = tsne.fit_transform(codebook)
-
-    fig, ax = plt.subplots(1, 1, figsize=(8, 6))
-
-    if range_dict is None:
-        ax.scatter(codebook_2d[:, 0], codebook_2d[:, 1])
+    if encoder_output is not None:
+        transformed_data = tsne.fit_transform(np.concat([codebook, encoder_output]))
+        hist = plt.hist2d(
+            transformed_data[len(codebook) :, 0],
+            transformed_data[len(codebook) :, 1],
+            bins=64,
+            cmap="Blues",
+            alpha=0.8,
+        )  # only put the transformed encoder_output into the heatmap, so [len(codebook):, 0]
+        plt.colorbar(hist[3], label="Density")
+        plt.title("Density Plot using hist2d")
+        plt.xlabel("X")
+        plt.ylabel("Y")
     else:
-        for key, value in range_dict.items():
-            ax.scatter(
-                codebook_2d[value[0] : value[1], 0],
-                codebook_2d[value[0] : value[1], 1],
-                alpha=0.4,
+        transformed_data = tsne.fit_transform(codebook)
+
+    # plot the codebooks
+    if range_dict is None:
+        plt.scatter(transformed_data[:, 0], transformed_data[:, 1])
+    else:
+        for name, partition in range_dict.items():
+            plt.scatter(
+                transformed_data[partition[0] : partition[1], 0],
+                transformed_data[partition[0] : partition[1], 1],
+                alpha=0.5,
                 s=16,
-                label=key,
+                label=name,
             )
+
         plt.legend(loc="lower left")
+    plt.axis("auto")
 
     plt.title(title)
-    plt.grid(True)
     plt.savefig(filename)
     plt.show()
 
@@ -78,6 +97,7 @@ def main():
     save_2d_tsne(
         concat_codebooks,
         range_dict=range_dict,
+        encoder_output=np.random.randn(10000, 256),
     )
 
 
