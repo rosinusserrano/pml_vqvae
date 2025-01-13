@@ -33,18 +33,18 @@ class VectorQuantization(autograd.Function):
         # Shape -> (batch_size * height * width)  x codebook_size
         squared_distances = torch.cdist(batch, codebook)
 
-        closest_codes_indexes = torch.argmin(squared_distances, dim=1)
+        nearest_codes_indexes = torch.argmin(squared_distances, dim=1)
 
         # Save indexes in order to match gradients to corresponding codes
-        ctx.save_for_backward(closest_codes_indexes, codebook)
+        ctx.save_for_backward(nearest_codes_indexes, codebook)
 
-        output = codebook[closest_codes_indexes]
+        output = codebook[nearest_codes_indexes]
         output = output.reshape(batch_size, height, width, channels)
         output = output.permute(0, 3, 1, 2)
 
-        closest_codes_indexes = closest_codes_indexes.reshape(batch_size, height, width)
+        nearest_codes_indexes = nearest_codes_indexes.reshape(batch_size, height, width)
 
-        return output, closest_codes_indexes
+        return output, nearest_codes_indexes
 
     @staticmethod
     def backward(ctx, grad_output, grad_indices):
@@ -168,6 +168,59 @@ class VQVAE(PML_model):
         return output[0]
 
 
+class VectorQuantizationWithCdist(VectorQuantization):
+    """Function to perform vector quantization and copy the codebook gradients
+    to the encoders output"""
+
+    @staticmethod
+    def forward(ctx, batch, codebook):
+        batch_size, channels, height, width = batch.shape
+        codebook_size, embedding_dim = codebook.shape
+
+        if embedding_dim != channels:
+            raise ValueError("codebook embedding dimension doesnt equal" "channel dim!")
+
+        batch = batch.permute(0, 2, 3, 1)  # channels on last dim
+        batch = batch.reshape(-1, channels)  # flatten except for channels
+
+        # Shape -> (batch_size * height * width)  x codebook_size
+        squared_distances = torch.cdist(batch, codebook)
+
+        nearest_codes_indexes = torch.argmin(squared_distances, dim=1)
+
+        # Save indexes in order to match gradients to corresponding codes
+        ctx.save_for_backward(nearest_codes_indexes, codebook)
+
+        output = codebook[nearest_codes_indexes]
+        output = output.reshape(batch_size, height, width, channels)
+        output = output.permute(0, 3, 1, 2)
+
+        nearest_codes_indexes = nearest_codes_indexes.reshape(batch_size, height, width)
+
+        return output, nearest_codes_indexes, squared_distances
+
+    @staticmethod
+    def backward(ctx, grad_output, grad_indices, grad_return_cdist=None):
+        code_indexes, codebook = ctx.saved_tensors
+
+        grad_encoder = grad_output
+
+        n_channels = grad_output.shape[1]
+
+        grad_output = grad_output.permute(0, 2, 3, 1)
+        grad_output = grad_output.reshape(-1, n_channels)
+
+        grad_codes = torch.zeros_like(codebook)
+        grad_codes = torch.index_add(
+            input=grad_codes,
+            dim=0,
+            index=code_indexes,
+            source=grad_output,
+        )
+
+        return grad_encoder, grad_codes, None
+
+
 class VQVAECodeEnforced(VQVAE):
     """This variant adds a loss term that draws unused codes towards the mean
     of the encoder output.
@@ -185,8 +238,26 @@ class VQVAECodeEnforced(VQVAE):
             dtype=torch.long,
         ).to(DEVICE)
 
+    def forward(self, tensor: torch.Tensor):
+        encoder_out = self.encoder(tensor)
+        codes, indexes, cdist = VectorQuantizationWithCdist.apply(
+            encoder_out,
+            self.codebook,
+        )
+        reconstruction = self.decoder(codes)
+
+        if self.training:
+            nearest_encoder_indexes = torch.argmin(cdist, dim=0)
+            nearest_encoder_embeds = encoder_out.permute(0, 2, 3, 1).reshape(
+                -1, self.config.embedding_dimension
+            )[nearest_encoder_indexes]
+
+        return reconstruction, encoder_out, codes, indexes, nearest_encoder_embeds
+
     def loss_fn(self, model_outputs, target):
-        reconstruction, encoder_out, codes, indices = model_outputs
+        reconstruction, encoder_out, codes, indices, nearest_encoder_embeds = (
+            model_outputs
+        )
 
         # Reconstructoin loss
         reconstruction = F.mse_loss(reconstruction, target)
@@ -198,28 +269,14 @@ class VQVAECodeEnforced(VQVAE):
         codes_commitment = F.mse_loss(codes, encoder_out.detach())
 
         # Code enforcment loss
-        encoder_mean = (
-            encoder_out.detach()
-            .permute(0, 2, 3, 1)
-            .reshape(-1, self.config.embedding_dimension)
-            .mean(dim=0, keepdim=True)
-        )
         unique_indices = indices.unique()
         self.code_idle_count += 1
-        self.code_idle_count[unique_indices] = 0
-
-        # Another thing to do would be:
-        #   self.code_idle_count[unique_indices] -= 2
-        # and then use torch.relu(self.code_idle_count) below. This way, a
-        # single iteration of not being used doesn't affect the loss...
-        # Above one could then add something like
-        #   self.code_idle_count = torch.maximum(self.code_idle_count, 50)
-        # which would assure the values not to get so low that they can't be
-        # recuperated
+        self.code_idle_count[unique_indices] -= 2
+        self.code_idle_count = torch.maximum(self.code_idle_count, torch.tensor(-10))
 
         code_enforcement = torch.mean(
-            (torch.sum((self.codebook - encoder_mean) ** 2, dim=1))
-            * self.code_idle_count
+            (torch.sum((self.codebook - nearest_encoder_embeds) ** 2, dim=1))
+            * torch.relu(self.code_idle_count)
         )
 
         loss = reconstruction + encoder_commitment + codes_commitment + code_enforcement
@@ -231,6 +288,7 @@ class VQVAECodeEnforced(VQVAE):
             "Commitment (codes)": codes_commitment.item(),
             "Code usage": set(indices.flatten().tolist()),
             "Enforcement": code_enforcement.item(),
+            "Max idle count": torch.max(self.code_idle_count).item(),
         }
 
         return loss
