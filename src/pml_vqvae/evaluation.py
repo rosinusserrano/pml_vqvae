@@ -7,10 +7,7 @@ from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
 import numpy as np
 
-codebook_np = np.random.random((128, 256))
-
-
-# Example list of 2D data points
+MARGIN_SIZE = 3
 
 
 def load_model(model_path, config_path):
@@ -25,7 +22,7 @@ def load_model(model_path, config_path):
 
 def save_2d_tsne(
     codebook: np.array,
-    filename: str = "eval_2d_sne.svg",
+    filename: str = "eval_2d_sne.png",
     title: str = "t-SNE Visualization of Codebook Embeddings",
     range_dict: dict = None,
     encoder_output: np.array = None,
@@ -41,7 +38,12 @@ def save_2d_tsne(
         print(x.shape)
         k = gaussian_kde((x, y))
         xi, yi = np.mgrid[
-            x.min() : x.max() : nbins * 1j, y.min() : y.max() : nbins * 1j
+            transformed_data[:, 0].min()
+            - MARGIN_SIZE : transformed_data[:, 0].max()
+            + MARGIN_SIZE : nbins * 1j,
+            transformed_data[:, 1].min()
+            - MARGIN_SIZE : transformed_data[:, 1].max().max()
+            + MARGIN_SIZE : nbins * 1j,
         ]
         zi = k(np.vstack([xi.flatten(), yi.flatten()]))
         plt.pcolormesh(xi, yi, zi.reshape(xi.shape), shading="gouraud", cmap="Blues")
@@ -65,7 +67,14 @@ def save_2d_tsne(
             )
 
         plt.legend(loc="lower left")
-    plt.axis("auto")
+    plt.xlim(
+        left=transformed_data[:, 0].min() - MARGIN_SIZE,
+        right=transformed_data[:, 0].max() + MARGIN_SIZE,
+    )
+    plt.ylim(
+        bottom=transformed_data[:, 1].min() - MARGIN_SIZE,
+        top=transformed_data[:, 1].max() + MARGIN_SIZE,
+    )
 
     plt.title(title)
     plt.savefig(filename)
@@ -86,23 +95,22 @@ def create_range(codebooks_dict):
 
 def main():
     m0_codebook = (
-        load_model("model_0.pth", "eval_config.yaml").codebook.detach().numpy()[0:256]
+        load_model("model_0.pth", "eval_config.yaml").codebook.detach().numpy()[0:512]
     )
     m21_codebook = (
-        load_model("model_21.pth", "eval_config.yaml").codebook.detach().numpy()[0:256]
+        load_model("model_21.pth", "eval_config.yaml").codebook.detach().numpy()[0:512]
     )
     m4_codebook = (
-        load_model("model_4.pth", "eval_config.yaml").codebook.detach().numpy()[0:256]
+        load_model("model_4.pth", "eval_config.yaml").codebook.detach().numpy()[0:512]
     )
+
+    # Replace with using the models
+    encoder_output = 2 * np.random.randn(1000, 256)
 
     concat_codebooks, range_dict = create_range(
         {"model 0": m0_codebook, "model 4": m4_codebook, "model 21": m21_codebook}
     )
-    save_2d_tsne(
-        concat_codebooks,
-        range_dict=range_dict,
-        encoder_output=2 * np.random.randn(1000, 256),
-    )
+    save_2d_tsne(concat_codebooks, range_dict=range_dict, encoder_output=encoder_output)
 
 
 if __name__ == "__main__":
