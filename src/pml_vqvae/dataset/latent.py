@@ -43,10 +43,10 @@ class LatentDataset(Dataset):
         self.data_per_file = data_per_file
         self.file_names = os.listdir(self.rootdir)
 
-        self.len = 0
-        for f in self.file_names:
-            with np.load(f"{self.rootdir}/{f}") as npzfile:
-                self.len += npzfile["labels"].shape[0]
+        # Account for the last file not necessarily hacing `data_per_file` samples
+        self.len = (len(self.file_names) - 1) * data_per_file
+        with np.load(f"{self.rootdir}/{self.file_names[-1]}") as npzfile:
+            self.len += npzfile["labels"].shape[0]
 
     def __len__(self):
         return self.len
