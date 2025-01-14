@@ -208,6 +208,7 @@ class PixelCNNConfig:
     name: str = "PixelCNN"
     num_codes: int = 512  # will be the output size
     num_classes: int = 10  # number of classes in the dataset
+    conditional_embedding_dim: int = 256
     input_shape: tuple = (32, 32)  # latent shape of vqvae
     dilations: list[int] = field(default_factory=lambda: [1, 2, 1, 4, 1, 2, 1, 2, 1])
     # dilations for the masked convolutions, it also defines the number of layers
@@ -224,7 +225,7 @@ class PixelCNN(PML_model):
 
         # class conditional embedding
         self.embedding = torch.nn.Embedding(
-            config.num_classes, config.num_classes, max_norm=1.0
+            config.num_classes, config.conditional_embedding_dim
         )
 
         self.v_stack = VerticalStack(
