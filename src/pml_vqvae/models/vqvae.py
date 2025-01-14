@@ -246,11 +246,10 @@ class VQVAECodeEnforced(VQVAE):
         )
         reconstruction = self.decoder(codes)
 
-        if self.training:
-            nearest_encoder_indexes = torch.argmin(cdist, dim=0)
-            nearest_encoder_embeds = encoder_out.permute(0, 2, 3, 1).reshape(
-                -1, self.config.embedding_dimension
-            )[nearest_encoder_indexes]
+        nearest_encoder_indexes = torch.argmin(cdist, dim=0)
+        nearest_encoder_embeds = encoder_out.permute(0, 2, 3, 1).reshape(
+            -1, self.config.embedding_dimension
+        )[nearest_encoder_indexes]
 
         return reconstruction, encoder_out, codes, indexes, nearest_encoder_embeds
 
@@ -276,7 +275,7 @@ class VQVAECodeEnforced(VQVAE):
 
         code_enforcement = torch.mean(
             (torch.sum((self.codebook - nearest_encoder_embeds) ** 2, dim=1))
-            * torch.relu(self.code_idle_count)
+            * torch.clamp(self.code_idle_count, 0, 100)
         )
 
         loss = reconstruction + encoder_commitment + codes_commitment + code_enforcement
