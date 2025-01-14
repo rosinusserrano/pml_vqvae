@@ -270,8 +270,9 @@ class VQVAECodeEnforced(VQVAE):
         # Code enforcment loss
         unique_indices = indices.unique()
         self.code_idle_count += 1
-        self.code_idle_count[unique_indices] -= 2
-        self.code_idle_count = torch.maximum(self.code_idle_count, torch.tensor(-10))
+        self.code_idle_count[unique_indices] = torch.clamp(
+            self.code_idle_count[unique_indices] - 10, -10, 0
+        )
 
         code_enforcement = torch.mean(
             (torch.sum((self.codebook - nearest_encoder_embeds) ** 2, dim=1))
