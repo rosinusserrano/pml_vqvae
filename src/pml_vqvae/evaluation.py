@@ -123,6 +123,10 @@ def main():
     )
     print("Loaded.")
     image_tensor = next(iter(test_loader))
+    print(type(image_tensor))
+    print(image_tensor)
+    print(len(image_tensor))
+
     encoder_outputs = []
     codebooks = []
     for epoch in ["0", "4", "21"]:
