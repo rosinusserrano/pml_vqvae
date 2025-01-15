@@ -118,7 +118,7 @@ def main():
     image_tensor = transform(image).unsqueeze(0)"""
 
     print("Start loading...")
-    _, test_loader = load_data(
+    test_loader, _ = load_data(
         "imagenet", n_train=1000, n_test=1000, seed=42, batch_size=64
     )
     print("Loaded.")
@@ -148,8 +148,9 @@ def main():
         plot_encoder_density(encoder_outputs_transformed[epoch], axs[epoch])
         scatter_codebooks(codebooks_transformed[epoch], axs[epoch])
     fig.suptitle("TEST")
-    plt.show()
     plt.savefig("test.jpg")
+
+    plt.show()
 
 
 if __name__ == "__main__":
