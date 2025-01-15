@@ -141,8 +141,10 @@ def main():
 
 
 if __name__ == "__main__":
+    print("Start loading...")
     _, test_loader = load_data(
         "imagenet", n_train=1000, n_test=1000, seed=42, batch_size=64
     )
+    print("Loaded.")
     print(next(iter(test_loader)))
     main()
