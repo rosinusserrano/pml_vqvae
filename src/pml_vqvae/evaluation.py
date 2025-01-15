@@ -123,7 +123,6 @@ def main():
     )
     print("Loaded.")
     image_tensor = next(iter(test_loader))
-
     encoder_outputs = []
     codebooks = []
     for epoch in ["0", "4", "21"]:
@@ -132,9 +131,7 @@ def main():
             "eval_config.yaml",
         )
         codebooks.append(model.codebook.detach().numpy())
-        encoder_output = (
-            model.encoder(image_tensor).detach().squeeze(0).permute(1, 2, 0).numpy()
-        )
+        encoder_output = model.encoder(image_tensor).detach().numpy()
         encoder_outputs.append(sample(np.reshape(encoder_output, (-1, 256)), 2048))
 
     fig, axs = plt.subplots(1, 3, figsize=(16, 4))
