@@ -117,6 +117,8 @@ def main():
     transform = transforms.ToTensor()
     image_tensor = transform(image).unsqueeze(0)"""
 
+    DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+
     print("Start loading...")
     test_loader, _ = load_data(
         "imagenet", n_train=1000, n_test=1000, seed=42, batch_size=64
@@ -126,6 +128,7 @@ def main():
     print(type(image_tensor))
     print(image_tensor)
     print(len(image_tensor))
+    image_tensor.to(DEVICE)
 
     encoder_outputs = []
     codebooks = []
@@ -134,9 +137,10 @@ def main():
             f"artifacts/hyperopt_X_with_replacement_43/model_{epoch}.pth",
             "eval_config.yaml",
         )
-        codebooks.append(model.codebook.detach().numpy())
+        model.to(DEVICE)
+        codebooks.append(model.codebook.detach().cpu().numpy())
         print(f"Shape: {image_tensor.shape}")
-        encoder_output = model.encoder(image_tensor).detach().numpy()
+        encoder_output = model.encoder(image_tensor).detach().cpu().numpy()
         encoder_outputs.append(sample(np.reshape(encoder_output, (-1, 256)), 2048))
 
     fig, axs = plt.subplots(1, 3, figsize=(16, 4))
