@@ -137,7 +137,7 @@ def main():
         codebooks.append(model.codebook.detach().cpu().numpy())
         print(f"Shape: {image_tensor.shape}")
         encoder_output = (
-            model.encoder(image_tensor).detach().cpu().permute(1, 2, 3, 0).numpy()
+            model.encoder(image_tensor).detach().cpu().permute(3, 2, 0, 1).numpy()
         )
         print(encoder_output.shape)
         encoder_outputs.append(sample(np.reshape(encoder_output, (-1, 256)), 1200))
