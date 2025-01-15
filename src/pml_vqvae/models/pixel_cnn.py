@@ -27,7 +27,7 @@ class MaskedConv2d(torch.nn.Conv2d):
 class VerticalStack(MaskedConv2d):
     def __init__(
         self,
-        num_classes: int,
+        num_classes: int | None,
         mask_type: str = "B",
         latent_shape: tuple = None,
         *args,
@@ -71,7 +71,7 @@ class VerticalStack(MaskedConv2d):
 class HorizontalStack(MaskedConv2d):
     def __init__(
         self,
-        num_classes: int,
+        num_classes: int | None,
         mask_type: str = "B",
         latent_shape: tuple = None,
         *args,
@@ -112,7 +112,7 @@ class HorizontalStack(MaskedConv2d):
 
 
 class CondGatedMaskedConv2d(torch.nn.Module):
-    def __init__(self, num_classes: int, latent_shape: tuple, *args, **kwargs):
+    def __init__(self, num_classes: int | None, latent_shape: tuple, *args, **kwargs):
         super().__init__()
         channels = kwargs["channels"]
         self.latent_shape = latent_shape
@@ -147,25 +147,32 @@ class CondGatedMaskedConv2d(torch.nn.Module):
             padding=0,
         )
 
-        self.h_embed_matcher = torch.nn.Linear(
-            num_classes, latent_shape[0] * latent_shape[1], bias=False
-        )
+        if num_classes is not None:
+            self.h_embed_matcher = torch.nn.Linear(
+                num_classes, latent_shape[0] * latent_shape[1], bias=False
+            )
 
-        self.v_embed_matcher = torch.nn.Linear(
-            num_classes, latent_shape[0] * latent_shape[1], bias=False
-        )
+            self.v_embed_matcher = torch.nn.Linear(
+                num_classes, latent_shape[0] * latent_shape[1], bias=False
+            )
 
-    def forward(self, v_stack, h_stack, class_cond_embedding):
+    def forward(
+        self,
+        v_stack: torch.Tensor,
+        h_stack: torch.Tensor,
+        class_cond_embedding: torch.Tensor | None,
+    ):
         # vertical stack
         v_stack_feat = self.conv_vertical(v_stack)  # [B, C, 28, 28]
 
-        v_embed = self.v_embed_matcher(class_cond_embedding).view(
-            -1, 1, self.latent_shape[0], self.latent_shape[1]
-        )
-
-        # add class conditional embedding
+        # add class conditional embeddings if conditioning is enabled
+        if class_cond_embedding is not None:
+            v_embed = self.v_embed_matcher(class_cond_embedding).view(
+                -1, 1, self.latent_shape[0], self.latent_shape[1]
+            )
+        else:
+            v_embed = torch.zeros_like(v_stack_feat)
         conditioned_v_stack = v_stack_feat + v_embed
-        # (C, num_classes)
 
         # split up features
         v_val, v_gate = torch.chunk(conditioned_v_stack, 2, dim=1)
@@ -179,11 +186,13 @@ class CondGatedMaskedConv2d(torch.nn.Module):
 
         h_stack_feat = h_stack_feat + from_v_stack
 
-        h_embed = self.h_embed_matcher(class_cond_embedding).view(
-            -1, 1, self.latent_shape[0], self.latent_shape[1]
-        )
-
-        # add class conditional embedding
+        # class conditioning, same as for vertical stack above
+        if class_cond_embedding is not None:
+            h_embed = self.h_embed_matcher(class_cond_embedding).view(
+                -1, 1, self.latent_shape[0], self.latent_shape[1]
+            )
+        else:
+            h_embed = torch.zeros_like(h_stack_feat)
         conditioned_h_stack = h_stack_feat + h_embed
 
         # split up features
@@ -208,29 +217,37 @@ class PixelCNNConfig:
     hidden_chan: int = 128
     name: str = "PixelCNN"
     num_codes: int = 512  # will be the output size
-    num_classes: int = 10  # number of classes in the dataset
-    conditional_embedding_dim: int = 256
+    conditional: bool = True
+    num_classes: int | None = 10  # number of classes in the dataset
+    conditional_embedding_dim: int | None = 256
     input_shape: tuple = (32, 32)  # latent shape of vqvae
-    dilations: list[int] = field(default_factory=lambda: [1, 2, 1, 4, 1, 2, 1, 2, 1])
     # dilations for the masked convolutions, it also defines the number of layers
+    dilations: list[int] = field(default_factory=lambda: [1, 2, 1, 4, 1, 2, 1, 2, 1])
 
 
 class PixelCNN(PML_model):
     def __init__(
         self,
-        config: PixelCNNConfig,  # dilations for the masked convolutions, it also defines the number of layers
+        config: PixelCNNConfig,
     ):
+        if config.conditional and (
+            config.num_classes is None or config.conditional_embedding_dim is None
+        ):
+            raise ValueError(
+                "If conditional, num_classes and conditional_embedding_dim have to be provided."
+            )
+
         super().__init__()
         self.config = config
-        self.input_shape = config.input_shape
 
         # class conditional embedding
-        self.embedding = torch.nn.Embedding(
-            config.num_classes, config.conditional_embedding_dim
-        )
+        if config.conditional:
+            self.embedding = torch.nn.Embedding(
+                config.num_classes, config.conditional_embedding_dim
+            )
 
         self.v_stack = VerticalStack(
-            dilation=1,
+            dilation=config.dilations[0],
             num_classes=config.num_classes,
             latent_shape=config.input_shape,
             mask_type="A",  # don't use the center pixel only for very first layer
@@ -239,7 +256,7 @@ class PixelCNN(PML_model):
             kernel_size=3,
         )
         self.h_stack = HorizontalStack(
-            dilation=1,
+            dilation=config.dilations[0],
             num_classes=config.num_classes,
             latent_shape=config.input_shape,
             mask_type="A",  # don't use the center pixel only for very first layer
@@ -257,7 +274,7 @@ class PixelCNN(PML_model):
                     kernel_size=3,
                     dilation=dil,
                 )
-                for dil in config.dilations
+                for dil in config.dilations[1:]
             ]
         )
 
@@ -269,8 +286,12 @@ class PixelCNN(PML_model):
         )
 
     def forward(self, x: torch.Tensor, class_idx: torch.Tensor):
-        # get the embedding for the specific class
-        cond_embedding = self.embedding(class_idx)  # (1,10)
+        if self.config.conditional:
+            # get the embedding for the specific class
+            cond_embedding = self.embedding(class_idx)
+        else:
+            # else disable conditioning
+            cond_embedding = None
 
         v_stack = F.elu(self.v_stack(x, cond_embedding))  # [B, C, 30, 30]
         h_stack = F.elu(self.h_stack(x, cond_embedding))  # [B, C, 30, 30]
@@ -297,14 +318,14 @@ class PixelCNN(PML_model):
         class_idx_list: torch.Tensor,
     ):
 
-        shape = (len(class_idx_list), 1, *self.input_shape)
+        shape = (len(class_idx_list), 1, *self.config.input_shape)
 
         # Create empty image
         imgs = torch.zeros(shape, dtype=torch.float32).to(DEVICE)
 
         # Generation loop
-        for h in trange(self.input_shape[0]):
-            for w in range(self.input_shape[1]):
+        for h in trange(self.config.input_shape[0]):
+            for w in range(self.config.input_shape[1]):
                 preds = self.forward(imgs, class_idx_list)
 
                 probs = F.softmax(preds, dim=1)[:, :, h, w]
