@@ -120,7 +120,10 @@ def main():
     encoder_outputs = []
     codebooks = []
     for epoch in ["0", "4", "21"]:
-        model = load_model(f"model_{epoch}.pth", "eval_config.yaml")
+        model = load_model(
+            f"artifacts/hyperopt_X_with_replacement_43/model_{epoch}.pth",
+            "eval_config.yaml",
+        )
         codebooks.append(model.codebook.detach().numpy())
         encoder_output = (
             model.encoder(image_tensor).detach().squeeze(0).permute(1, 2, 0).numpy()
