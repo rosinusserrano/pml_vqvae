@@ -125,9 +125,6 @@ def main():
     )
     print("Loaded.")
     image_tensor = next(iter(test_loader))[0]
-    print(type(image_tensor))
-    print(image_tensor)
-    print(len(image_tensor))
     image_tensor.to(DEVICE)
 
     encoder_outputs = []
