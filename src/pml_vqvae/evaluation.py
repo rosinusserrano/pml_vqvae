@@ -125,12 +125,12 @@ def main():
     print("Loaded.")
     image_tensor = next(iter(test_loader))[0]
     image_tensor.to(DEVICE)
-
+    # artifacts/hyperopt_X_with_replacement_20/
     encoder_outputs = []
     codebooks = []
     for epoch in ["0", "4", "21"]:
         model = load_model(
-            f"model_{epoch}.pth",
+            f"artifacts/hyperopt_X_with_replacement_43/model_{epoch}.pth",
             "eval_config.yaml",
         )
         # model.to(DEVICE)
