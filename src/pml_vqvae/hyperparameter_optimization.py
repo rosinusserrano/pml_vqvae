@@ -78,13 +78,21 @@ PIXELCNN_HYPERPARAMETER_SEARCH_SPACE = [
         "is_ordered": True,
     },
     {
+        "name": "conditional_embedding_dim",
+        "type": "choice",
+        "values": [16, 64, 256, 1024],
+        "sort_values": True,
+        "is_ordered": True,
+    },
+    {
         "name": "dilations",
         "type": "choice",
         "values": [
             [1, 2, 1, 4, 1, 2, 1],
-            [1, 2, 1, 4, 1, 2, 1, 2, 1],
-            [1, 2, 1, 3, 1, 4, 1, 3, 1, 2, 1],
             [1, 1, 2, 2, 3, 3, 4, 4],
+            [1, 2, 1, 4, 1, 2, 1, 2, 1],
+            [1, 1, 1, 2, 2, 2, 3, 3, 3, 4][1, 2, 1, 3, 1, 4, 1, 3, 1, 2, 1],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
         ],
         "sort_values": False,
         "is_ordered": False,
