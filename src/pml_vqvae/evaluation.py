@@ -1,3 +1,4 @@
+from pml_vqvae.dataset.dataloader import load_data
 from pml_vqvae.train_config import TrainConfig
 from scipy.stats import gaussian_kde
 import yaml
@@ -124,7 +125,7 @@ def main():
         encoder_output = (
             model.encoder(image_tensor).detach().squeeze(0).permute(1, 2, 0).numpy()
         )
-        encoder_outputs.append(sample(np.reshape(encoder_output, (-1, 256)), 3000))
+        encoder_outputs.append(sample(np.reshape(encoder_output, (-1, 256)), 2048))
 
     fig, axs = plt.subplots(1, 3, figsize=(16, 4))
 
@@ -136,7 +137,12 @@ def main():
         scatter_codebooks(codebooks_transformed[epoch], axs[epoch])
     fig.suptitle(image_path)
     plt.show()
+    plt.savefig("test.jpg")
 
 
 if __name__ == "__main__":
+    _, test_loader = load_data(
+        "imagenet", n_train=1000, n_test=1000, seed=42, batch_size=64
+    )
+    print(next(iter(test_loader)))
     main()
