@@ -122,7 +122,7 @@ def main():
         "imagenet", n_train=1000, n_test=1000, seed=42, batch_size=64
     )
     print("Loaded.")
-    image_tensor = test_loader[0]
+    image_tensor = next(iter(test_loader))
 
     encoder_outputs = []
     codebooks = []
