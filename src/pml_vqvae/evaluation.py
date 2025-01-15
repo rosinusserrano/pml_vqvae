@@ -131,6 +131,7 @@ def main():
             "eval_config.yaml",
         )
         codebooks.append(model.codebook.detach().numpy())
+        print(f"Shape: {image_tensor.shape}")
         encoder_output = model.encoder(image_tensor).detach().numpy()
         encoder_outputs.append(sample(np.reshape(encoder_output, (-1, 256)), 2048))
 
