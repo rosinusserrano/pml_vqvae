@@ -7,7 +7,10 @@ from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
 import numpy as np
 
-MARGIN_SIZE = 3
+from PIL import Image
+import torchvision.transforms as transforms
+
+MARGIN_RATIO = 0.5
 
 
 def load_model(model_path, config_path):
@@ -20,68 +23,76 @@ def load_model(model_path, config_path):
     return model
 
 
-def save_2d_tsne(
-    codebook: np.array,
-    filename: str = "eval_2d_sne.png",
-    title: str = "t-SNE Visualization of Codebook Embeddings",
-    range_dict: dict = None,
-    encoder_output: np.array = None,
-):
-    plt.figure(figsize=(8, 6))
+def transform_data(codebooks, encoder_outputs=None):
+    codebooks_combined = np.concat(codebooks)
+    if encoder_outputs is not None:
+        encoder_outputs_combined = np.concat(encoder_outputs)
+        all_data = np.concat([codebooks_combined, encoder_outputs_combined])
+    else:
+        all_data = codebooks_combined
     tsne = TSNE(random_state=42)
-    if encoder_output is not None:
-        transformed_data = tsne.fit_transform(np.concat([codebook, encoder_output]))
-
-        nbins = 16
-        x = transformed_data[len(codebook) :, 0]
-        y = transformed_data[len(codebook) :, 1]
-        print(x.shape)
-        k = gaussian_kde((x, y))
-        xi, yi = np.mgrid[
-            transformed_data[:, 0].min()
-            - MARGIN_SIZE : transformed_data[:, 0].max()
-            + MARGIN_SIZE : nbins * 1j,
-            transformed_data[:, 1].min()
-            - MARGIN_SIZE : transformed_data[:, 1].max().max()
-            + MARGIN_SIZE : nbins * 1j,
-        ]
-        zi = k(np.vstack([xi.flatten(), yi.flatten()]))
-        plt.pcolormesh(xi, yi, zi.reshape(xi.shape), shading="gouraud", cmap="Blues")
-
-        cbar = plt.colorbar()
-        cbar.set_label("Encoder Output Density")
+    transformed_data = tsne.fit_transform(all_data)
+    transformed_codebooks = []
+    start = 0
+    for codebook in codebooks:
+        end = start + len(codebook)
+        transformed_codebooks.append(transformed_data[start:end])
+        start = end
+    if encoder_outputs is not None:
+        transformed_encoder_outputs = []
+        for encoder_output in encoder_outputs:
+            end = start + len(encoder_output)
+            transformed_encoder_outputs.append(transformed_data[start:end])
+            start = end
     else:
-        transformed_data = tsne.fit_transform(codebook)
+        transformed_encoder_outputs = None
+    return transformed_codebooks, transformed_encoder_outputs
 
-    # plot the codebooks
-    if range_dict is None:
-        plt.scatter(transformed_data[:, 0], transformed_data[:, 1])
+
+def plot_encoder_density(encoder_output_transformed, ax):
+    n_bins = 128
+    k = gaussian_kde(
+        (encoder_output_transformed[:, 0], encoder_output_transformed[:, 1])
+    )
+    margin = MARGIN_RATIO * encoder_output_transformed[:, 0].max()
+    xi, yi = np.mgrid[
+        encoder_output_transformed[:, 0].min()
+        - margin : encoder_output_transformed[:, 0].max()
+        + margin : n_bins * 1j,
+        encoder_output_transformed[:, 1].min()
+        - margin : encoder_output_transformed[:, 1].max()
+        + margin : n_bins * 1j,
+    ]
+    zi = k(np.vstack([xi.flatten(), yi.flatten()]))
+    ax.pcolormesh(xi, yi, zi.reshape(xi.shape), shading="gouraud", cmap="Reds")
+    return
+
+
+def scatter_codebooks(
+    codebook_transformed: np.array,
+    ax: plt.Axes,
+    codebook_partitioning: dict = None,
+):
+    if codebook_partitioning is None:
+        ax.scatter(
+            codebook_transformed[:, 0],
+            codebook_transformed[:, 1],
+            alpha=0.5,
+            s=8,
+        )
     else:
-        for name, partition in range_dict.items():
-            plt.scatter(
-                transformed_data[partition[0] : partition[1], 0],
-                transformed_data[partition[0] : partition[1], 1],
+        for name, partition in codebook_partitioning.items():
+            ax.scatter(
+                codebook_transformed[partition[0] : partition[1], 0],
+                codebook_transformed[partition[0] : partition[1], 1],
                 alpha=0.5,
-                s=16,
+                s=8,
                 label=name,
             )
-
-        plt.legend(loc="lower left")
-    plt.xlim(
-        left=transformed_data[:, 0].min() - MARGIN_SIZE,
-        right=transformed_data[:, 0].max() + MARGIN_SIZE,
-    )
-    plt.ylim(
-        bottom=transformed_data[:, 1].min() - MARGIN_SIZE,
-        top=transformed_data[:, 1].max() + MARGIN_SIZE,
-    )
-
-    plt.title(title)
-    plt.savefig(filename)
-    plt.show()
+        ax.legend(loc="lower left")
 
 
-def create_range(codebooks_dict):
+def create_codebook_partitioning(codebooks_dict):
     range_dict = {}
     codebook_list = []
     curr = 0
@@ -93,24 +104,38 @@ def create_range(codebooks_dict):
     return concat_codebooks, range_dict
 
 
+def sample(array, num_samples):
+    random_indices = np.random.choice(array.shape[0], size=num_samples, replace=False)
+    return array[random_indices]
+
+
 def main():
-    m0_codebook = (
-        load_model("model_0.pth", "eval_config.yaml").codebook.detach().numpy()[0:512]
-    )
-    m21_codebook = (
-        load_model("model_21.pth", "eval_config.yaml").codebook.detach().numpy()[0:512]
-    )
-    m4_codebook = (
-        load_model("model_4.pth", "eval_config.yaml").codebook.detach().numpy()[0:512]
-    )
+    image_path = "auto2.jpg"
+    image_path = image_path  # Replace with your image path
+    image = Image.open(image_path).convert("RGB")  # Ensure 3 color channels (RGB)
+    transform = transforms.ToTensor()
+    image_tensor = transform(image).unsqueeze(0)
 
-    # Replace with using the models
-    encoder_output = 2 * np.random.randn(1000, 256)
+    encoder_outputs = []
+    codebooks = []
+    for epoch in ["0", "4", "21"]:
+        model = load_model(f"model_{epoch}.pth", "eval_config.yaml")
+        codebooks.append(model.codebook.detach().numpy())
+        encoder_output = (
+            model.encoder(image_tensor).detach().squeeze(0).permute(1, 2, 0).numpy()
+        )
+        encoder_outputs.append(sample(np.reshape(encoder_output, (-1, 256)), 3000))
 
-    concat_codebooks, range_dict = create_range(
-        {"model 0": m0_codebook, "model 4": m4_codebook, "model 21": m21_codebook}
+    fig, axs = plt.subplots(1, 3, figsize=(16, 4))
+
+    codebooks_transformed, encoder_outputs_transformed = transform_data(
+        codebooks, encoder_outputs
     )
-    save_2d_tsne(concat_codebooks, range_dict=range_dict, encoder_output=encoder_output)
+    for epoch in range(0, 3):
+        plot_encoder_density(encoder_outputs_transformed[epoch], axs[epoch])
+        scatter_codebooks(codebooks_transformed[epoch], axs[epoch])
+    fig.suptitle(image_path)
+    plt.show()
 
 
 if __name__ == "__main__":
