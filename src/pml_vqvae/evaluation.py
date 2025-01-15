@@ -11,7 +11,7 @@ import numpy as np
 from PIL import Image
 import torchvision.transforms as transforms
 
-MARGIN_RATIO = 0.5
+MARGIN_RATIO = 0.2
 
 
 def load_model(model_path, config_path):
@@ -55,7 +55,7 @@ def plot_encoder_density(encoder_output_transformed, ax):
     k = gaussian_kde(
         (encoder_output_transformed[:, 0], encoder_output_transformed[:, 1])
     )
-    margin = MARGIN_RATIO * encoder_output_transformed[:, 0].max()
+    margin = encoder_output_transformed[:, 0].max() * MARGIN_RATIO
     xi, yi = np.mgrid[
         encoder_output_transformed[:, 0].min()
         - margin : encoder_output_transformed[:, 0].max()
@@ -116,7 +116,6 @@ def main():
     image = Image.open(image_path).convert("RGB")  # Ensure 3 color channels (RGB)
     transform = transforms.ToTensor()
     image_tensor = transform(image).unsqueeze(0)"""
-
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
     print("Start loading...")
@@ -131,14 +130,17 @@ def main():
     codebooks = []
     for epoch in ["0", "4", "21"]:
         model = load_model(
-            f"artifacts/hyperopt_X_with_replacement_43/model_{epoch}.pth",
+            f"model_{epoch}.pth",
             "eval_config.yaml",
         )
-        model.to(DEVICE)
+        # model.to(DEVICE)
         codebooks.append(model.codebook.detach().cpu().numpy())
         print(f"Shape: {image_tensor.shape}")
-        encoder_output = model.encoder(image_tensor).detach().cpu().numpy()
-        encoder_outputs.append(sample(np.reshape(encoder_output, (-1, 256)), 2048))
+        encoder_output = (
+            model.encoder(image_tensor).detach().cpu().permute(1, 2, 3, 0).numpy()
+        )
+        print(encoder_output.shape)
+        encoder_outputs.append(sample(np.reshape(encoder_output, (-1, 256)), 1200))
 
     fig, axs = plt.subplots(1, 3, figsize=(16, 4))
 
@@ -148,8 +150,8 @@ def main():
     for epoch in range(0, 3):
         plot_encoder_density(encoder_outputs_transformed[epoch], axs[epoch])
         scatter_codebooks(codebooks_transformed[epoch], axs[epoch])
-    fig.suptitle("TEST")
-    plt.savefig("test.jpg")
+    fig.suptitle("NEWEST_TEST")
+    plt.savefig("test.png")
 
     plt.show()
 
