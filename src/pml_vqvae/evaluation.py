@@ -111,11 +111,18 @@ def sample(array, num_samples):
 
 
 def main():
-    image_path = "auto2.jpg"
+    """image_path = "auto2.jpg"
     image_path = image_path  # Replace with your image path
     image = Image.open(image_path).convert("RGB")  # Ensure 3 color channels (RGB)
     transform = transforms.ToTensor()
-    image_tensor = transform(image).unsqueeze(0)
+    image_tensor = transform(image).unsqueeze(0)"""
+
+    print("Start loading...")
+    _, test_loader = load_data(
+        "imagenet", n_train=1000, n_test=1000, seed=42, batch_size=64
+    )
+    print("Loaded.")
+    image_tensor = test_loader[0]
 
     encoder_outputs = []
     codebooks = []
@@ -138,16 +145,10 @@ def main():
     for epoch in range(0, 3):
         plot_encoder_density(encoder_outputs_transformed[epoch], axs[epoch])
         scatter_codebooks(codebooks_transformed[epoch], axs[epoch])
-    fig.suptitle(image_path)
+    fig.suptitle("TEST")
     plt.show()
     plt.savefig("test.jpg")
 
 
 if __name__ == "__main__":
-    print("Start loading...")
-    _, test_loader = load_data(
-        "imagenet", n_train=1000, n_test=1000, seed=42, batch_size=64
-    )
-    print("Loaded.")
-    print(next(iter(test_loader)))
     main()
