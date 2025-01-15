@@ -173,6 +173,17 @@ def load_data(
             f"/home/{getpass.getuser()}/pml_vqvae/artifacts/konni_replacement_vqvae/imagenet_latents_200000/test",
             data_per_file=1,
         )
+    
+    elif dataset.startswith("latent"):
+        _, dataset_path = dataset.split()
+        print("Getting latent dataset")
+        train_set = LatentDataset(
+            f"{dataset_path}/train",
+        )
+
+        test_set = LatentDataset(
+            f"{dataset_path}/test",
+        )
 
     train_loader = torch.utils.data.DataLoader(
         train_set, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers

@@ -15,10 +15,11 @@ print(f"On device: {DEVICE}")
 def generate_latent_dataset(
     data_loader: torch.utils.data.DataLoader,
     vqvae: VQVAE,
+    max_per_file: int = 1,
 ) -> LatentDatasetGenerator:
     vqvae.eval()
 
-    latent_dataset = LatentDatasetGenerator()
+    latent_dataset = LatentDatasetGenerator(max_per_file=max_per_file)
 
     vqvae.to(DEVICE)
 
@@ -38,17 +39,35 @@ if __name__ == "__main__":
         "--model_path",
         "-m",
         help="Path to a directory containing config.yaml and model.pth",
+        required=True,
     )
     parser.add_argument(
-        "--dataset",
-        "-d",
-        help="Name of the dataset to use",
+        "--dataset", "-d", help="Name of the dataset to use", required=True
     )
     parser.add_argument(
-        "--n_samples",
-        "--ns",
-        help="Number of samples to use",
+        "--n-train",
+        "--ntr",
+        help="Number of training samples to use",
         type=int,
+    )
+    parser.add_argument(
+        "--n-test",
+        "--nte",
+        help="Number of test samples to use",
+        type=int,
+    )
+    parser.add_argument(
+        "--n-classes",
+        "--nc",
+        help="Number of classes to use",
+        type=int,
+    )
+    parser.add_argument(
+        "--max-per-file",
+        "--mpf",
+        help="Number of samples packed into a single file",
+        type=int,
+        default=10,
     )
     parser.add_argument(
         "--seed",
@@ -78,26 +97,40 @@ if __name__ == "__main__":
         exit()
 
     dataset = args.dataset
-    n_samples = args.n_samples
+    n_train = args.n_train
+    n_test = args.n_test
+    n_classes = args.n_classes
+    max_per_file = args.max_per_file
     seed = args.seed
+
+    if (n_train is not None or n_test is not None) and n_classes is not None:
+        raise ValueError("Either use --n-train/--n-test or --n-classes, not mixed.")
+
+    dataset_name = f"{dataset}_latents"
+    if n_classes is not None:
+        dataset_name = f"{dataset_name}_{n_classes}classes"
+    if n_train is not None:
+        dataset_name = f"{dataset_name}_{n_train}train"
+    if n_test is not None:
+        dataset_name = f"{dataset_name}_{n_test}test"
 
     print("Loading data")
     train_loader, test_loader = load_data(
         dataset,
-        n_train=n_samples,
-        n_test=None,
+        n_train=n_train,
+        n_test=n_test,
         seed=seed,
+        class_idx=list(range(n_classes)) if n_classes is not None else None,
         batch_size=256,
+        shuffle=False,
     )
 
-    print("Generating train set")
-    train_latent_dataset = generate_latent_dataset(train_loader, vqvae)
-    train_latent_dataset.save(
-        f"{args.model_path}/{dataset}_latents_{n_samples}/train", "train"
-    )
+    print("Iterating through train set")
+    train_latent_dataset = generate_latent_dataset(train_loader, vqvae, max_per_file)
+    print(" Saving to filesystem")
+    train_latent_dataset.save(f"{args.model_path}/{dataset_name}/train", "train")
 
-    print("Generating test set")
-    test_latent_dataset = generate_latent_dataset(test_loader, vqvae)
-    test_latent_dataset.save(
-        f"{args.model_path}/{dataset}_latents_{n_samples}/test", "test"
-    )
+    print("Iterating through test set")
+    test_latent_dataset = generate_latent_dataset(test_loader, vqvae, max_per_file)
+    print(" Saving to filesystem")
+    test_latent_dataset.save(f"{args.model_path}/{dataset_name}/test", "test")
