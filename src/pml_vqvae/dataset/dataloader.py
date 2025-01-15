@@ -165,12 +165,12 @@ def load_data(
     elif dataset == "latent":
         print("Getting latent dataset")
         train_set = LatentDataset(
-            f"/home/{getpass.getuser()}/pml_vqvae/artifacts/30_classes_imagenet_latents_30000/train",
+            f"/home/{getpass.getuser()}/pml_vqvae/artifacts/konni_replacement_vqvae/imagenet_latents_200000/train",
             data_per_file=1,
         )
 
         test_set = LatentDataset(
-            f"/home/{getpass.getuser()}/pml_vqvae/artifacts/30_classes_imagenet_latents_30000/test",
+            f"/home/{getpass.getuser()}/pml_vqvae/artifacts/konni_replacement_vqvae/imagenet_latents_200000/test",
             data_per_file=1,
         )
     

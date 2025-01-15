@@ -153,10 +153,11 @@ def train(config: TrainConfig):
     stats_keeper = StatsKeeper()
 
     last_average_test_loss = None
-    best_average_test_loss = float("inf")
+    best_convergence_criterion = float("inf")
     patience = config.convergence_patience
     print("Training model...")
     for i in range(config.epochs):
+        print(f"\nEPOCH {i+1}")
         # train on all datat for one epoch
         batch, output, _ = train_epoch(
             model,
@@ -165,7 +166,6 @@ def train(config: TrainConfig):
             stats_keeper,
             config.label_conditioning,
         )
-        print(f"Batch images are in range [{batch.min()}, {batch.max()}]")
         wandb_wrapper.construct_examples(batch, model.visualize_output(output))
 
         # test
@@ -192,14 +192,21 @@ def train(config: TrainConfig):
 
         model_dir = stats_keeper.save_model(model, config.output_dir, epoch=i)
         wandb_wrapper.save_model(model_dir)
-        print(epoch_stats)
+        print("\n".join([f"  [train] {k}: {v:.6f}" for k, v in epoch_stats[0].items()]))
+        print("\n".join([f"  [test] {k}: {v:.6f}" for k, v in epoch_stats[1].items()]))
+
+        convergence_criterion = (
+            last_average_test_loss
+            if config.convergence_key is None
+            else epoch_stats[1][config.convergence_key]
+        )
 
         if (
-            last_average_test_loss
-            < best_average_test_loss * config.convergence_performance_threshold
+            convergence_criterion
+            < best_convergence_criterion * config.convergence_performance_threshold
         ):
             patience = config.convergence_patience
-            best_average_test_loss = last_average_test_loss
+            best_convergence_criterion = convergence_criterion
         else:
             patience -= 1
             print(f"No significant increase in performance. Patience left {patience}")

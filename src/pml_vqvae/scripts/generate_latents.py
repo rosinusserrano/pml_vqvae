@@ -39,13 +39,10 @@ if __name__ == "__main__":
         "--model_path",
         "-m",
         help="Path to a directory containing config.yaml and model.pth",
-        required=True
+        required=True,
     )
     parser.add_argument(
-        "--dataset",
-        "-d",
-        help="Name of the dataset to use",
-        required=True
+        "--dataset", "-d", help="Name of the dataset to use", required=True
     )
     parser.add_argument(
         "--n-train",
@@ -70,6 +67,7 @@ if __name__ == "__main__":
         "--mpf",
         help="Number of samples packed into a single file",
         type=int,
+        default=10,
     )
     parser.add_argument(
         "--seed",
@@ -107,7 +105,7 @@ if __name__ == "__main__":
 
     if (n_train is not None or n_test is not None) and n_classes is not None:
         raise ValueError("Either use --n-train/--n-test or --n-classes, not mixed.")
-    
+
     dataset_name = f"{dataset}_latents"
     if n_classes is not None:
         dataset_name = f"{dataset_name}_{n_classes}classes"
@@ -129,14 +127,10 @@ if __name__ == "__main__":
 
     print("Iterating through train set")
     train_latent_dataset = generate_latent_dataset(train_loader, vqvae, max_per_file)
-    print("Saving to filesystem")
-    train_latent_dataset.save(
-        f"{args.model_path}/{dataset_name}/train", "train"
-    )
+    print(" Saving to filesystem")
+    train_latent_dataset.save(f"{args.model_path}/{dataset_name}/train", "train")
 
     print("Iterating through test set")
     test_latent_dataset = generate_latent_dataset(test_loader, vqvae, max_per_file)
-    print("Saving to filesystem")
-    test_latent_dataset.save(
-        f"{args.model_path}/{dataset_name}/test", "test"
-    )
+    print(" Saving to filesystem")
+    test_latent_dataset.save(f"{args.model_path}/{dataset_name}/test", "test")

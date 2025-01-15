@@ -12,38 +12,38 @@ print("On device", DEVICE)
 
 print("Loading VQVAE")
 vqvaeconfig = VQVAEConfig(
-    codebook_size=1024,
+    codebook_size=512,
     commitment_weight=2,
-    hidden_dimension=64,
-    embedding_dimension=64,
+    hidden_dimension=256,
+    embedding_dimension=256,
+    codebook_initialization_radius=0.5,
 )
 vqvae = VQVAE(vqvaeconfig).to(DEVICE)
 vqvae.load_state_dict(
-    torch.load("artifacts/vqvae_konni_easy_params/model.pth", weights_only=True)
+    torch.load("artifacts/konni_replacement_vqvae/model.pth", weights_only=True)
 )
 
 print("Loading PixelCNN")
 pixelcnnconfig = PixelCNNConfig(
-    num_codes=1024,
+    num_codes=512,
     hidden_chan=256,
-    num_classes=30,
+    num_classes=1000,
     input_shape=(32, 32),
 )
 pixelcnn = PixelCNN(pixelcnnconfig).to(DEVICE)
 pixelcnn.load_state_dict(
     torch.load(
-        "artifacts/pixelcnn on 30 classes test_4/model_50.pth", weights_only=True
+        "artifacts/pixelcnn on latents of replacement vqvae_2/model_9.pth",
+        weights_only=True,
     )
 )
 
 print("Sampling latent indices with PixelCNN")
-indices = pixelcnn.sample(
-    (torch.ones(64) * 3).long().to(DEVICE), probabilistic_sampling_prob=1
-)
+indices = pixelcnn.sample((torch.ones(64) * 51).long().to(DEVICE))
 
 print("Generating images with decoder of VQVAE")
 generated_images = vqvae.decode(indices.long()).detach().cpu()
-show(generated_images, outfile="vqvae_generations_tigershark.png")
+show(generated_images, outfile="vqvae_generations_triceratops.png")
 
 # print("Getting imagenet for test batch reconstruction")
 # imgnet, _ = load_data("imagenet", batch_size=64)
