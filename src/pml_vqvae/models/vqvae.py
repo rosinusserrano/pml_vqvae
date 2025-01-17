@@ -9,7 +9,12 @@ import torch.nn.functional as F
 from torch import autograd
 
 from pml_vqvae.models.pml_model_interface import PML_model
-from pml_vqvae.nnutils import downsample, upsample, ResidualBlock
+from pml_vqvae.nnutils import (
+    downsample,
+    sobol_uniform_points,
+    upsample,
+    ResidualBlock,
+)
 
 
 class VectorQuantization(autograd.Function):
@@ -73,6 +78,7 @@ class VQVAEConfig:
     hidden_dimension: int
     embedding_dimension: int
     codebook_initialization_radius: float
+    fixed_embeds: bool = False
     name: str = "VQVAE"
 
 
@@ -91,15 +97,26 @@ class VQVAE(PML_model):
             ResidualBlock(config.hidden_dimension, config.embedding_dimension),
         )
 
-        self.codebook = nn.Parameter(
-            torch.zeros(
-                (config.codebook_size, config.embedding_dimension)
-            ).data.uniform_(
-                -config.codebook_initialization_radius,
-                config.codebook_initialization_radius,
-            ),
-            requires_grad=True,
-        )
+        if self.config.fixed_embeds:
+            self.codebook = nn.Parameter(
+                torch.tensor(
+                    sobol_uniform_points(
+                        config.codebook_size, config.embedding_dimension
+                    ),
+                    dtype=torch.float32,
+                ),
+                requires_grad=False,
+            )
+        else:
+            self.codebook = nn.Parameter(
+                torch.zeros(
+                    (config.codebook_size, config.embedding_dimension)
+                ).data.uniform_(
+                    -config.codebook_initialization_radius,
+                    config.codebook_initialization_radius,
+                ),
+                requires_grad=True,
+            )
 
         self.decoder = nn.Sequential(
             ResidualBlock(config.embedding_dimension, config.hidden_dimension),
@@ -141,7 +158,10 @@ class VQVAE(PML_model):
         encoder_commitment = F.mse_loss(codes.detach(), encoder_out)
         encoder_commitment *= self.config.commitment_weight
 
-        codes_commitment = F.mse_loss(codes, encoder_out.detach())
+        if self.config.fixed_embeds:
+            codes_commitment = torch.tensor(0.0)
+        else:
+            codes_commitment = F.mse_loss(codes, encoder_out.detach())
 
         loss = reconstruction + encoder_commitment + codes_commitment
 
@@ -163,3 +183,15 @@ class VQVAE(PML_model):
 
     def visualize_output(self, output):
         return output[0]
+
+    def vis_codes(self, batch, epoch):
+        import matplotlib.pyplot as plt
+
+        out = self.encoder(batch).cpu().detach().numpy()
+
+        plt.plot(out[0].flatten(), out[1].flatten(), "o")
+        codes = self.codebook.cpu().detach().numpy()
+        plt.plot(codes[:, 0], codes[:, 1], "x")
+
+        plt.savefig(f"codes_{epoch}.png")
+        plt.clf()

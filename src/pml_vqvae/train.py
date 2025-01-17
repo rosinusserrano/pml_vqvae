@@ -166,6 +166,7 @@ def train(config: TrainConfig):
             config.label_conditioning,
         )
         print(f"Batch images are in range [{batch.min()}, {batch.max()}]")
+        # model.vis_codes(batch, i)
         wandb_wrapper.construct_examples(batch, model.visualize_output(output))
 
         # test

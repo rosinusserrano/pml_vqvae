@@ -2,6 +2,8 @@
 
 import torch
 from torch import nn
+import numpy as np
+from scipy.stats import qmc
 
 
 def upsample(in_channels: int, out_channels: int, activation: nn.Module = nn.ReLU()):
@@ -85,3 +87,26 @@ class ResidualBlock(nn.Module):
             out = self.skip_conv(out) + x
 
         return out
+
+
+def sobol_uniform_points(n, d):
+    """
+    Generate n points uniformly distributed in d-dimensional space using Sobol sequence.
+
+    Parameters:
+    - n: int, the number of points
+    - d: int, the number of dimensions
+
+    Returns:
+    - points: np.ndarray of shape (n, d), the uniformly distributed points
+    """
+    sampler = qmc.Sobol(d, scramble=True)
+    points = sampler.random(n) * 8 - 4
+    return points
+
+
+if __name__ == "__main__":
+
+    p = sobol_uniform_points(512, 64)
+    print(p.shape)
+    print(p)
