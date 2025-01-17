@@ -46,6 +46,7 @@ class TrainConfig:
     n_test: int | None = None
     seed: int | None = None
     class_idx: int | None = None
+    hyperclass: bool = False
 
     # model optionals (some model require a config, others don't)
     model_config: dict | None = None

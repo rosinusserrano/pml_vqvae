@@ -19,6 +19,7 @@ def load_data(
     shuffle: bool = True,
     class_idx: list = None,
     seed: int = None,
+    hyperclass: bool = False,
 ):
     """Load data from specified dataset
 
@@ -79,6 +80,7 @@ def load_data(
             transform=train_transforms,
             seed=seed,
             class_idx=class_idx,
+            hyperclass=hyperclass,
         )
 
         test_set = ImageNetDataset(
@@ -87,6 +89,7 @@ def load_data(
             transform=test_transforms,
             seed=seed,
             class_idx=class_idx,
+            hyperclass=hyperclass,
         )
 
     elif dataset == "cifar":
@@ -173,7 +176,7 @@ def load_data(
             f"/home/{getpass.getuser()}/pml_vqvae/artifacts/konni_replacement_vqvae/imagenet_latents_200000/test",
             data_per_file=1,
         )
-    
+
     elif dataset.startswith("latent"):
         _, dataset_path = dataset.split()
         print("Getting latent dataset")

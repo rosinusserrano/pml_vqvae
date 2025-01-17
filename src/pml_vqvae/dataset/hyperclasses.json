@@ -1,0 +1,51 @@
+{
+    "dog": [
+        "Irish terrier",
+        "Appenzeller",
+        "Leonberg",
+        "golden retriever",
+        "giant schnauzer"
+    ],
+    "cat":[
+        "Egyptian cat",
+        "Persian cat",
+        "Siamese cat",
+        "tabby",
+        "tiger cat"
+    ],
+    "car":[
+        "convertible",
+        "sports car",
+        "racer",
+        "limousine",
+        "jeep"
+    ],
+    "bird":[
+        "bald eagle",
+        "hummingbird",
+        "great grey owl",
+        "white stork",
+        "house finch"
+    ],
+    "ship":[
+        "container ship",
+        "speedboat",
+        "liner",
+        "lifeboat",
+        "fireboat"
+    ],
+    "truck":[
+        "garbage truck",
+        "tow truck",
+        "fire engine",
+        "pickup",
+        "trailer truck"
+    ],
+    "fish":[
+        "goldfish",
+        "coho",
+        "barracouta",
+        "tench",
+        "sturgeon"
+    ]
+}
