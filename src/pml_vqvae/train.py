@@ -141,6 +141,7 @@ def train(config: TrainConfig):
         seed=config.seed,
         class_idx=config.class_idx,
         batch_size=config.batch_size,
+        hyperclass=config.hyperclass,
     )
 
     optimizer = config.get_optimizer(model)

@@ -2,7 +2,7 @@
 experiment_name: "code enforced vqvae realness" # name of the experiment
 description: "" # description of the experiment
 seed: 42 # seed for reproducibility
-test_interval: 1  # test the model every test_interval epochs, None to disable
+test_interval: 1 # test the model every test_interval epochs, None to disable
 vis_train_interval: 1 # plot the training loss every plot_train_interval epochs, None to disable
 wandb_log: True # log the experiment to wandb
 
@@ -11,6 +11,7 @@ n_train: 200000 # number of training samples
 n_test: 10000 # number of test samples
 dataset: "imagenet" # either cifar or imagenet
 class_idx: null # list of class indices to use, empty list to use all classes
+hyperclass: True # use hyperclasses
 
 # train config
 batch_size: 128
@@ -38,7 +39,6 @@ model_config:
   hidden_dimension: 256
   embedding_dimension: 256
   codebook_initialization_radius: 0.5
-
 # VAE
 # model_config:
 #   kld_weight: 0.00025
