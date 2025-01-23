@@ -134,20 +134,21 @@ def main():
             "eval_config.yaml",
         )
         # model.to(DEVICE)
-        codebooks.append(model.codebook.detach().cpu().numpy())
-        print(f"Shape: {image_tensor.shape}")
-        encoder_output = (
-            model.encoder(image_tensor).detach().cpu().permute(3, 2, 0, 1).numpy()
-        )
-        print(encoder_output.shape)
-        encoder_outputs.append(sample(np.reshape(encoder_output, (-1, 256)), 1200))
+        with torch.no_grad():
+            codebooks.append(model.codebook.detach().cpu().numpy())
+            print(f"Shape: {image_tensor.shape}")
+            encoder_output = (
+                model.encoder(image_tensor).detach().cpu().permute(3, 2, 0, 1).numpy()
+            )
+            print(encoder_output.shape)
+            encoder_outputs.append(sample(np.reshape(encoder_output, (-1, 256)), 1200))
 
     fig, axs = plt.subplots(1, 3, figsize=(16, 4))
 
     codebooks_transformed, encoder_outputs_transformed = transform_data(
         codebooks, encoder_outputs
     )
-    for epoch in range(0, 2):
+    for epoch in range(0, 3):
         plot_encoder_density(encoder_outputs_transformed[epoch], axs[epoch])
         scatter_codebooks(codebooks_transformed[epoch], axs[epoch])
     fig.suptitle("NEWEST_TEST")
