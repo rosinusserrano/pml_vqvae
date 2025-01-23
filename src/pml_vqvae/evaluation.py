@@ -128,9 +128,9 @@ def main():
     # artifacts/hyperopt_X_with_replacement_20/
     encoder_outputs = []
     codebooks = []
-    for epoch in ["0", "4", "21"]:
+    for epoch in ["0", "40"]:
         model = load_model(
-            f"artifacts/hyperopt_X_with_replacement_43/model_{epoch}.pth",
+            f"artifacts/Vergleichsrun REPLACEMENT/model_{epoch}.pth",
             "eval_config.yaml",
         )
         # model.to(DEVICE)
@@ -147,7 +147,7 @@ def main():
     codebooks_transformed, encoder_outputs_transformed = transform_data(
         codebooks, encoder_outputs
     )
-    for epoch in range(0, 3):
+    for epoch in range(0, 2):
         plot_encoder_density(encoder_outputs_transformed[epoch], axs[epoch])
         scatter_codebooks(codebooks_transformed[epoch], axs[epoch])
     fig.suptitle("NEWEST_TEST")
