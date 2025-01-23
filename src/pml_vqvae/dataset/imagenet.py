@@ -41,6 +41,7 @@ def create_imagenet_subset(
     split: str,
     seed: int = None,
     class_idx_list: list = None,
+    hyperclass: bool = False,
 ):
     """Create a subset of the ImageNet dataset with n_samples per class.
 
@@ -56,12 +57,34 @@ def create_imagenet_subset(
 
     full_imagenet = init_imagenet(root_dir, split)
 
+    # create a class_idx_list according to the hyperclasses
+    idx2hyperclasslabel = None
+    if hyperclass:
+        idx2hyperclasslabel = {}
+        hyperclasses = json.load(open("src/pml_vqvae/dataset/hyperclasses.json"))
+
+        class_idx_list = []
+        for i, (_, class_names) in enumerate(hyperclasses.items()):
+            class_idx = []
+
+            for name in class_names:
+                try:
+                    class_idx.append(full_imagenet.class_to_idx[name])
+                except KeyError:
+                    print(f"WARNING: Class {name} not found in ImageNet dataset")
+
+            class_idx_list.extend(class_idx)
+
+            for idx in class_idx:
+                idx2hyperclasslabel[idx] = i
+
     img_subset = []
 
     img_pointer = 0
     # iterate over all classes
     for class_idx in range(len(full_imagenet.classes)):
         class_imgs = []
+
         # iterate over all images starting from last pointer
         for idx in range(img_pointer, len(full_imagenet.imgs)):
             path, img_class_idx = full_imagenet.imgs[idx]
@@ -95,7 +118,7 @@ def create_imagenet_subset(
     subset_imagenet.samples = img_subset
     subset_imagenet.targets = [img[1] for img in img_subset]
 
-    return subset_imagenet
+    return subset_imagenet, idx2hyperclasslabel
 
 
 class ImageNetDataset(Dataset):
@@ -117,14 +140,25 @@ class ImageNetDataset(Dataset):
         seed: int = None,
         transform=None,
         class_idx: list = None,
+        hyperclass: bool = False,
     ):
         super().__init__()
 
         # root directory of the dataset
         self.root_dir = os.path.join(root_dir, split)
 
-        if samples_per_class is not None or class_idx is not None:
-            self.imagenet = create_imagenet_subset(
+        self.is_hyperclass = hyperclass
+        if hyperclass:
+            self.imagenet, self.idx2hyperclasslabel = create_imagenet_subset(
+                root_dir,
+                samples_per_class,
+                split,
+                seed=seed,
+                class_idx_list=class_idx,
+                hyperclass=True,
+            )
+        elif samples_per_class is not None or class_idx is not None:
+            self.imagenet, _ = create_imagenet_subset(
                 root_dir, samples_per_class, split, seed=seed, class_idx_list=class_idx
             )
             self.samples_per_class = samples_per_class
@@ -153,7 +187,10 @@ class ImageNetDataset(Dataset):
         if self.transform:
             image = self.transform(image)
 
-        return image, self.imagenet.targets[idx]
+        if self.is_hyperclass:
+            return image, self.idx2hyperclasslabel[self.imagenet.targets[idx]]
+        else:
+            return image, self.imagenet.targets[idx]
 
     def export_class_dist(self, outfile="./imagenet_dist"):
         """Export the class distribution of the dataset as a histogram.
