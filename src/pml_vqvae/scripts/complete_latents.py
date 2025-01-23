@@ -27,17 +27,16 @@ print("Loading PixelCNN")
 pixelcnnconfig = PixelCNNConfig(
     num_codes=512,
     conditional=False,
-    hidden_chan=256,
+    hidden_chan=128,
     num_classes=None,
     conditional_embedding_dim=None,
-    dilations=[1, 2, 1, 4, 1, 2, 1, 2, 1],
+    dilations="1-1-1-1-1-1-1-1-1-1-1-1-1-1-1",
     input_shape=(32, 32),
-    vqvae_path="artifacts/konni_replacement_vqvae",
 )
 pixelcnn = PixelCNN(pixelcnnconfig).to(DEVICE)
 pixelcnn.load_state_dict(
     torch.load(
-        "artifacts/embedding pixelcnn_4/model_2.pth",
+        "artifacts/hyperopt-XI-pixelcnn-unconditional_19/model_20.pth",
         weights_only=True,
     )
 )

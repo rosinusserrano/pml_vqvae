@@ -188,6 +188,9 @@ def load_data(
             f"{dataset_path}/test",
         )
 
+    else:
+        raise ValueError(f"Dataset {dataset} not available")
+
     train_loader = torch.utils.data.DataLoader(
         train_set, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers
     )

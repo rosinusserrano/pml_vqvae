@@ -99,11 +99,6 @@ class TrainConfig:
 
     def integrity_check(self):
         """Check if the configuration is complete"""
-        if self.dataset not in AVAIL_DATASETS:
-            raise ValueError(
-                f"Dataset {self.dataset} is not available. Choose from {AVAIL_DATASETS}"
-            )
-
         if self.model_name not in AVAIL_MODELS:
             raise ValueError(
                 f"Model {self.model_name} is not available. Choose from {AVAIL_MODELS}"
