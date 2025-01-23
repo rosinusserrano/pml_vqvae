@@ -295,3 +295,59 @@ class VQVAECodeEnforced(VQVAE):
 
     def name(self):
         return "VQVAECodeEnforced"
+
+
+class VectorQuantizationMeanCodeGradient(autograd.Function):
+    """Function to perform vector quantization and copy the codebook gradients
+    to the encoders output"""
+
+    @staticmethod
+    def forward(ctx, batch, codebook):
+        batch_size, channels, height, width = batch.shape
+        codebook_size, embedding_dim = codebook.shape
+
+        if embedding_dim != channels:
+            raise ValueError("codebook embedding dimension doesnt equal" "channel dim!")
+
+        batch = batch.permute(0, 2, 3, 1)  # channels on last dim
+        batch = batch.reshape(-1, channels)  # flatten except for channels
+
+        # Shape -> (batch_size * height * width)  x codebook_size
+        squared_distances = torch.cdist(batch, codebook)
+
+        nearest_codes_indexes = torch.argmin(squared_distances, dim=1)
+
+        # Save indexes in order to match gradients to corresponding codes
+        ctx.save_for_backward(nearest_codes_indexes, codebook)
+
+        output = codebook[nearest_codes_indexes]
+        output = output.reshape(batch_size, height, width, channels)
+        output = output.permute(0, 3, 1, 2)
+
+        nearest_codes_indexes = nearest_codes_indexes.reshape(batch_size, height, width)
+
+        return output, nearest_codes_indexes
+
+    @staticmethod
+    def backward(ctx, grad_output, grad_indices):
+        code_indexes, codebook = ctx.saved_tensors
+
+        grad_encoder = grad_output
+
+        n_channels = grad_output.shape[1]
+
+        grad_output = grad_output.permute(0, 2, 3, 1)
+        grad_output = grad_output.reshape(-1, n_channels)
+
+        grad_codes = torch.zeros_like(codebook)
+        grad_codes = torch.index_add(
+            input=grad_codes,
+            dim=0,
+            index=code_indexes,
+            source=grad_output,
+        )
+        idx_count = torch.bincount(code_indexes, minlength=codebook.shape[0])
+        idx_count[idx_count == 0] = 1
+        grad_codes = grad_codes / idx_count[:, None]
+
+        return grad_encoder, grad_codes
