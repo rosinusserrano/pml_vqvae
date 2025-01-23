@@ -15,19 +15,29 @@ import pml_vqvae.train
 warnings.simplefilter(action="ignore", category=FutureWarning)
 
 
-EXPERIMENT_NAME = "hyperopt-IX-break-if-not-improving"
+EXPERIMENT_NAME = "hyperopt-XII-pixelcnn-conditional-embedding"
 
 
 FIXED_HYPERPARAMS = {
-    "dataset": "imagenet",
+    # "dataset": "latent artifacts/konni_replacement_vqvae/imagenet_latents_200000",
     "experiment_name": EXPERIMENT_NAME,
-    "model_name": "vqvae",
+    "model_name": "pixelcnn",
     "n_test": 5000,
     "n_train": 100000,
     "test_interval": 1,
     "vis_train_interval": 1,
+    "label_conditioning": True,
     "epochs": 20,
     "optimizer": "adam",
+    "wandb_log": True,
+    "conditional": True,
+    "num_codes": 512,
+    "vqvae_path": "artifacts/konni_replacement_vqvae",
+    "dilations": "1-2-1-3-1-4-1-3-1-2-1",
+    "hidden_chan": 128,
+    "batch_size": 32,
+    "learning_rate": 0.001,
+    "weight_decay": 0.01,
 }
 
 
@@ -71,57 +81,45 @@ VQVAE_HYPERPARAMETER_SEARCH_SPACE = [
 
 PIXELCNN_HYPERPARAMETER_SEARCH_SPACE = [
     {
-        "name": "hidden_chan",
-        "type": "choice",
-        "values": [16, 32, 64, 128, 256],
-        "sort_values": True,
-        "is_ordered": True,
-    },
-    {
         "name": "conditional_embedding_dim",
         "type": "choice",
         "values": [16, 64, 256, 1024],
         "sort_values": True,
         "is_ordered": True,
     },
-    {
-        "name": "dilations",
-        "type": "choice",
-        "values": [
-            [1, 2, 1, 4, 1, 2, 1],
-            [1, 1, 2, 2, 3, 3, 4, 4],
-            [1, 2, 1, 4, 1, 2, 1, 2, 1],
-            [1, 1, 1, 2, 2, 2, 3, 3, 3, 4][1, 2, 1, 3, 1, 4, 1, 3, 1, 2, 1],
-            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-        ],
-        "sort_values": False,
-        "is_ordered": False,
-    },
 ]
 
 
 TRAINING_HYPERPARAMETER_SEARCH_SPACE = [
     {
-        "name": "learning_rate",
+        "name": "dataset",
         "type": "choice",
-        "values": [1e-4, 1e-3],
-        "sort_values": True,
-        "is_ordered": True,
+        "values": [
+            "latent artifacts/konni_replacement_vqvae/imagenet_latents_200000",
+            "latent artifacts/konni_replacement_vqvae/imagenet_latents_20classes",
+        ],
     },
-    {
-        "name": "batch_size",
-        "type": "choice",
-        "values": [32, 64, 128],
-        "sort_values": True,
-        "is_ordered": True,
-    },
-    {
-        "name": "weight_decay",
-        "type": "choice",
-        "values": [1e-4, 1e-3, 1e-2, 1e-1],
-        "sort_values": True,
-        "is_ordered": True,
-    },
+    # {
+    #     "name": "learning_rate",
+    #     "type": "choice",
+    #     "values": [1e-4, 1e-3],
+    #     "sort_values": True,
+    #     "is_ordered": True,
+    # },
+    # {
+    #     "name": "batch_size",
+    #     "type": "choice",
+    #     "values": [32, 64, 128],
+    #     "sort_values": True,
+    #     "is_ordered": True,
+    # },
+    # {
+    #     "name": "weight_decay",
+    #     "type": "choice",
+    #     "values": [1e-4, 1e-3, 1e-2, 1e-1],
+    #     "sort_values": True,
+    #     "is_ordered": True,
+    # },
 ]
 
 
@@ -129,24 +127,28 @@ def test(parameters):
     train_config = {}
     model_config = {}
 
+    parameters = parameters | FIXED_HYPERPARAMS
+
     for k, v in parameters.items():
         if k in get_annotations(TrainConfig).keys():
             train_config[k] = v
         else:
             model_config[k] = v
 
+    if "20classes" in train_config["dataset"]:
+        model_config["num_classes"] = 20
+    else:
+        model_config["num_classes"] = 1000
+
     train_config["model_config"] = model_config
-
-    train_config = train_config | FIXED_HYPERPARAMS
-
-    # train_config["epochs"] = 5 * (train_config["batch_size"] // 32)
 
     train_config = TrainConfig.from_dict(train_config)
 
-    last_average_test_loss = pml_vqvae.train.train(train_config)
-    # last_average_test_loss = 2
+    print(train_config)
 
-    return last_average_test_loss
+    best_model_performance = pml_vqvae.train.train(train_config)
+
+    return best_model_performance
 
 
 class SlurmJobQueueClient:
@@ -184,7 +186,7 @@ def main():
     ax_client.create_experiment(
         name=EXPERIMENT_NAME,
         parameters=TRAINING_HYPERPARAMETER_SEARCH_SPACE
-        + VQVAE_HYPERPARAMETER_SEARCH_SPACE,
+        + PIXELCNN_HYPERPARAMETER_SEARCH_SPACE,
         objectives={"mse": ObjectiveProperties(minimize=True)},
     )
 

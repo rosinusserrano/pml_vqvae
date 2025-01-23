@@ -230,6 +230,8 @@ class PixelCNNConfig:
         default_factory=lambda: [1, 2, 1, 4, 1, 2, 1, 2, 1]
     )
     vqvae_path: str | None = None
+    use_one_hot: bool = False
+    use_code_embeddings: bool = False
 
 
 class PixelCNN(PML_model):
@@ -244,6 +246,16 @@ class PixelCNN(PML_model):
                 "If conditional, num_classes and conditional_embedding_dim have to be provided."
             )
 
+        if config.use_code_embeddings:
+            if config.vqvae_path is None:
+                raise ValueError(
+                    "Have to provide the path to the VQVAE if you want to use the code embeddings"
+                )
+            if config.use_one_hot:
+                raise ValueError(
+                    "Can't use both, decide for either one hot or code embeddings or none."
+                )
+
         super().__init__()
 
         # Support dilations as string for hyperparameter optimization
@@ -253,17 +265,29 @@ class PixelCNN(PML_model):
         self.config = config
 
         self.codebook = None
+        self.decoder = None
         if self.config.vqvae_path is not None:
-            self.codebook = self.load_codebook_from_vqvae()
+            vqvae = self.get_vqvae_model()
+            self.codebook = vqvae.codebook.to(DEVICE)
+            self.decoder = vqvae.decoder.requires_grad_(False).to(DEVICE)
 
         self.input_channels = 1
-        if self.codebook is not None:
+        if self.config.use_code_embeddings:
             self.input_channels = self.codebook.shape[1]
+        if self.config.use_one_hot:
+            self.input_channels = self.config.hidden_chan
 
         # class conditional embedding
         if config.conditional:
             self.embedding = torch.nn.Embedding(
                 config.num_classes, config.conditional_embedding_dim
+            )
+
+        if config.use_one_hot:
+            self.one_hot_conv = torch.nn.Conv2d(
+                self.config.num_codes,
+                self.config.hidden_chan,
+                kernel_size=1,
             )
 
         self.v_stack = VerticalStack(
@@ -305,7 +329,7 @@ class PixelCNN(PML_model):
             padding=0,
         )
 
-    def load_codebook_from_vqvae(self):
+    def get_vqvae_model(self):
         config_file = f"{self.config.vqvae_path}/config.yaml"
         model_file = f"{self.config.vqvae_path}/model.pth"
 
@@ -318,7 +342,7 @@ class PixelCNN(PML_model):
         vqvae = VQVAE(model_config)
         vqvae.load_state_dict(torch.load(model_file, weights_only=True))
 
-        return vqvae.codebook.data.to(DEVICE)
+        return vqvae
 
     def forward(self, x: torch.Tensor, class_idx: torch.Tensor | None = None):
         if self.config.conditional:
@@ -328,9 +352,17 @@ class PixelCNN(PML_model):
             # else disable conditioning
             cond_embedding = None
 
-        # if provided with a codebook, transform indices to code emebddings
-        if self.codebook is not None:
+        # Map indices in specified way (code embeddings or one-hot)
+        if self.config.use_code_embeddings:
             x = self.codebook[x.long()].squeeze().permute(0, 3, 1, 2)
+        if self.config.use_one_hot:
+            x = (
+                F.one_hot(x.long(), self.config.num_codes)
+                .float()
+                .squeeze()
+                .permute(0, 3, 1, 2)
+            )
+            x = self.one_hot_conv(x)
 
         v_stack = F.elu(self.v_stack(x, cond_embedding))  # [B, C, 30, 30]
         h_stack = F.elu(self.h_stack(x, cond_embedding))  # [B, C, 30, 30]
