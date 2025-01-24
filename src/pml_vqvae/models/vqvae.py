@@ -118,6 +118,7 @@ class VQVAE(PML_model):
 
         return reconstruction, encoder_out, codes, indexes
 
+    @torch.no_grad()
     def encode(self, tensor: torch.Tensor):
         encoder_out = self.encoder(tensor)
         _, indexes = VectorQuantization.apply(encoder_out, self.codebook)
