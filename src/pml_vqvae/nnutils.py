@@ -72,7 +72,7 @@ class ResidualBlock(nn.Module):
             nn.BatchNorm2d(out_channels),
             nn.Conv2d(out_channels, out_channels, kernel_size, padding=padding),
             nn.ReLU(),
-            nn.BatchNorm2d(out_channels),
+            nn.BatchNorm2d(out_channels, affine=False),
         )
         self.skip_conv = nn.Conv2d(in_channels, out_channels, 1)
 
@@ -101,12 +101,22 @@ def sobol_uniform_points(n, d):
     - points: np.ndarray of shape (n, d), the uniformly distributed points
     """
     sampler = qmc.Sobol(d, scramble=True)
-    points = sampler.random(n) * 8 - 4
+    points = sampler.random(n) * 2 - 1
     return points
 
 
 if __name__ == "__main__":
+    import matplotlib.pyplot as plt
 
-    p = sobol_uniform_points(512, 64)
-    print(p.shape)
-    print(p)
+    plt.figure(figsize=(10, 5))
+    plt.subplot(1, 2, 1)
+    p = np.random.uniform(-1, 1, (512, 2))
+    plt.scatter(p[:, 0], p[:, 1], color="red", alpha=0.5, marker="o")
+    plt.title("Uniform", fontsize=20)
+
+    plt.subplot(1, 2, 2)
+    p = sobol_uniform_points(512, 2)
+    plt.scatter(p[:, 0], p[:, 1], color="red", alpha=0.5, marker="o")
+    plt.title("Sobol", fontsize=20)
+
+    plt.savefig("sobol.svg")
