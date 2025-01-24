@@ -7,7 +7,7 @@ import torch
 from torch.utils.data import random_split
 
 from pml_vqvae.dataset.cifar10 import CifarDataset
-from pml_vqvae.dataset.imagenet import ImageNetDataset
+from pml_vqvae.dataset.imagenet import ImageNetDataset, Imagenet128
 
 
 def load_data(
@@ -186,6 +186,15 @@ def load_data(
 
         test_set = LatentDataset(
             f"{dataset_path}/test",
+        )
+
+    elif dataset == "imagenet128":
+        print("Getting imagenet128")
+        train_set = Imagenet128(
+            rootdir="/workspace/datasets/imagenet_train100k_test5k_128x128/train"
+        )
+        test_set = Imagenet128(
+            rootdir="/workspace/datasets/imagenet_train100k_test5k_128x128/test"
         )
 
     else:

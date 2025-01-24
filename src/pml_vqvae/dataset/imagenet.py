@@ -261,3 +261,33 @@ class ImageNetDataset(Dataset):
                 json.dump(info, f)
 
         return info
+
+
+class Imagenet128(Dataset):
+    def __init__(self, rootdir: str):
+        self.rootdir = rootdir
+        self.file_names = sorted(os.listdir(rootdir))
+
+        # use first file size for "data_per_file"
+        with np.load(f"{self.rootdir}/{self.file_names[0]}") as npzfile:
+            self.data_per_file = npzfile["labels"].shape[0]
+
+        # Account for the last file not necessarily having `data_per_file` samples
+        self.len = (len(self.file_names) - 1) * self.data_per_file
+        with np.load(f"{self.rootdir}/{self.file_names[-1]}") as npzfile:
+            self.len += npzfile["labels"].shape[0]
+
+    def __len__(self):
+        return self.len
+
+    def __getitem__(self, index: int):
+        with np.load(
+            f"{self.rootdir}/{self.file_names[index // self.data_per_file]}"
+        ) as npzfile:
+            latents = npzfile["images"][index % self.data_per_file][None, :, :]
+            labels = npzfile["labels"][index % self.data_per_file]
+
+        return (
+            torch.tensor(latents, dtype=torch.float32).permute(3, 1, 2, 0).squeeze(),
+            torch.tensor(labels, dtype=torch.long),
+        )
