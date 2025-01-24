@@ -15,13 +15,13 @@ import pml_vqvae.train
 warnings.simplefilter(action="ignore", category=FutureWarning)
 
 
-EXPERIMENT_NAME = "hyperopt-XII-pixelcnn-conditional-embedding"
+EXPERIMENT_NAME = "hyperopt-vqvae-ce-buffer-and-max-idle-count"
 
 
 FIXED_HYPERPARAMS = {
-    # "dataset": "latent artifacts/konni_replacement_vqvae/imagenet_latents_200000",
+    "dataset": "imagenet",
     "experiment_name": EXPERIMENT_NAME,
-    "model_name": "pixelcnn",
+    "model_name": "vqvae-ce",
     "n_test": 5000,
     "n_train": 100000,
     "test_interval": 1,
@@ -30,50 +30,64 @@ FIXED_HYPERPARAMS = {
     "epochs": 20,
     "optimizer": "adam",
     "wandb_log": True,
-    "conditional": True,
-    "num_codes": 512,
-    "vqvae_path": "artifacts/konni_replacement_vqvae",
-    "dilations": "1-2-1-3-1-4-1-3-1-2-1",
-    "hidden_chan": 128,
     "batch_size": 32,
-    "learning_rate": 0.001,
-    "weight_decay": 0.01,
+    "learning_rate": 0.0001,
+    "weight_decay": 0.0001,
+    # PixelCNN params
+    # "conditional": True,
+    # "num_codes": 512,
+    # "vqvae_path": "artifacts/konni_replacement_vqvae",
+    # "dilations": "1-2-1-3-1-4-1-3-1-2-1",
+    # "hidden_chan": 128,
+    # VQVAE params
+    "hidden_dimension": 128,
+    "embedding_dimension": 128,
+    "codebook_size": 256,
+    "codebook_initialization_radius": 0.5,
+    "commitment_weight": 4.0,
 }
 
 
 VQVAE_HYPERPARAMETER_SEARCH_SPACE = [
+    # {
+    #     "name": "hidden_dimension",
+    #     "type": "choice",
+    #     "values": [64, 128, 256],
+    #     "sort_values": True,
+    #     "is_ordered": True,
+    # },
+    # {
+    #     "name": "embedding_dimension",
+    #     "type": "choice",
+    #     "values": [64, 128, 256, 512],
+    #     "sort_values": True,
+    #     "is_ordered": True,
+    # },
+    # {
+    #     "name": "codebook_size",
+    #     "type": "choice",
+    #     "values": [64, 128, 256, 512, 1024],
+    #     "sort_values": True,
+    #     "is_ordered": True,
+    # },
+    # {
+    #     "name": "codebook_initialization_radius",
+    #     "type": "choice",
+    #     "values": [0.01, 0.5, 1.0, 2.0, 10.0],
+    #     "sort_values": True,
+    #     "is_ordered": True,
+    # },
+    # {
+    #     "name": "commitment_weight",
+    #     "type": "choice",
+    #     "values": [2.0, 4.0, 7.0, 10.0],
+    #     "sort_values": True,
+    #     "is_ordered": True,
+    # },
     {
-        "name": "hidden_dimension",
+        "name": "buffer_size",
         "type": "choice",
-        "values": [64, 128, 256],
-        "sort_values": True,
-        "is_ordered": True,
-    },
-    {
-        "name": "embedding_dimension",
-        "type": "choice",
-        "values": [64, 128, 256, 512],
-        "sort_values": True,
-        "is_ordered": True,
-    },
-    {
-        "name": "codebook_size",
-        "type": "choice",
-        "values": [64, 128, 256, 512, 1024],
-        "sort_values": True,
-        "is_ordered": True,
-    },
-    {
-        "name": "codebook_initialization_radius",
-        "type": "choice",
-        "values": [0.01, 0.5, 1.0, 2.0, 10.0],
-        "sort_values": True,
-        "is_ordered": True,
-    },
-    {
-        "name": "commitment_weight",
-        "type": "choice",
-        "values": [2.0, 4.0, 7.0, 10.0],
+        "values": [0, 5, 20, 100],
         "sort_values": True,
         "is_ordered": True,
     },
