@@ -15,11 +15,12 @@ print(f"On device: {DEVICE}")
 def generate_latent_dataset(
     data_loader: torch.utils.data.DataLoader,
     vqvae: VQVAE,
-    max_per_file: int = 1,
+    max_per_file: int,
+    path: str,
 ) -> LatentDatasetGenerator:
     vqvae.eval()
 
-    latent_dataset = LatentDatasetGenerator(max_per_file=max_per_file)
+    latent_dataset = LatentDatasetGenerator(max_per_file=max_per_file, save_path=path)
 
     vqvae.to(DEVICE)
 
@@ -74,7 +75,7 @@ if __name__ == "__main__":
         "--hc",
         help="Use hyperclass for imagenet",
         action="store_true",
-        default=False,
+        default=None,
     )
     parser.add_argument(
         "--seed",
@@ -137,17 +138,23 @@ if __name__ == "__main__":
         n_test=n_test,
         seed=seed,
         class_idx=list(range(n_classes)) if n_classes is not None else None,
-        batch_size=256,
+        batch_size=64,
         shuffle=False,
         hyperclass=hyperclass,
     )
 
-    print("Iterating through train set")
-    train_latent_dataset = generate_latent_dataset(train_loader, vqvae, max_per_file)
-    print(" Saving to filesystem")
-    train_latent_dataset.save(f"{args.model_path}/{dataset_name}/train", "train")
+    print("Generating train set")
+    train_latent_dataset = generate_latent_dataset(
+        train_loader,
+        vqvae,
+        max_per_file,
+        f"{args.model_path}/{dataset_name}/train",
+    )
 
-    print("Iterating through test set")
-    test_latent_dataset = generate_latent_dataset(test_loader, vqvae, max_per_file)
-    print(" Saving to filesystem")
-    test_latent_dataset.save(f"{args.model_path}/{dataset_name}/test", "test")
+    print("Generating test set")
+    test_latent_dataset = generate_latent_dataset(
+        test_loader,
+        vqvae,
+        max_per_file,
+        f"{args.model_path}/{dataset_name}/test",
+    )
