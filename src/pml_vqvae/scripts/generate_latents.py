@@ -70,6 +70,12 @@ if __name__ == "__main__":
         default=10,
     )
     parser.add_argument(
+        "--hyperclass",
+        "--hc",
+        help="Use hyperclass for imagenet",
+        action="store_true",
+    )
+    parser.add_argument(
         "--seed",
         "-s",
         help="Seed for reproducibility",
@@ -102,7 +108,12 @@ if __name__ == "__main__":
     n_classes = args.n_classes
     max_per_file = args.max_per_file
     seed = args.seed
+    hyperclass = args.hyperclass
 
+    if hyperclass and (
+        n_test is not None or n_train is not None or n_classes is not None
+    ):
+        raise ValueError("Dont use ntrain, ntest or nclasses when using hyperclasses.")
     if (n_train is not None or n_test is not None) and n_classes is not None:
         raise ValueError("Either use --n-train/--n-test or --n-classes, not mixed.")
 
@@ -113,6 +124,8 @@ if __name__ == "__main__":
         dataset_name = f"{dataset_name}_{n_train}train"
     if n_test is not None:
         dataset_name = f"{dataset_name}_{n_test}test"
+    if hyperclass is not None:
+        dataset_name = f"{dataset_name}_hyperclass"
 
     print("Loading data")
     train_loader, test_loader = load_data(
@@ -123,6 +136,7 @@ if __name__ == "__main__":
         class_idx=list(range(n_classes)) if n_classes is not None else None,
         batch_size=256,
         shuffle=False,
+        hyperclass=hyperclass,
     )
 
     print("Iterating through train set")
