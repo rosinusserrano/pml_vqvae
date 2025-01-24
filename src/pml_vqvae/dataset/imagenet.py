@@ -288,6 +288,10 @@ class Imagenet128(Dataset):
             labels = npzfile["labels"][index % self.data_per_file]
 
         return (
-            torch.tensor(latents, dtype=torch.float32).permute(3, 1, 2, 0).squeeze(),
+            (
+                torch.tensor(latents, dtype=torch.float32).permute(3, 1, 2, 0).squeeze()
+                / 127.5
+                - 1
+            ),
             torch.tensor(labels, dtype=torch.long),
         )
