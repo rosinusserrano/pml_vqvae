@@ -389,9 +389,14 @@ class PixelCNN(PML_model):
         class_idx_list: torch.Tensor | None = None,
         num_samples: int | None = None,
     ):
-        if (class_idx_list is None) == (num_samples is None):
+        if self.config.conditional and class_idx_list is None:
             raise ValueError(
-                "Either provide num_samples or class_idx_list but not both."
+                "Have to provide class idx list if pixelcnn is conditional."
+            )
+
+        if not self.config.conditional and num_samples is None:
+            raise ValueError(
+                "Unconditional PixelCNN needs the number of samples specified."
             )
 
         shape = (
@@ -419,14 +424,23 @@ class PixelCNN(PML_model):
     def complete(
         self,
         incomplete: torch.Tensor,
-        start_height: int = 0,
-        start_width: int = 0,
         class_idx_list: torch.Tensor | None = None,
     ):
+        if self.config.conditional and class_idx_list is None:
+            raise ValueError(
+                "Have to provide class idx list if pixelcnn is conditional."
+            )
+
+        # Add channel dimension if not there
+        if len(incomplete.shape) == 3:
+            incomplete = incomplete[:, None, :, :]
+
         # Generation loop
-        for h in trange(start_height, self.config.input_shape[0]):
-            current_start_width = start_width if h == start_height else 0
-            for w in range(current_start_width, self.config.input_shape[1]):
+        for h in trange(self.config.input_shape[0]):
+            for w in range(self.config.input_shape[1]):
+                if incomplete[0, 0, h, w].item() >= 0:
+                    continue
+
                 preds = self.forward(incomplete, class_idx_list)
 
                 probs = F.softmax(preds, dim=1)[:, :, h, w]
