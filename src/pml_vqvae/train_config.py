@@ -6,7 +6,12 @@ from torch.optim import RMSprop, SGD, AdamW, Adamax
 
 from pml_vqvae.models.baseline.autoencoder import BaselineAutoencoder
 from pml_vqvae.models.baseline.vae import BaselineVAE, BaselineVAEConfig
-from pml_vqvae.models.vqvae import VQVAE, VQVAEConfig, VQVAECodeEnforced
+from pml_vqvae.models.vqvae import (
+    VQVAE,
+    VQVAEConfig,
+    VQVAECodeEnforced,
+    VQVAECodeEnforcedConfig,
+)
 from pml_vqvae.models.pixel_cnn import PixelCNN, PixelCNNConfig
 
 AVAIL_DATASETS = ["cifar", "imagenet", "mnist", "latent"]
@@ -128,7 +133,7 @@ class TrainConfig:
         if self.model_name == "vqvae-ce":
             if self.model_config is None:
                 raise ValueError("VQ-VAE needs model config!")
-            config = VQVAEConfig(**self.model_config)
+            config = VQVAECodeEnforcedConfig(**self.model_config)
             return VQVAECodeEnforced(config)
 
         if self.model_name == "pixelcnn":

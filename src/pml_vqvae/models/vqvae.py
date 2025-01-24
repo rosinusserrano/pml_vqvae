@@ -221,6 +221,12 @@ class VectorQuantizationWithCdist(VectorQuantization):
         return grad_encoder, grad_codes, None
 
 
+@dataclass
+class VQVAECodeEnforcedConfig(VQVAEConfig):
+    buffer_size: int = 20
+    max_idle_weight: int = 3
+
+
 class VQVAECodeEnforced(VQVAE):
     """This variant adds a loss term that draws unused codes towards the mean
     of the encoder output.
@@ -230,8 +236,9 @@ class VQVAECodeEnforced(VQVAE):
     towards the encoders output mean.
     """
 
-    def __init__(self, config):
+    def __init__(self, config: VQVAECodeEnforcedConfig):
         super().__init__(config)
+        self.config = config
 
         self.code_idle_count = torch.zeros(
             (self.config.codebook_size,),
@@ -270,14 +277,13 @@ class VQVAECodeEnforced(VQVAE):
         # Code enforcment loss
         unique_indices = indices.unique()
         self.code_idle_count += 1
-        self.code_idle_count[unique_indices] = torch.clamp(
-            self.code_idle_count[unique_indices] - 10, -10, 0
-        )
+        self.code_idle_count[unique_indices] = -self.config.buffer_size
 
-        code_enforcement = torch.mean(
+        n_unused_codes = self.config.codebook_size - unique_indices.shape[0]
+        code_enforcement = torch.sum(
             (torch.sum((self.codebook - nearest_encoder_embeds) ** 2, dim=1))
-            * torch.clamp(self.code_idle_count, 0, 100)
-        )
+            * torch.clamp(self.code_idle_count, 0, self.config.max_idle_weight)
+        ) / (n_unused_codes if n_unused_codes > 0 else 1)
 
         loss = reconstruction + encoder_commitment + codes_commitment + code_enforcement
 
@@ -289,6 +295,7 @@ class VQVAECodeEnforced(VQVAE):
             "Code usage": set(indices.flatten().tolist()),
             "Enforcement": code_enforcement.item(),
             "Max idle count": torch.max(self.code_idle_count).item(),
+            "Num idle codes": torch.sum(self.code_idle_count > 0).item(),
         }
 
         return loss
