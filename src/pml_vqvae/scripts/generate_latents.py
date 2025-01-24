@@ -74,6 +74,7 @@ if __name__ == "__main__":
         "--hc",
         help="Use hyperclass for imagenet",
         action="store_true",
+        default=False,
     )
     parser.add_argument(
         "--seed",
@@ -101,6 +102,8 @@ if __name__ == "__main__":
         print(f"Could not load model from {args.model_path}")
         print(e)
         exit()
+
+    print(f"Generating latents with config:\n\t{args}")
 
     dataset = args.dataset
     n_train = args.n_train
