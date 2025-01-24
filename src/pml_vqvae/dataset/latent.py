@@ -40,7 +40,7 @@ class LatentDatasetGenerator:
 class LatentDataset(Dataset):
     def __init__(self, rootdir: str):
         self.rootdir = rootdir
-        self.file_names = os.listdir(self.rootdir)
+        self.file_names = sorted(os.listdir(self.rootdir))
 
         # use first file size for "data_per_file"
         with np.load(f"{self.rootdir}/{self.file_names[0]}") as npzfile:
