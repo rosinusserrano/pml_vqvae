@@ -1,5 +1,5 @@
 # experiment config
-experiment_name: "vqvae-ce buffer fix" # name of the experiment
+experiment_name: "pixelcnn full imagenet - one hot encoding - conditional" # name of the experiment
 description: "" # description of the experiment
 seed: 42 # seed for reproducibility
 test_interval: 1 # test the model every test_interval epochs, None to disable
@@ -7,46 +7,47 @@ vis_train_interval: 1 # plot the training loss every plot_train_interval epochs,
 wandb_log: true # log the experiment to wandb
 
 #dataset config
-n_train: 100000 # number of training samples
-n_test: 5000 # number of test samples
-dataset: "imagenet" # either cifar or imagenet
+n_train: null # number of training samples
+n_test: null # number of test samples
+dataset: "latent /home/pml10/pml_vqvae/artifacts/final_replacement_vqvae/imagenet_latents" # either cifar or imagenet
 class_idx: null # list of class indices to use, empty list to use all classes
 hyperclass: false # use hyperclasses
 
 # train config
 batch_size: 32
 epochs: 20
-learning_rate: 0.0001
-label_conditioning: false
+learning_rate: 0.001
+label_conditioning: true
 convergence_patience: 3
 convergence_performance_threshold: 0.999
-convergence_key: Reconstruction
+convergence_key: null
+weight_decay: 0.01
 
 # model config
-model_name: "vqvae-ce" # either autoencoder or vae
+model_name: "pixelcnn" # either autoencoder or vae
 
 # PixelCNN
-# model_config:
-#   hidden_chan: 128
-#   num_codes: 512
-#   num_classes: 7
-#   input_shape: [32, 32]  # for mnist
-#   conditional_embedding_dim: 16
-#   conditional: True
-#   vqvae_path: artifacts/konni_replacement_vqvae
-#   use_one_hot: False
-#   use_code_embeddings: True
+model_config:
+  hidden_chan: 128
+  num_codes: 1024
+  num_classes: 1000
+  input_shape: [32, 32]  # for mnist
+  conditional_embedding_dim: 64
+  conditional: True
+  vqvae_path: /home/pml10/pml_vqvae/artifacts/final_replacement_vqvae
+  use_one_hot: True
+  use_code_embeddings: False
 
 # VQVAE
-model_config:
-  codebook_size: 1024
-  commitment_weight: 4
-  hidden_dimension: 256
-  embedding_dimension: 256
-  codebook_initialization_radius: 0.5
-  # optional for vqvae-ce
-  buffer_size: 20
-  max_idle_weight: 5
+# model_config:
+#   codebook_size: 1024
+#   commitment_weight: 4
+#   hidden_dimension: 256
+#   embedding_dimension: 256
+#   codebook_initialization_radius: 0.5
+#   # optional for vqvae-ce
+#   buffer_size: 20
+#   max_idle_weight: 5
 
 # VAE
 # model_config:
