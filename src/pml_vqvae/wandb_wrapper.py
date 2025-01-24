@@ -19,8 +19,8 @@ class WANDBWrapper:
         if self.log:
             wandb.login(key=os.environ["WANDB_API_KEY"])  # your api key
             wandb.init(
-                entity="pml-team",
-                project="pml-vqvae",
+                # entity="pml-team",
+                project="pml_vqvae",
                 name=self.config.experiment_name,
                 config=self.config.to_dict(),
             )  # DON'T change the project name
