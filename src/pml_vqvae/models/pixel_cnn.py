@@ -1,6 +1,6 @@
 import torch
 import os
-from pml_vqvae.baseline.pml_model_interface import PML_model
+from pml_vqvae.models.baseline.pml_model_interface import PML_model
 from pml_vqvae.visuals import show
 from torchvision.transforms import v2
 import torchvision
@@ -336,7 +336,12 @@ class PixelCNN(PML_model):
             with torch.no_grad():
                 probs = F.softmax(output, dim=1).cpu()
                 output_img = torch.argmax(probs, dim=1, keepdim=True)
-                model.visualize_output(batch.cpu(), output_img, prefix=f"train_{epoch}")
+                model.visualize_output(
+                    batch.cpu(),
+                    output_img,
+                    prefix=f"train_{epoch}",
+                    base_dir="./artifacts",
+                )
                 epoch_loss = sum(batch_losses) / len(batch_losses)
                 print(f"Epoch {epoch}, Loss: {epoch_loss}")
 
@@ -371,7 +376,10 @@ if __name__ == "__main__":
         num_workers=2,
     )
 
-    model.train_model(loader, epochs=10, learning_rate=1e-3)
+    model.train_model(loader, epochs=15, learning_rate=0.0015)
+
+    name = f"pixelcnn.pth"
+    torch.save(model.state_dict(), name)
 
     imgs = model.sample(
         torch.tensor([0, 1, 2, 3, 4, 5, 6, 7, 8, 9] * 2, dtype=torch.int).to(DEVICE)
