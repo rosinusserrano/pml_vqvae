@@ -134,10 +134,67 @@ def sample(array, num_samples):
     return array[random_indices]
 
 
+def plot_multiple_classes(model_name, output_img_name, model_dir=".", class_idxs=None):
+    print("Loading dataset.")
+    data_loaders = []
+    for class_idx in class_idxs:
+        _, test_loader = load_data(
+            "imagenet",
+            n_train=1000,
+            n_test=1000,
+            seed=42,
+            batch_size=512,
+            class_idx=[class_idx] if class_idx is not None else None,
+        )
+        data_loaders.append(test_loader)
+
+    print("Dataset loaded.")
+
+    image_tensors = []
+    for no_class_idx, _ in enumerate(class_idxs):
+        image_tensor = next(iter(data_loaders[no_class_idx]))[0]
+        image_tensor.to(DEVICE)
+        image_tensors.append(image_tensor)
+
+    encoder_outputs = []
+    codebooks = []
+    model = load_model(
+        f"{model_dir}/{model_name}.pth",
+        "eval_config.yaml",
+    )
+    model.to(DEVICE)
+    with torch.no_grad():
+        codebooks.append(model.codebook.detach().cpu().numpy())
+        for image_tensor in image_tensors:
+            encoder_output = (
+                model.encoder(image_tensor).detach().cpu().permute(3, 2, 0, 1).numpy()
+            )
+
+            encoder_outputs.append(sample(np.reshape(encoder_output, (-1, 256)), 10000))
+    codebooks_transformed, encoder_outputs_transformed = transform_data(
+        codebooks, encoder_outputs
+    )
+
+    fig, axs = plt.subplots(1, 3, figsize=(12, 6))
+
+    for class_idx_no, class_idx in enumerate(class_idxs):
+        ax = axs[class_idx_no]
+        ax.set_aspect(1)
+        ax.tick_params(axis="both", labelsize=16, length=10, width=2)
+        for spine in ax.spines.values():
+            spine.set_linewidth(2)
+        scatter_codebooks(codebooks_transformed[0], ax)
+        plot_encoder_density(encoder_outputs_transformed[class_idx_no], ax)
+    plt.tight_layout()
+    plt.savefig(f"{output_img_name}.png")
+
+    plt.show()
+
+
 def plot_from_dataset(model_names, output_img_name, model_dir="."):
     print("Loading dataset.")
-    test_loader, _ = load_data(
-        "imagenet", n_train=1000, n_test=1000, seed=42, batch_size=64
+    _, test_loader = load_data(
+        "imagenet", n_train=1000, n_test=1000, seed=42, batch_size=512
     )
     print("Dataset loaded.")
     image_tensor = next(iter(test_loader))[0]
@@ -155,7 +212,7 @@ def plot_from_dataset(model_names, output_img_name, model_dir="."):
             encoder_output = (
                 model.encoder(image_tensor).detach().cpu().permute(3, 2, 0, 1).numpy()
             )
-            encoder_outputs.append(sample(np.reshape(encoder_output, (-1, 256)), 1024))
+            encoder_outputs.append(sample(np.reshape(encoder_output, (-1, 256)), 10000))
     codebooks_transformed, encoder_outputs_transformed = transform_data(
         codebooks, encoder_outputs
     )
@@ -214,7 +271,12 @@ def plot_from_image(model_names, output_img_name, img_path="auto2.jpg", model_di
 
 
 def main():
-    plot_from_image(["model_0", "model_3", "model_4"], "out.png")
+    plot_multiple_classes(
+        "model_2",
+        "worst_all_best",
+        "artifacts/FINAL REPLACEMENT VQVAE",
+        class_idxs=[530, None, 550],
+    )
 
 
 if __name__ == "__main__":
