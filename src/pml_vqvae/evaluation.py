@@ -134,7 +134,7 @@ def sample(array, num_samples):
     return array[random_indices]
 
 
-def plot_from_dataset(model_names, img_name, model_dir="."):
+def plot_from_dataset(model_names, output_img_name, model_dir="."):
     print("Loading dataset.")
     test_loader, _ = load_data(
         "imagenet", n_train=1000, n_test=1000, seed=42, batch_size=64
@@ -155,22 +155,22 @@ def plot_from_dataset(model_names, img_name, model_dir="."):
             encoder_output = (
                 model.encoder(image_tensor).detach().cpu().permute(3, 2, 0, 1).numpy()
             )
-            encoder_outputs.append(sample(np.reshape(encoder_output, (-1, 256)), 2048))
-
-    fig, axs = plt.subplots(1, 3, figsize=(18, 6))
-
+            encoder_outputs.append(sample(np.reshape(encoder_output, (-1, 256)), 1024))
     codebooks_transformed, encoder_outputs_transformed = transform_data(
         codebooks, encoder_outputs
     )
-    for epoch in range(0, len(model_names)):
-        axs[epoch].set_aspect(1)
-        axs[epoch].tick_params(axis="both", labelsize=16, length=10, width=2)
-        for spine in axs[epoch].spines.values():
+
+    fig, axs = plt.subplots(1, 3, figsize=(18, 6))
+    for model_no, _ in enumerate(model_names):
+        ax = axs[model_no]
+        ax.set_aspect(1)
+        ax.tick_params(axis="both", labelsize=16, length=10, width=2)
+        for spine in ax.spines.values():
             spine.set_linewidth(2)
-        scatter_codebooks(codebooks_transformed[epoch], axs[epoch])
-        plot_encoder_density(encoder_outputs_transformed[epoch], axs[epoch])
+        scatter_codebooks(codebooks_transformed[model_no], ax)
+        plot_encoder_density(encoder_outputs_transformed[model_no], ax)
     plt.tight_layout()
-    plt.savefig(f"{img_name}.png")
+    plt.savefig(f"{output_img_name}.png")
 
     plt.show()
 
@@ -194,19 +194,19 @@ def plot_from_image(model_names, output_img_name, img_path="auto2.jpg", model_di
                 model.encoder(image_tensor).detach().cpu().permute(3, 2, 0, 1).numpy()
             )
             encoder_outputs.append(sample(np.reshape(encoder_output, (-1, 256)), 256))
-
-    fig, axs = plt.subplots(1, 3, figsize=(18, 6))
-
     codebooks_transformed, encoder_outputs_transformed = transform_data(
         codebooks, encoder_outputs
     )
-    for epoch in range(0, len(model_names)):
-        axs[epoch].set_aspect(1)
-        axs[epoch].tick_params(axis="both", labelsize=16, length=10, width=2)
-        for spine in axs[epoch].spines.values():
+
+    fig, axs = plt.subplots(1, 3, figsize=(18, 6))
+    for model_no, _ in enumerate(model_names):
+        ax = axs[model_no]
+        ax.set_aspect(1)
+        ax.tick_params(axis="both", labelsize=16, length=10, width=2)
+        for spine in ax.spines.values():
             spine.set_linewidth(2)
-        scatter_codebooks(codebooks_transformed[epoch], axs[epoch])
-        plot_encoder_density(encoder_outputs_transformed[epoch], axs[epoch])
+        scatter_codebooks(codebooks_transformed[model_no], ax)
+        plot_encoder_density(encoder_outputs_transformed[model_no], ax)
     plt.tight_layout()
     plt.savefig(f"{output_img_name}.png")
 
