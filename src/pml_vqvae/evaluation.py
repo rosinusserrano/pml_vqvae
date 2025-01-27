@@ -7,11 +7,13 @@ import torch
 from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
 import numpy as np
+import math
 
 from PIL import Image
-import torchvision.transforms as transforms
+from torchvision import transforms
 
-MARGIN_RATIO = 0.2
+MARGIN_RATIO = 0.1
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 
 def load_model(model_path, config_path):
@@ -31,7 +33,7 @@ def transform_data(codebooks, encoder_outputs=None):
         all_data = np.concat([codebooks_combined, encoder_outputs_combined])
     else:
         all_data = codebooks_combined
-    tsne = TSNE(random_state=42)
+    tsne = TSNE(random_state=42, n_jobs=-1)
     transformed_data = tsne.fit_transform(all_data)
     transformed_codebooks = []
     start = 0
@@ -52,20 +54,40 @@ def transform_data(codebooks, encoder_outputs=None):
 
 def plot_encoder_density(encoder_output_transformed, ax):
     n_bins = 128
+    lower_limit, upper_limit = (
+        np.min([ax.get_xlim()[0], ax.get_ylim()[0]]),
+        np.max([ax.get_xlim()[1], ax.get_ylim()[1]]),
+    )
+
+    ticks = {
+        "lower": math.ceil(lower_limit / 10) * 10,
+        "upper": math.ceil(upper_limit / 10) * 10,
+    }
+    if ticks["lower"] * -1 < ticks["upper"]:
+        ticks["upper"] = ticks["lower"] * -1
+    else:
+        ticks["lower"] = ticks["upper"] * -1
+    ax.set_xticks(
+        [ticks["lower"], 0.5 * ticks["lower"], 0, 0.5 * ticks["upper"], ticks["upper"]]
+    )
+    ax.set_yticks(
+        [ticks["lower"], 0.5 * ticks["lower"], 0, 0.5 * ticks["upper"], ticks["upper"]]
+    )
+
+    margin = (upper_limit - lower_limit) * MARGIN_RATIO
+    lower_limit, upper_limit = lower_limit - margin, upper_limit + margin
+
     k = gaussian_kde(
         (encoder_output_transformed[:, 0], encoder_output_transformed[:, 1])
     )
-    margin = encoder_output_transformed[:, 0].max() * MARGIN_RATIO
     xi, yi = np.mgrid[
-        encoder_output_transformed[:, 0].min()
-        - margin : encoder_output_transformed[:, 0].max()
-        + margin : n_bins * 1j,
-        encoder_output_transformed[:, 1].min()
-        - margin : encoder_output_transformed[:, 1].max()
-        + margin : n_bins * 1j,
+        lower_limit : upper_limit : n_bins * 1j,
+        lower_limit : upper_limit : n_bins * 1j,
     ]
     zi = k(np.vstack([xi.flatten(), yi.flatten()]))
-    ax.pcolormesh(xi, yi, zi.reshape(xi.shape), shading="gouraud", cmap="Reds")
+    ax.pcolormesh(
+        xi, yi, zi.reshape(xi.shape), shading="gouraud", cmap="Reds", zorder=0
+    )
     return
 
 
@@ -74,12 +96,14 @@ def scatter_codebooks(
     ax: plt.Axes,
     codebook_partitioning: dict = None,
 ):
+    filled_marker_style = dict(
+        marker="o", color="cyan", edgecolor="black", alpha=0.45, s=12
+    )
     if codebook_partitioning is None:
         ax.scatter(
             codebook_transformed[:, 0],
             codebook_transformed[:, 1],
-            alpha=0.5,
-            s=8,
+            **filled_marker_style,
         )
     else:
         for name, partition in codebook_partitioning.items():
@@ -87,8 +111,8 @@ def scatter_codebooks(
                 codebook_transformed[partition[0] : partition[1], 0],
                 codebook_transformed[partition[0] : partition[1], 1],
                 alpha=0.5,
-                s=8,
                 label=name,
+                **filled_marker_style,
             )
         ax.legend(loc="lower left")
 
@@ -110,51 +134,87 @@ def sample(array, num_samples):
     return array[random_indices]
 
 
-def main():
-    """image_path = "auto2.jpg"
-    image_path = image_path  # Replace with your image path
-    image = Image.open(image_path).convert("RGB")  # Ensure 3 color channels (RGB)
-    transform = transforms.ToTensor()
-    image_tensor = transform(image).unsqueeze(0)"""
-    DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-
-    print("Start loading...")
+def plot_from_dataset(model_names, img_name, model_dir="."):
+    print("Loading dataset.")
     test_loader, _ = load_data(
         "imagenet", n_train=1000, n_test=1000, seed=42, batch_size=64
     )
-    print("Loaded.")
+    print("Dataset loaded.")
     image_tensor = next(iter(test_loader))[0]
     image_tensor.to(DEVICE)
-    # artifacts/hyperopt_X_with_replacement_20/
     encoder_outputs = []
     codebooks = []
-    for epoch in ["0", "40"]:
+    for model in model_names:
         model = load_model(
-            f"artifacts/Vergleichsrun REPLACEMENT/model_{epoch}.pth",
+            f"{model_dir}/{model}.pth",
             "eval_config.yaml",
         )
-        # model.to(DEVICE)
+        model.to(DEVICE)
         with torch.no_grad():
             codebooks.append(model.codebook.detach().cpu().numpy())
-            print(f"Shape: {image_tensor.shape}")
             encoder_output = (
                 model.encoder(image_tensor).detach().cpu().permute(3, 2, 0, 1).numpy()
             )
-            print(encoder_output.shape)
-            encoder_outputs.append(sample(np.reshape(encoder_output, (-1, 256)), 1200))
+            encoder_outputs.append(sample(np.reshape(encoder_output, (-1, 256)), 2048))
 
-    fig, axs = plt.subplots(1, 3, figsize=(16, 4))
+    fig, axs = plt.subplots(1, 3, figsize=(18, 6))
 
     codebooks_transformed, encoder_outputs_transformed = transform_data(
         codebooks, encoder_outputs
     )
-    for epoch in range(0, 3):
-        plot_encoder_density(encoder_outputs_transformed[epoch], axs[epoch])
+    for epoch in range(0, len(model_names)):
+        axs[epoch].set_aspect(1)
+        axs[epoch].tick_params(axis="both", labelsize=16, length=10, width=2)
+        for spine in axs[epoch].spines.values():
+            spine.set_linewidth(2)
         scatter_codebooks(codebooks_transformed[epoch], axs[epoch])
-    fig.suptitle("NEWEST_TEST")
-    plt.savefig("test.png")
+        plot_encoder_density(encoder_outputs_transformed[epoch], axs[epoch])
+    plt.tight_layout()
+    plt.savefig(f"{img_name}.png")
 
     plt.show()
+
+
+def plot_from_image(model_names, output_img_name, img_path="auto2.jpg", model_dir="."):
+    image = Image.open(img_path).convert("RGB")  # Ensure 3 color channels (RGB)
+    transform = transforms.ToTensor()
+    image_tensor = transform(image).unsqueeze(0)
+    image_tensor.to(DEVICE)
+    encoder_outputs = []
+    codebooks = []
+    for model in model_names:
+        model = load_model(
+            f"{model_dir}/{model}.pth",
+            "eval_config.yaml",
+        )
+        model.to(DEVICE)
+        with torch.no_grad():
+            codebooks.append(model.codebook.detach().cpu().numpy())
+            encoder_output = (
+                model.encoder(image_tensor).detach().cpu().permute(3, 2, 0, 1).numpy()
+            )
+            encoder_outputs.append(sample(np.reshape(encoder_output, (-1, 256)), 256))
+
+    fig, axs = plt.subplots(1, 3, figsize=(18, 6))
+
+    codebooks_transformed, encoder_outputs_transformed = transform_data(
+        codebooks, encoder_outputs
+    )
+    for epoch in range(0, len(model_names)):
+        axs[epoch].set_aspect(1)
+        axs[epoch].tick_params(axis="both", labelsize=16, length=10, width=2)
+        for spine in axs[epoch].spines.values():
+            spine.set_linewidth(2)
+        scatter_codebooks(codebooks_transformed[epoch], axs[epoch])
+        plot_encoder_density(encoder_outputs_transformed[epoch], axs[epoch])
+    plt.tight_layout()
+    plt.savefig(f"{output_img_name}.png")
+
+    plt.show()
+
+
+def main():
+    plot_from_image(["model_0", "model_3", "model_4"], "out.png")
 
 
 if __name__ == "__main__":

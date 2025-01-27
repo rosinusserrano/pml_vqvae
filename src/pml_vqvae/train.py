@@ -3,25 +3,20 @@ import numpy as np
 from torch.utils.data import DataLoader
 import torch
 from torch.optim import Optimizer
-from torchvision.transforms import v2
 import yaml
-import pml_vqvae.models.vqvae
 from tqdm.auto import tqdm
 from pml_vqvae.stats_keeper import StatsKeeper
 from pml_vqvae.wandb_wrapper import WANDBWrapper
 from pml_vqvae.models.pml_model_interface import PML_model
-from pml_vqvae.cli_handler import CLI_handler
 from pml_vqvae.train_config import TrainConfig
 from pml_vqvae.dataset.dataloader import load_data
 from random import randint
 
-import torch.nn.functional as F
-import matplotlib.pyplot as plt
 
-# import wandb
 DEFAULT_CONFIG = "config.yaml"
 PATIENCE = 3
 PERFORMANCE_THRESHOLD_ES = 0.98
+RESTART_THRESHOLD = 20
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -96,7 +91,7 @@ def train_epoch(
     # for dynamic logging
     train_tqdm = tqdm(train_loader)
     unused_codes = np.zeros(len(model.codebook.detach()))
-    replaced_codes = 0
+    count_replaced_codes = 0
 
     for batch, labels in train_tqdm:
         batch = batch.to(DEVICE)
@@ -117,23 +112,24 @@ def train_epoch(
         optimizer.step()
 
         with torch.no_grad():
-            for i in range(len(model.codebook.detach())):
-                if i not in model.batch_stats["Code usage"]:
-                    unused_codes[i] += 1
-                    if unused_codes[i] == 20:
-                        unused_codes[i] = 0
-                        # print(batch.size())
-                        x = model.encoder(
-                            torch.unsqueeze(batch[randint(0, len(batch) - 1)], 0)
-                        )
-                        x = torch.permute(x, (0, 2, 3, 1))
-                        # print(x.size())
-                        model.codebook[i] = x[0][randint(0, 31)][randint(0, 31)]
-                        replaced_codes += 1
+            for code_index in range(len(model.codebook.detach())):
+                if code_index not in model.batch_stats["Code usage"]:
+                    unused_codes[code_index] += 1
+                    if unused_codes[code_index] == RESTART_THRESHOLD:
+                        rand_img = torch.unsqueeze(batch[randint(0, len(batch) - 1)], 0)
+                        enc_output = model.encoder(rand_img)
+                        enc_output = torch.permute(enc_output, (0, 2, 3, 1))
+                        restart_value = enc_output[0][randint(0, 31)][randint(0, 31)]
+                        model.codebook[code_index] = restart_value
+                        unused_codes[code_index] = 0
+
+                        count_replaced_codes += 1
                 else:
-                    unused_codes[i] = 0
+                    unused_codes[code_index] = 0
     # create epoch level stats
-    print(f"Replaced {replaced_codes} because they were not used")
+    print(
+        f"Replaced {count_replaced_codes} during this epoch because they were not used"
+    )
 
     stats_keeper.batch_summarize()
 
@@ -180,7 +176,6 @@ def train(config: TrainConfig):
     last_average_test_loss = None
     best_avg_test_reconstruction = float("inf")
     patience = config.convergence_patience
-    image = None
     print("Training model...")
     for i in range(config.epochs):
         # train on all datat for one epoch
@@ -193,9 +188,6 @@ def train(config: TrainConfig):
         )
         print(f"Batch images are in range [{batch.min()}, {batch.max()}]")
         wandb_wrapper.construct_examples(batch, model.visualize_output(output))
-        if image is None:
-            image = batch[0:1]
-        torch.set_printoptions(threshold=100_000)
 
         # test
         if (
