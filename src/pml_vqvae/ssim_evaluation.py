@@ -171,6 +171,12 @@ def ssim_for_all_classes(
     dataset: str,
     n_samples: int | None = None,
 ):
+    """Compute average SSIM score for each class.
+
+    n_samples will be the number of samples drawn from the test set. Thus the
+    number of samples used per class will be n_samples / n_classes. If None,
+    all data is used. Imagenet test set is 100k samples.
+    """
     _, dataloader = load_data(
         dataset,
         batch_size=32,
@@ -200,15 +206,19 @@ def ssim_for_all_classes(
     return averages
 
 
-# PLOT CLASS SIDE BY SIDE
-
-
 def get_tsne_data_for_class(
     vqvae: VQVAE,
     class_idx: int,
     batch_size: int = 1,
     hyperclass: bool = False,
 ):
+    """This function returns the encoder output for one batch of a given class.
+
+    The output is reshaped such that the spatial dimensions are collapsed,
+    meaning that for imagent, the encoder output is reshaped from batch_size x
+    32 x 32 x embedding_dimension to batch_size*1024 x embedding_dimension.
+    Additionally the output is converted to a numpy array.
+    """
     _, dataloader = load_data(
         "imagenet",
         n_train=0,
@@ -227,17 +237,18 @@ def get_tsne_data_for_class(
     return encoder_out.detach().cpu().numpy()
 
 
-def make_ssim_boxplots(models: list[nn.Module], model_names: list[str]):
+def make_ssim_boxplots(
+    models: list[PML_model],
+    model_names: list[str],
+    dataset: str = "imagenet",
+    save_ssim_dict: bool = True,
+):
 
-    ssims_arr = []
+    ssims_dict = {}
     for model in models:
-        ssim = ssim_for_all_classes(
-            model,
-            "imagenet",
-            n_samples=None,
-        )
+        ssim = ssim_for_all_classes(model, dataset, n_samples=None)
 
-        ssims_arr.append(ssim)
+        ssims_dict[model_name] = ssim
 
         print(
             f"{model.name()} got min ssim",
@@ -252,10 +263,17 @@ def make_ssim_boxplots(models: list[nn.Module], model_names: list[str]):
             max(ssim.items(), key=lambda x: x[1])[0],
         )
 
+    if save_ssim_dict:
+        with open("avg_ssim_per_class_per_model.yaml", "w", encoding="utf-8") as f:
+            yaml.safe_dump(ssims_dict, f)
+
     plt.boxplot(
-        list(map(lambda d: list(d.values())), ssims_arr), tick_labels=model_names
+        list(map(lambda k: list(ssims_dict[k].values())), ssims_dict.keys()),
+        tick_labels=model_names,
     )
     plt.savefig("boxplot_ssim.png")
+
+    return ssims_dict
 
 
 def jpeg_compression_check():
@@ -295,35 +313,52 @@ def png_jjpeg100_ssim():
 
 
 if __name__ == "__main__":
-    MODEL_PATH = "artifacts/final_replacement_vqvae"
+    MODEL_PATHS = [
+        "artifacts/final_replacement_vqvae",
+        "artifacts/final_codeenforced_vqvae",
+    ]
 
-    config_file = f"{MODEL_PATH}/config.yaml"
-    model_file = f"{MODEL_PATH}/model.pth"
+    models = []
+    model_names = []
 
-    print("Reading config file")
-    with open(config_file, "r", encoding="utf-8") as f:
-        config_dict = yaml.safe_load(f)
+    for p in MODEL_PATHS:
+        config_file = f"{p}/config.yaml"
+        model_file = f"{p}/model.pth"
 
-    model_config_dict = config_dict["model_config"]["value"]
-    model_name = config_dict["model_name"]["value"]
+        print("Reading config file")
+        with open(config_file, "r", encoding="utf-8") as f:
+            config_dict = yaml.safe_load(f)
 
-    print("Loading model")
-    model: VQVAE = get_model(model_name, model_config_dict)
-    model.load_state_dict(torch.load(model_file, weights_only=True))
-    model.to(DEVICE)
+        model_config_dict = config_dict["model_config"]["value"]
+        model_name = config_dict["model_name"]["value"]
+
+        model_names.append(model_name)
+
+        print(f"Loading model {model_name}")
+        model: VQVAE = get_model(model_name, model_config_dict)
+        model.load_state_dict(
+            torch.load(model_file, weights_only=True, map_location="cpu")
+        )
+        model.to(DEVICE)
+
+        models.append(model)
 
     print("Get SSIM per class")
-    avg_ssim = ssim_for_all_classes(model, "imagenet", 50000)
-    ordered_ssim_values = sorted(avg_ssim.items(), key=lambda x: x[1])
+    avg_ssim_per_model = make_ssim_boxplots(models, model_names)
 
-    n_classes = len(ordered_ssim_values)
+    for model_name in avg_ssim_per_model.keys():
+        print(f"Results for {model_name}")
+        avg_ssim = avg_ssim_per_model[model_name]
+        ordered_ssim_values = sorted(avg_ssim.items(), key=lambda x: x[1])
 
-    best_class = ordered_ssim_values[-1]
-    median_class = ordered_ssim_values[n_classes // 2]
-    worst_class = ordered_ssim_values[0]
+        n_classes = len(ordered_ssim_values)
 
-    print("best", best_class, "median", median_class, "worst", worst_class)
+        best_class = ordered_ssim_values[-1]
+        median_class = ordered_ssim_values[n_classes // 2]
+        worst_class = ordered_ssim_values[0]
 
-    encoder_out = get_tsne_data_for_class(model, best_class[0], batch_size=32)
+        print("best", best_class, "median", median_class, "worst", worst_class)
 
-    print(encoder_out.shape)
+        encoder_out = get_tsne_data_for_class(model, best_class[0], batch_size=32)
+
+        print(encoder_out.shape)
