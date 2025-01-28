@@ -96,9 +96,7 @@ def scatter_codebooks(
     ax: plt.Axes,
     codebook_partitioning: dict = None,
 ):
-    filled_marker_style = dict(
-        marker="o", color="cyan", edgecolor="black", alpha=0.45, s=12
-    )
+    filled_marker_style = dict(marker="+", color="black", alpha=0.4, s=24)
     if codebook_partitioning is None:
         ax.scatter(
             codebook_transformed[:, 0],
@@ -110,7 +108,6 @@ def scatter_codebooks(
             ax.scatter(
                 codebook_transformed[partition[0] : partition[1], 0],
                 codebook_transformed[partition[0] : partition[1], 1],
-                alpha=0.5,
                 label=name,
                 **filled_marker_style,
             )
@@ -175,7 +172,7 @@ def plot_multiple_classes(model_name, output_img_name, model_dir=".", class_idxs
         codebooks, encoder_outputs
     )
 
-    fig, axs = plt.subplots(1, 3, figsize=(12, 6))
+    fig, axs = plt.subplots(1, 3, figsize=(18, 6))
 
     for class_idx_no, class_idx in enumerate(class_idxs):
         ax = axs[class_idx_no]
