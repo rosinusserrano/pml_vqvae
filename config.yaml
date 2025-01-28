@@ -32,6 +32,7 @@ model_config:
   num_codes: 1024
   num_classes: 1000
   input_shape: [32, 32]  # for mnist
+  dilations: "1-2-1-3-1-4-1-3-1-2-1"
   conditional_embedding_dim: 64
   conditional: True
   vqvae_path: /home/pml10/pml_vqvae/artifacts/final_replacement_vqvae
