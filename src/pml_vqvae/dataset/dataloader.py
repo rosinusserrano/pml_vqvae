@@ -189,8 +189,8 @@ def load_data(
                 if tarfile.is_tarfile(dataset_path):
                     with tarfile.open(dataset_path) as f:
                         f.extractall(path=extract_dir)
-            else:
-                dataset_path = dataset_path.split(".tar.gz")[0]
+
+            dataset_path = dataset_path.split(".tar.gz")[0]
 
         print("Getting latent dataset")
         train_set = LatentDataset(
