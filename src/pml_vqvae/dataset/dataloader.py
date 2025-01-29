@@ -1,3 +1,6 @@
+import tarfile
+import os
+
 import torchvision
 from torchvision.transforms import v2
 import getpass
@@ -179,6 +182,16 @@ def load_data(
 
     elif dataset.startswith("latent"):
         _, dataset_path = dataset.split()
+
+        if dataset_path.endswith(".tar.gz"):
+            if not os.path.exists(dataset_path.split(".tar.gz")[0]):
+                extract_dir = os.path.dirname(dataset_path)
+                if tarfile.is_tarfile(dataset_path):
+                    with tarfile.open(dataset_path) as f:
+                        f.extractall(path=extract_dir)
+            else:
+                dataset_path = dataset_path.split(".tar.gz")[0]
+
         print("Getting latent dataset")
         train_set = LatentDataset(
             f"{dataset_path}/train",
