@@ -12,7 +12,7 @@ print("On device", DEVICE)
 
 print("Loading VQVAE")
 vqvaeconfig = VQVAEConfig(
-    codebook_size=512,
+    codebook_size=1024,
     commitment_weight=2,
     hidden_dimension=256,
     embedding_dimension=256,
@@ -20,34 +20,37 @@ vqvaeconfig = VQVAEConfig(
 )
 vqvae = VQVAE(vqvaeconfig).to(DEVICE)
 vqvae.load_state_dict(
-    torch.load("artifacts/konni_replacement_vqvae/model.pth", weights_only=True)
+    torch.load("artifacts/final_replacement_vqvae/model.pth", weights_only=True)
 )
 
 print("Loading PixelCNN")
 pixelcnnconfig = PixelCNNConfig(
-    num_codes=512,
-    conditional=False,
-    hidden_chan=256,
-    num_classes=None,
-    conditional_embedding_dim=None,
-    dilations=[1, 2, 1, 4, 1, 2, 1, 2, 1],
+    num_codes=1024,
+    conditional=True,
+    hidden_chan=128,
+    num_classes=1000,
+    conditional_embedding_dim=64,
+    # dilations=[1, 2, 1, 4, 1, 2, 1, 2, 1],
     input_shape=(32, 32),
-    vqvae_path="artifacts/konni_replacement_vqvae",
+    vqvae_path="artifacts/final_replacement_vqvae",
+    use_code_embeddings=False,
+    use_one_hot=True,
 )
 pixelcnn = PixelCNN(pixelcnnconfig).to(DEVICE)
 pixelcnn.load_state_dict(
     torch.load(
-        "artifacts/embedding pixelcnn_4/model_2.pth",
+        "artifacts/final_pixelcnn_ohe_conditional/model.pth",
         weights_only=True,
     )
 )
 
+# for clsidx in range():
 print("Sampling latent indices with PixelCNN")
-indices = pixelcnn.sample(num_samples=64)
+indices = pixelcnn.sample(class_idx_list=(torch.ones(64).long()).to(DEVICE))
 
 print("Generating images with decoder of VQVAE")
 generated_images = vqvae.decode(indices.long()).detach().cpu()
-show(generated_images, outfile="vqvae_generations_unconditional2.png")
+show(generated_images, outfile=f"vqvae_generations_cls1.png")
 
 # print("Getting imagenet for test batch reconstruction")
 # imgnet, _ = load_data("imagenet", batch_size=64)
