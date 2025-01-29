@@ -158,7 +158,7 @@ def batch_structural_similarity(
             channel_axis=0,
             data_range=1.0,
         )
-        ssim_batch.append(ssim)
+        ssim_batch.append(ssim.item())
 
     if reduce:
         return sum(ssim_batch) / len(ssim_batch)
@@ -242,11 +242,15 @@ def make_ssim_boxplots(
     model_names: list[str],
     dataset: str = "imagenet",
     save_ssim_dict: bool = True,
+    n_samples: int | None = None,
 ):
 
     ssims_dict = {}
-    for model in models:
-        ssim = ssim_for_all_classes(model, dataset, n_samples=None)
+    for i in range(len(models)):
+        model = models[i]
+        model_name = model_names[i]
+
+        ssim = ssim_for_all_classes(model, dataset, n_samples=n_samples)
 
         ssims_dict[model_name] = ssim
 
@@ -268,10 +272,10 @@ def make_ssim_boxplots(
             yaml.safe_dump(ssims_dict, f)
 
     plt.boxplot(
-        list(map(lambda k: list(ssims_dict[k].values())), ssims_dict.keys()),
+        list(map(lambda k: list(ssims_dict[k].values()), ssims_dict.keys())),
         tick_labels=model_names,
     )
-    plt.savefig("boxplot_ssim.png")
+    plt.savefig("boxplot_ssim.svg")
 
     return ssims_dict
 
@@ -316,6 +320,7 @@ if __name__ == "__main__":
     MODEL_PATHS = [
         "artifacts/final_replacement_vqvae",
         "artifacts/final_codeenforced_vqvae",
+        "artifacts/final_fixed_vqvae",
     ]
 
     models = []
@@ -343,6 +348,8 @@ if __name__ == "__main__":
 
         models.append(model)
 
+    model_names = ["replacement", "enforced", "fixed"]
+
     print("Get SSIM per class")
     avg_ssim_per_model = make_ssim_boxplots(models, model_names)
 
@@ -359,6 +366,6 @@ if __name__ == "__main__":
 
         print("best", best_class, "median", median_class, "worst", worst_class)
 
-        encoder_out = get_tsne_data_for_class(model, best_class[0], batch_size=32)
+        # encoder_out = get_tsne_data_for_class(model, best_class[0], batch_size=32)
 
-        print(encoder_out.shape)
+        # print(encoder_out.shape)
