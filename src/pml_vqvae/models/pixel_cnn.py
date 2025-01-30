@@ -350,39 +350,47 @@ class PixelCNN(PML_model):
 
 
 if __name__ == "__main__":
+    # model = PixelCNN(
+    #     input_shape=(28, 28), num_codes=256, hidden_chan=256, num_classes=10
+    # )
+
+    # model.to(DEVICE)
+
+    # transforms = v2.Compose(
+    #     [
+    #         v2.ToImage(),
+    #         v2.ToDtype(torch.float32, scale=True),
+    #     ]
+    # )
+
+    # mnist = torchvision.datasets.MNIST(
+    #     "./",
+    #     transform=transforms,
+    #     download=True,
+    # )
+
+    # loader = torch.utils.data.DataLoader(
+    #     mnist,
+    #     batch_size=128,
+    #     shuffle=False,
+    #     num_workers=2,
+    # )
+
+    # model.train_model(loader, epochs=15, learning_rate=0.0015)
+
+    # name = f"pixelcnn.pth"
+    # torch.save(model.state_dict(), name)
+
+    # load model weights
     model = PixelCNN(
         input_shape=(28, 28), num_codes=256, hidden_chan=256, num_classes=10
     )
 
+    model.load_state_dict(torch.load("pixelcnn.pth"))
     model.to(DEVICE)
-
-    transforms = v2.Compose(
-        [
-            v2.ToImage(),
-            v2.ToDtype(torch.float32, scale=True),
-        ]
-    )
-
-    mnist = torchvision.datasets.MNIST(
-        "./",
-        transform=transforms,
-        download=True,
-    )
-
-    loader = torch.utils.data.DataLoader(
-        mnist,
-        batch_size=128,
-        shuffle=False,
-        num_workers=2,
-    )
-
-    model.train_model(loader, epochs=15, learning_rate=0.0015)
-
-    name = f"pixelcnn.pth"
-    torch.save(model.state_dict(), name)
 
     imgs = model.sample(
         torch.tensor([0, 1, 2, 3, 4, 5, 6, 7, 8, 9] * 2, dtype=torch.int).to(DEVICE)
     )
 
-    show(imgs, outfile="samples.png", imgs_per_row=5)
+    show(imgs, outfile="samples.svg", imgs_per_row=10)
